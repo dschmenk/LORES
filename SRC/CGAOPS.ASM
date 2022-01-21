@@ -13,8 +13,8 @@ _TEXT   SEGMENT
 
 times   =       5                       ; Must be factor of 80 and 50
 
-    PUBLIC  _setstartaddr
-_setstartaddr PROC NEAR
+    PUBLIC  _setStartAddr
+_setStartAddr PROC NEAR
         push    bp
         mov     bp, sp
         mov     bx, WORD PTR [bp+4]      ;startaddr
@@ -39,10 +39,10 @@ waitact:
         mov     ah, bl
         out     dx, ax
         ret
-_setstartaddr ENDP
+_setStartAddr ENDP
 
-    PUBLIC  _filledgeh
-_filledgeh  PROC NEAR
+    PUBLIC  _cpyEdgeH
+_cpyEdgeH  PROC NEAR
         push    bp
         mov     bp, sp
         push    di
@@ -67,10 +67,10 @@ cpyedgeh:
         mov     sp, bp
         pop     bp
         ret
-_filledgeh  ENDP
+_cpyEdgeH  ENDP
 
-        PUBLIC  _filledgev
-_filledgev  PROC NEAR
+        PUBLIC  _cpyEdgeV
+_cpyEdgeV  PROC NEAR
         push    bp
         mov     bp, sp
         push    di
@@ -94,6 +94,6 @@ cpyedgev:
         mov     sp, bp
         pop     bp
         ret
-_filledgev  ENDP
+_cpyEdgeV  ENDP
 _TEXT	ENDS
 END
