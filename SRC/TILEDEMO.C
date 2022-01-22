@@ -148,6 +148,7 @@ int main(int argc, char **argv)
     unsigned int s, t;
     unsigned long st;
     int scrolldir;
+    unsigned char sprite[10][5];
 
     buildmap();
     gr160(0);
@@ -172,9 +173,34 @@ int main(int argc, char **argv)
          */
         if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT | SCROLL_RIGHT;
         if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP   | SCROLL_DOWN;
+        /*
+         * Move origin based on scroll direction
+         */
+        if (scrolldir & SCROLL_LEFT)
+            s += 2;
+        else if (scrolldir & SCROLL_RIGHT)
+            s -= 2;
+        if (scrolldir & SCROLL_UP)
+            t += 2;
+        else if (scrolldir & SCROLL_DOWN)
+            t -= 2;
+        /*
+         * Place sprite in middle of screen
+         */
+        tileBuf(s + 80-4, t + 50-4, 10, 10, sprite[0]);
+        sprite[2][1] = 0xFF;
+        sprite[3][1] = 0xFF;
+        sprite[2][3] = 0xFF;
+        sprite[3][3] = 0xFF;
+        sprite[6][1] = 0xFF;
+        sprite[7][1] = 0xFF;
+        sprite[6][3] = 0xFF;
+        sprite[7][3] = 0xFF;
         st = tileScroll(scrolldir);
         s  = st;
         t  = st >> 16;
+        cpyBuf(s + 80-4, t + 50-4, 10, 10, sprite[0]);
+        if (getch() == 'Q') {txt80(); return 0;}
     }
     getch();
     txt80();

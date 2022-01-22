@@ -5,3 +5,6 @@
 
 void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char **map);
 unsigned long tileScroll(int scrolldir);
+void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsigned char *buf);
+void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char *buf);
+void tileScrn(unsigned int s, unsigned int t);
