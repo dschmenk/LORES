@@ -42,7 +42,7 @@ void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char **
 
     x = 16 - s;
     tile(0, y, s, t, x, height, *tileptr++);
-    for (; x < 160 - 16 - 1; x += 16)
+    for (; x < 160 - 16; x += 16)
         tile(x, y, 0, t, 16, height, *tileptr++);
     tile(x, y, 0, t, 160 - x, height, *tileptr);
 }
@@ -57,7 +57,7 @@ void tileScrn(unsigned int s, unsigned int t)
     y  = 16 - t;
     tileRow(0, s, t, y, tileptr);
     tileptr += spanMap;
-    for (; y < 100 - 16 - 1; y += 16)
+    for (; y < 100 - 16 ; y += 16)
     {
         tileRow(y, s, 0, 16, tileptr);
         tileptr += spanMap;
@@ -92,14 +92,14 @@ void tileBufRow(int y, unsigned int s, unsigned int t, int height, unsigned char
         /*
          * Only one tile wide
          */
-        tileMem(0, y, s, t, widthBuf - s, height, *tileptr, span, buf);
+        tileMem(0, y, s, t, widthBuf, height, *tileptr, span, buf);
     else
     {
         /*
          * Two or more tiles wide
          */
         tileMem(0, y, s, t, x, height, *tileptr++, span, buf);
-        for (; x < widthBuf - 16 - 1; x += 16)
+        for (; x < widthBuf - 16; x += 16)
             tileMem(x, y, 0, t, 16, height, *tileptr++, span, buf);
         tileMem(x, y, 0, t, widthBuf - x, height, *tileptr, span, buf);
     }
@@ -117,7 +117,7 @@ void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsign
         /*
          * Only one tile tall
          */
-        tileBufRow(0, s, t, heightBuf - t, tileptr, widthBuf, buf);
+        tileBufRow(0, s, t, heightBuf, tileptr, widthBuf, buf);
     else
     {
         /*
@@ -125,7 +125,7 @@ void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsign
          */
         tileBufRow(0, s, t, y, tileptr, widthBuf, buf);
         tileptr += spanMap;
-        for (; y < heightBuf - 16 - 1; y += 16)
+        for (; y < heightBuf - 16; y += 16)
         {
             tileBufRow(y, s, 0, 16, tileptr, widthBuf, buf);
             tileptr += spanMap;

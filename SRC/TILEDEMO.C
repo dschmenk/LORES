@@ -200,7 +200,7 @@ int main(int argc, char **argv)
         s  = st;
         t  = st >> 16;
         cpyBuf(s + 80-4, t + 50-4, 10, 10, sprite[0]);
-        if (getch() == 'Q') {txt80(); return 0;}
+        //if (getch() == 'Q') {txt80(); return 0;}
     }
     getch();
     txt80();
