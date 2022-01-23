@@ -8,9 +8,10 @@
 void setStartAddr(int addr);
 void _cpyEdgeH(int addr);
 void _cpyEdgeV(int addr);
-#define CPYBUF
-#ifdef CPYBUF
 void _cpyBuf(int addr, int width, int height, int span, unsigned char *buf);
+void _cpyBufSnow(int addr, int width, int height, int span, unsigned char *buf);
+#ifndef CPYBUF
+#define CPYBUF  _cpyBufSnow
 #endif
 /*
  * Graphics routines for 160x100x16 color mode
@@ -27,7 +28,7 @@ unsigned char **tileMap;
 int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char *tileptr)
 {
 #ifdef CPYBUF
-    _cpyBuf((y * 160 + x + orgAddr) & 0x3FFF, width >> 1, height, 8, tileptr + t * 8 + (s >> 1));
+    CPYBUF((y * 160 + x + orgAddr) & 0x3FFF, width >> 1, height, 8, tileptr + t * 8 + (s >> 1));
 #else
     unsigned int pixaddr;
     int w;
@@ -193,7 +194,7 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
      * Copy to video memory
      */
 #ifdef CPYBUF
-    _cpyBuf(((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
+    CPYBUF(((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
 #else
     pixaddr = ((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF;
     width >>= 1;

@@ -120,27 +120,27 @@ __cpyBuf    PROC NEAR
         mov     di, WORD PTR [bp+4]     ; pixaddr
         mov     si, WORD PTR [bp+12]    ; pixbuf
 cpybufv:
+        mov     cx, WORD PTR [bp+6]     ; width/2
         push    si
         push    di
-        mov     cx, WORD PTR [bp+6]     ; width/2
 cpybufh:
         REPT    unrollcpybuf
         lodsw
         stosb
         inc     di
         dec     cx
-        jz      cpybufnxt
+        jz      SHORT cpybufnxt
         mov     al, ah
         stosb
         inc     di
         dec     cx
-        jz      cpybufnxt
+        jz      SHORT cpybufnxt
         ENDM
         lodsw
         stosb
         inc     di
         dec     cx
-        jz      cpybufnxt
+        jz      SHORT cpybufnxt
         mov     al, ah
         stosb
         inc     di
@@ -158,6 +158,78 @@ cpybufnxt:
         pop     bp
         ret
 __cpyBuf    ENDP
+
+PUBLIC  __cpyBufSnow
+__cpyBufSnow PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+        push    si
+; pixaddr       = 4
+; width/2       = 6
+; height        = 8
+; span          = 10
+; bufptr        = 12
+        mov     dx, 03DAh
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     di, WORD PTR [bp+4]     ; pixaddr
+        mov     si, WORD PTR [bp+12]    ; pixbuf
+cpybufsv:
+        mov     cx, WORD PTR [bp+6]     ; width/2
+        push    si
+        push    di
+cpybufsh:
+        REPT    unrollcpybuf
+        lodsw
+        xchg    ax, bx
+@@:     in      al, dx
+        test    al, 01h
+        jz      @B
+        mov     al, bl
+        stosb
+        inc     di
+        dec     cx
+        jz      SHORT cpybufsnxt
+@@:     in      al, dx
+        test    al, 01h
+        jz      @B
+        mov     al, bh
+        stosb
+        inc     di
+        dec     cx
+        jz      SHORT cpybufsnxt
+        ENDM
+        lodsw
+        xchg    ax, bx
+@@:     in      al, dx
+        test    al, 01h
+        jz      @B
+        mov     al, bl
+        stosb
+        inc     di
+        dec     cx
+        jz      SHORT cpybufsnxt
+@@:     in      al, dx
+        test    al, 01h
+        jz      @B
+        mov     al, bh
+        stosb
+        inc     di
+        loop    cpybufsh
+cpybufsnxt:
+        pop     di
+        add     di, 160
+        pop     si
+        add     si, WORD PTR [bp+10]
+        dec     WORD PTR [bp+8]
+        jnz    cpybufsv
+        pop     si
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+__cpyBufSnow ENDP
 
 _TEXT	ENDS
 END
