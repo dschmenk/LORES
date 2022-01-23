@@ -1,4 +1,4 @@
-# CGA LoRes 160x100x16 hardware assisted scrolling library and demo
+# CGA LoRes 160x100 16 color hardware assisted scrolling library and demo
 
 A simple proof-of-concept demonstrating hardware scrolling with a tile based virtual map and sprites.
 
