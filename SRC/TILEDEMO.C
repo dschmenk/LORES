@@ -229,16 +229,47 @@ int main(int argc, char **argv)
      * Set initial coordinates and scroll direction.
      * Scroll increment must be power of two.
      */
-    s = 2;
-    t = 8;
+    s = 2 << 4;
+    t = 4 << 4;
     scrolldir = SCROLL_RIGHT | SCROLL_UP;
+#ifdef SW_SCROLL
     /*
-     * Draw full screen at start address
+     * Use software scrolling
      */
-    tileInit(s, t, 16, 16, (unsigned char **)tilemap);
+    tileInit(0, 0, 16, 16, (unsigned char **)tilemap);
+    while (!kbhit())
+    {
+        /*
+         * Change scroll direction at map boundaries
+         */
+        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT | SCROLL_RIGHT;
+        if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP   | SCROLL_DOWN;
+        /*
+         * Move origin based on scroll direction
+         */
+        if (scrolldir & SCROLL_LEFT)
+            s += 2;
+        else if (scrolldir & SCROLL_RIGHT)
+            s -= 2;
+        if (scrolldir & SCROLL_UP)
+            t += 2;
+        else if (scrolldir & SCROLL_DOWN)
+            t -= 2;
+        /*
+         * Place sprite in middle of screen
+         */
+        tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
+        tileScrn(s, t);
+        cpyBuf(80-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        //if (getch() == 'Q') {txt80(); return 0;}
+    }
+    getch();
+#endif
     /*
      * Use hardware scrolling
      */
+    tileInit(s, t, 16, 16, (unsigned char **)tilemap);
     while (!kbhit())
     {
         /*

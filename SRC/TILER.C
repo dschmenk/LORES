@@ -72,7 +72,7 @@ void tileScrn(unsigned int s, unsigned int t)
     {
         tileRow(y, s, 0, 16, tileptr);
         tileptr += spanMap;
-        y += 16;
+        y       += 16;
     }
     tileRow(y, s, 0, 100 - y, tileptr);
 }
@@ -144,7 +144,7 @@ void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsign
         {
             tileBufRow(y, s, 0, 16, tileptr, widthBuf, buf);
             tileptr += spanMap;
-            y += 16;
+            y       += 16;
         }
         tileBufRow(y, s, 0, heightBuf - y, tileptr, widthBuf, buf);
     }
@@ -197,13 +197,13 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
 #else
     pixaddr = ((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF;
     width >>= 1;
-     while (height--)
-     {
-         for (w = 0; w < width; w++)
-             vidmem[pixaddr + (w << 1)] = buf[w];
-         pixaddr += 160;
-         buf     += span;
-     }
+    while (height--)
+    {
+        for (w = 0; w < width; w++)
+            vidmem[pixaddr + (w << 1)] = buf[w];
+        pixaddr += 160;
+        buf     += span;
+    }
 #endif
 }
 /*
