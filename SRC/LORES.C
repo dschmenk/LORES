@@ -2,6 +2,7 @@
 #include <conio.h>
 
 char gr160regs[] = {113, 80, 88, 15, 127, 6, 100, 112, 2, 1, 32, 0, 0, 0};
+unsigned int scanline[100]; // Precalculated scanline offsets
 
 void txt80(void)
 {
@@ -26,6 +27,11 @@ void gr160(unsigned char color)
     fill = 221 | (color << 8);
     for (i = 0; i < 8192; i++)
         vidmemw[i] = fill;
+    /*
+     * Precaclulate scanline offsets
+     */
+    for (i = 0; i < 100; i++)
+        scanline[i] = i * 160;
 }
 void plot(unsigned int x, unsigned int y, unsigned char color)
 {

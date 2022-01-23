@@ -2,6 +2,7 @@
 #include <conio.h>
 #include "lores.h"
 #include "tiler.h"
+extern unsigned int scanline[100]; // Precalculated scanline offsets
 /*
  * Fast edge fill routines
  */
@@ -28,12 +29,12 @@ unsigned char far * far *tileMap;
 int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tileptr)
 {
 #ifdef CPYBUF
-    CPYBUF((y * 160 + x + orgAddr) & 0x3FFF, width >> 1, height, 8, tileptr + t * 8 + (s >> 1));
+    CPYBUF((scanline[y] + x + orgAddr) & 0x3FFF, width >> 1, height, 8, tileptr + t * 8 + (s >> 1));
 #else
     unsigned int pixaddr;
     int w;
 
-    pixaddr = (y * 160 + x + orgAddr) & 0x3FFF;
+    pixaddr = (scanline[y] + x + orgAddr) & 0x3FFF;
     tile   += t * 8 + (s >> 1);
     width >>= 1;
     while (height--)
@@ -163,7 +164,7 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
      * Calc screen extents
      */
     extS = orgS + 158;
-    extT = orgT + 98;
+    extT = orgT + 99;
     /*
      * Quick reject
      */
@@ -194,9 +195,9 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
      * Copy to video memory
      */
 #ifdef CPYBUF
-    CPYBUF(((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
+    CPYBUF((scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
 #else
-    pixaddr = ((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF;
+    pixaddr = (scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF;
     width >>= 1;
     while (height--)
     {
@@ -210,7 +211,7 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
 /*
  * Tile into edge buffer
  */
-void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
+void tileMemH2(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
 {
     tile   += (t << 3) + (s >> 1);
     x     >>= 1;
@@ -221,6 +222,14 @@ void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char fa
         edgeH[1][x + width] = tile[8 + width];
     }
 }
+void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
+{
+    tile   += (t << 3) + (s >> 1);
+    x     >>= 1;
+    width >>= 1;
+    while (width--)
+        edgeH[0][x + width] = tile[width];
+}
 void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char far *tile)
 {
     tile += (t << 3) + (s >> 1);
@@ -229,6 +238,15 @@ void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char f
         edgeV[y++] = *tile;
         tile      += 8;
     }
+}
+void tileEdgeH2(unsigned int s, unsigned int t, unsigned char far * far*tileptr)
+{
+    int x;
+
+    tileMemH2(0, s, t, 16 - s, *tileptr++);
+    for (x = 16 - s; x < 160 - 16; x += 16)
+        tileMemH2(x, 0, t, 16, *tileptr++);
+    tileMemH2(x, 0, t, 160 - x, *tileptr++);
 }
 void tileEdgeH(unsigned int s, unsigned int t, unsigned char far * far*tileptr)
 {
@@ -340,7 +358,7 @@ unsigned long tileScroll(int scrolldir)
         /*
          * Fill in top edge
          */
-        tileEdgeH(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
+        tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
         hcount = 80/5; // Must agree without unrolled loop count in CGAOPS.ASM
         haddr  = orgAddr;
     }
@@ -349,7 +367,7 @@ unsigned long tileScroll(int scrolldir)
         /*
          * Fill in botom edge
          */
-        tileEdgeH(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * spanMap + (orgS >> 4));
+        tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * spanMap + (orgS >> 4));
         hcount = 80/5; // Must agree without unrolled loop count in CGAOPS.ASM
         haddr  = (orgAddr + 98 * 160) & 0x3FFF;
     }
