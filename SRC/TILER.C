@@ -3,8 +3,9 @@
 #include "lores.h"
 #include "tiler.h"
 extern unsigned int scanline[100]; // Precalculated scanline offsets
+#define MEMOPS
 /*
- * Fast edge fill routines
+ * Fast CGA routines
  */
 void setStartAddr(int addr);
 void _cpyEdgeH(int addr, int count);
@@ -13,6 +14,15 @@ void _cpyBuf(int addr, int width, int height, int span, unsigned char far *buf);
 void _cpyBufSnow(int addr, int width, int height, int span, unsigned char far *buf);
 #ifndef CPYBUF
 #define CPYBUF  _cpyBufSnow
+#endif
+#ifdef MEMOPS
+/*
+ * Fast memory routines
+ */
+void tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tile, int span, unsigned char far *buf);
+void tileMemH2(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile);
+void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile);
+void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char far *tile);
 #endif
 /*
  * Graphics routines for 160x100x16 color mode
@@ -26,7 +36,7 @@ unsigned int maxS, maxT, maxOrgS, maxOrgT;
 unsigned int spanMap;
 unsigned char far * far *tileMap;
 
-int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tileptr)
+void tile(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tileptr)
 {
 #ifdef CPYBUF
     CPYBUF((scanline[y] + x + orgAddr) & 0x3FFF, width >> 1, height, 8, tileptr + t * 8 + (s >> 1));
@@ -81,7 +91,8 @@ void tileScrn(unsigned int s, unsigned int t)
 /*
  * Tile into memory buffer
  */
-int tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tile, int span, unsigned char far *buf)
+#ifndef MEMOPS
+void tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tile, int span, unsigned char far *buf)
 {
     int w;
 
@@ -96,6 +107,35 @@ int tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height,
         tile += 8;
     }
 }
+void tileMemH2(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
+{
+    tile   += (t << 3) + (s >> 1);
+    x     >>= 1;
+    width >>= 1;
+    while (width--)
+    {
+        edgeH[0][x + width] = tile[width];
+        edgeH[1][x + width] = tile[8 + width];
+    }
+}
+void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
+{
+    tile   += (t << 3) + (s >> 1);
+    x     >>= 1;
+    width >>= 1;
+    while (width--)
+        edgeH[0][x + width] = tile[width];
+}
+void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char far *tile)
+{
+    tile += (t << 3) + (s >> 1);
+    while (height--)
+    {
+        edgeV[y++] = *tile;
+        tile      += 8;
+    }
+}
+#endif
 void tileBufRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr, int widthBuf, unsigned char far *buf)
 {
     int x, span;
@@ -211,34 +251,6 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
 /*
  * Tile into edge buffer
  */
-void tileMemH2(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
-{
-    tile   += (t << 3) + (s >> 1);
-    x     >>= 1;
-    width >>= 1;
-    while (width--)
-    {
-        edgeH[0][x + width] = tile[width];
-        edgeH[1][x + width] = tile[8 + width];
-    }
-}
-void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
-{
-    tile   += (t << 3) + (s >> 1);
-    x     >>= 1;
-    width >>= 1;
-    while (width--)
-        edgeH[0][x + width] = tile[width];
-}
-void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char far *tile)
-{
-    tile += (t << 3) + (s >> 1);
-    while (height--)
-    {
-        edgeV[y++] = *tile;
-        tile      += 8;
-    }
-}
 void tileEdgeH2(unsigned int s, unsigned int t, unsigned char far * far*tileptr)
 {
     int x;

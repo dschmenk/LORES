@@ -9,13 +9,11 @@ _BSS	ENDS
 DGROUP	GROUP	CONST, _BSS, _DATA
         ASSUME  CS: _TEXT, DS: DGROUP, SS: DGROUP
 
-_BSS    SEGMENT
-        EXTRN   _edgeH:	BYTE
-        EXTRN   _edgeV:	BYTE
-_BSS    ENDS
+EXTRN   _edgeH:	BYTE
+EXTRN   _edgeV:	BYTE
 
 _TEXT   SEGMENT
-        ASSUME  CS: _TEXT, DS: DGROUP
+;        ASSUME  CS: _TEXT, DS: DGROUP
 
 unrolledgeh     = 5
 unrolledgev     = 5
@@ -25,7 +23,7 @@ unrollcpybuf    = 3
 _setStartAddr   PROC NEAR
         push    bp
         mov     bp, sp
-        mov     bx, WORD PTR [bp+4]      ;startaddr
+        mov     bx, WORD PTR [bp+4]     ;startaddr
         mov     sp, bp
         pop     bp
 ; Wait for beginning of VBlank
