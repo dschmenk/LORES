@@ -6,8 +6,12 @@
  * Fast edge fill routines
  */
 void setStartAddr(int addr);
-void cpyEdgeH(int addr, unsigned char *edge);
-void cpyEdgeV(int addr, unsigned char *edge);
+void _cpyEdgeH(int addr);
+void _cpyEdgeV(int addr);
+#define CPYBUF
+#ifdef CPYBUF
+void _cpyBuf(int addr, int width, int height, int span, unsigned char *buf);
+#endif
 /*
  * Graphics routines for 160x100x16 color mode
  */
@@ -20,8 +24,11 @@ unsigned int maxS, maxT, maxOrgS, maxOrgT;
 unsigned int spanMap;
 unsigned char **tileMap;
 
-int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char *tile)
+int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char *tileptr)
 {
+#ifdef CPYBUF
+    _cpyBuf((y * 160 + x + orgAddr) & 0x3FFF, width >> 1, height, 8, tileptr + t * 8 + (s >> 1));
+#else
     unsigned int pixaddr;
     int w;
 
@@ -31,10 +38,11 @@ int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, un
     while (height--)
     {
         for (w = 0; w < width; w++)
-            vidmem[pixaddr + (w << 1)] = tile[w];
+            vidmem[pixaddr + (w << 1)] = tileptr[w];
         pixaddr += 160;
-        tile    += 8;
+        tileptr += 8;
     }
+#endif
 }
 void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char **tileptr)
 {
@@ -184,8 +192,11 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
     /*
      * Copy to video memory
      */
-     pixaddr = ((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF;
-     width >>= 1;
+#ifdef CPYBUF
+    _cpyBuf(((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
+#else
+    pixaddr = ((t - orgT) * 160 + (s - orgS) + orgAddr) & 0x3FFF;
+    width >>= 1;
      while (height--)
      {
          for (w = 0; w < width; w++)
@@ -193,6 +204,7 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
          pixaddr += 160;
          buf     += span;
      }
+#endif
 }
 /*
  * Tile into edge buffer
@@ -222,7 +234,7 @@ void tileEdgeH(unsigned int s, unsigned int t, unsigned char **tileptr)
     int x;
 
     tileMemH(0, s, t, 16 - s, *tileptr++);
-    for (x = 16 - s; x < 160 - 16 - 1; x += 16)
+    for (x = 16 - s; x < 160 - 16; x += 16)
         tileMemH(x, 0, t, 16, *tileptr++);
     tileMemH(x, 0, t, 160 - x, *tileptr++);
 }
@@ -232,7 +244,7 @@ void tileEdgeV(unsigned int s, unsigned int t, unsigned char **tileptr)
 
     tileMemV(0, s, t, 16 - t, *tileptr);
     tileptr += spanMap;
-    for (y = 16 - t; y < 100 - 16 - 1; y += 16)
+    for (y = 16 - t; y < 100 - 16; y += 16)
     {
         tileMemV(y, s, 0, 16, *tileptr);
         tileptr += spanMap;
@@ -326,9 +338,9 @@ unsigned long tileScroll(int scrolldir)
      * Fill in edges
      */
     if (scrolldir & (SCROLL_UP | SCROLL_DOWN))
-        cpyEdgeH(haddr, edgeH[0]);
+        _cpyEdgeH(haddr);
     if (scrolldir & (SCROLL_LEFT | SCROLL_RIGHT))
-        cpyEdgeV(vaddr, edgeV);
+        _cpyEdgeV(vaddr);
     /*
      * Return updated origin as 32 bit value
      */

@@ -8,10 +8,18 @@ _BSS	SEGMENT  WORD PUBLIC 'BSS'
 _BSS	ENDS
 DGROUP	GROUP	CONST, _BSS, _DATA
 	ASSUME  CS: _TEXT, DS: DGROUP, SS: DGROUP
-_TEXT   SEGMENT
-	ASSUME	CS: _TEXT
 
-times   =       5                       ; Must be factor of 80 and 50
+_BSS      SEGMENT
+        EXTRN   _edgeH:	BYTE
+        EXTRN   _edgeV:	BYTE
+_BSS   ENDS
+
+_TEXT   SEGMENT
+	ASSUME	CS: _TEXT, DS: DGROUP
+
+unrolledgeh     = 5
+unrolledgev     = 5
+unrollcpybuf    = 3
 
     PUBLIC  _setStartAddr
 _setStartAddr PROC NEAR
@@ -41,19 +49,19 @@ waitact:
         ret
 _setStartAddr ENDP
 
-    PUBLIC  _cpyEdgeH
-_cpyEdgeH  PROC NEAR
+    PUBLIC  __cpyEdgeH
+__cpyEdgeH  PROC NEAR
         push    bp
         mov     bp, sp
         push    di
         push    si
         mov     ax, 0B800H
         mov     es, ax
-        mov     di, WORD PTR [bp+4]      ;pixaddr
-        mov     si, WORD PTR [bp+6]      ;edgeaddr
-        mov     cx, 80/times
+        mov     di, WORD PTR [bp+4]     ; pixaddr
+        mov     si, OFFSET DGROUP:_edgeH
+        mov     cx, 80/unrolledgeh
 cpyedgeh:
-        REPT    times
+        REPT    unrolledgeh
         lodsw
         stosb
         inc     di
@@ -67,21 +75,21 @@ cpyedgeh:
         mov     sp, bp
         pop     bp
         ret
-_cpyEdgeH  ENDP
+__cpyEdgeH  ENDP
 
-        PUBLIC  _cpyEdgeV
-_cpyEdgeV  PROC NEAR
+        PUBLIC  __cpyEdgeV
+__cpyEdgeV  PROC NEAR
         push    bp
         mov     bp, sp
         push    di
         push    si
         mov     ax, 0B800H
         mov     es, ax
-        mov     di, WORD PTR [bp+4]      ;pixaddr
-        mov     si, WORD PTR [bp+6]      ;edgeaddr
-        mov     cx, 50/times
+        mov     di, WORD PTR [bp+4]     ;pixaddr
+        mov     si, OFFSET DGROUP:_edgeV
+        mov     cx, 50/unrolledgev
 cpyedgev:
-        REPT    times
+        REPT    unrolledgev
         lodsw
         mov     es:[di], al
         add     di, 160
@@ -94,6 +102,62 @@ cpyedgev:
         mov     sp, bp
         pop     bp
         ret
-_cpyEdgeV  ENDP
+__cpyEdgeV  ENDP
+
+        PUBLIC  __cpyBuf
+__cpyBuf    PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+        push    si
+; pixaddr       = 4
+; width/2       = 6
+; height        = 8
+; span          = 10
+; bufptr        = 12
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     di, WORD PTR [bp+4]     ; pixaddr
+        mov     si, WORD PTR [bp+12]    ; pixbuf
+cpybufv:
+        push    si
+        push    di
+        mov     cx, WORD PTR [bp+6]     ; width/2
+cpybufh:
+        REPT    unrollcpybuf
+        lodsw
+        stosb
+        inc     di
+        dec     cx
+        jz      cpybufnxt
+        mov     al, ah
+        stosb
+        inc     di
+        dec     cx
+        jz      cpybufnxt
+        ENDM
+        lodsw
+        stosb
+        inc     di
+        dec     cx
+        jz      cpybufnxt
+        mov     al, ah
+        stosb
+        inc     di
+        loop    cpybufh
+cpybufnxt:
+        pop     di
+        add     di, 160
+        pop     si
+        add     si, WORD PTR [bp+10]
+        dec     WORD PTR [bp+8]
+        jnz    cpybufv
+        pop     si
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+__cpyBuf    ENDP
+
 _TEXT	ENDS
 END
