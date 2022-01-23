@@ -7,22 +7,22 @@ CONST	ENDS
 _BSS	SEGMENT  WORD PUBLIC 'BSS'
 _BSS	ENDS
 DGROUP	GROUP	CONST, _BSS, _DATA
-	ASSUME  CS: _TEXT, DS: DGROUP, SS: DGROUP
+        ASSUME  CS: _TEXT, DS: DGROUP, SS: DGROUP
 
-_BSS      SEGMENT
+_BSS    SEGMENT
         EXTRN   _edgeH:	BYTE
         EXTRN   _edgeV:	BYTE
-_BSS   ENDS
+_BSS    ENDS
 
 _TEXT   SEGMENT
-	ASSUME	CS: _TEXT, DS: DGROUP
+        ASSUME  CS: _TEXT, DS: DGROUP
 
 unrolledgeh     = 5
 unrolledgev     = 5
 unrollcpybuf    = 3
 
-    PUBLIC  _setStartAddr
-_setStartAddr PROC NEAR
+        PUBLIC  _setStartAddr
+_setStartAddr   PROC NEAR
         push    bp
         mov     bp, sp
         mov     bx, WORD PTR [bp+4]      ;startaddr
@@ -47,10 +47,10 @@ waitact:
         mov     ah, bl
         out     dx, ax
         ret
-_setStartAddr ENDP
+_setStartAddr   ENDP
 
-    PUBLIC  __cpyEdgeH
-__cpyEdgeH  PROC NEAR
+        PUBLIC  __cpyEdgeH
+__cpyEdgeH      PROC NEAR
         push    bp
         mov     bp, sp
         push    di
@@ -59,7 +59,7 @@ __cpyEdgeH  PROC NEAR
         mov     es, ax
         mov     di, WORD PTR [bp+4]     ; pixaddr
         mov     si, OFFSET DGROUP:_edgeH
-        mov     cx, 80/unrolledgeh
+        mov     cx, WORD PTR [bp+6]     ; hcount
 cpyedgeh:
         REPT    unrolledgeh
         lodsw
@@ -75,10 +75,10 @@ cpyedgeh:
         mov     sp, bp
         pop     bp
         ret
-__cpyEdgeH  ENDP
+__cpyEdgeH      ENDP
 
         PUBLIC  __cpyEdgeV
-__cpyEdgeV  PROC NEAR
+__cpyEdgeV      PROC NEAR
         push    bp
         mov     bp, sp
         push    di
@@ -102,10 +102,10 @@ cpyedgev:
         mov     sp, bp
         pop     bp
         ret
-__cpyEdgeV  ENDP
+__cpyEdgeV      ENDP
 
         PUBLIC  __cpyBuf
-__cpyBuf    PROC NEAR
+__cpyBuf        PROC NEAR
         push    bp
         mov     bp, sp
         push    di
@@ -159,10 +159,10 @@ cpybufnxt:
         mov     sp, bp
         pop     bp
         ret
-__cpyBuf    ENDP
+__cpyBuf        ENDP
 
-PUBLIC  __cpyBufSnow
-__cpyBufSnow PROC NEAR
+        PUBLIC  __cpyBufSnow
+__cpyBufSnow    PROC NEAR
         push    bp
         mov     bp, sp
         push    di
@@ -185,7 +185,7 @@ cpybufsv:
 cpybufsh:
         REPT    unrollcpybuf
         lodsw
-        xchg    ax, bx
+        mov     bx, ax
 @@:     in      al, dx
         test    al, 01h
         jz      @B
@@ -204,7 +204,7 @@ cpybufsh:
         jz      SHORT cpybufsnxt
         ENDM
         lodsw
-        xchg    ax, bx
+        mov     bx, ax
 @@:     in      al, dx
         test    al, 01h
         jz      @B
@@ -233,7 +233,7 @@ cpybufsnxt:
         mov     sp, bp
         pop     bp
         ret
-__cpyBufSnow ENDP
+__cpyBufSnow    ENDP
 
 _TEXT	ENDS
 END

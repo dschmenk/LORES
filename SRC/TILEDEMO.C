@@ -227,11 +227,12 @@ int main(int argc, char **argv)
     facebuf = (unsigned char *)malloc(FACEBUF_HEIGHT*FACEBUF_WIDTH/2);
     /*
      * Set initial coordinates and scroll direction.
-     * Scroll increment must be power of two.
+     * Horizontal scroll increment must be two,
+     * vertical scroll increment can be two or one.
      */
     s = 2 << 4;
     t = 4 << 4;
-    scrolldir = SCROLL_RIGHT | SCROLL_UP;
+    scrolldir = SCROLL_RIGHT2 | SCROLL_UP2;
 #ifdef SW_SCROLL
     /*
      * Use software scrolling
@@ -242,18 +243,18 @@ int main(int argc, char **argv)
         /*
          * Change scroll direction at map boundaries
          */
-        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT | SCROLL_RIGHT;
-        if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP   | SCROLL_DOWN;
+        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT2 | SCROLL_RIGHT2;
+        if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP2   | SCROLL_DOWN2;
         /*
          * Move origin based on scroll direction
          */
-        if (scrolldir & SCROLL_LEFT)
+        if (scrolldir & SCROLL_LEFT2)
             s += 2;
-        else if (scrolldir & SCROLL_RIGHT)
+        else if (scrolldir & SCROLL_RIGHT2)
             s -= 2;
-        if (scrolldir & SCROLL_UP)
+        if (scrolldir & SCROLL_UP2)
             t += 2;
-        else if (scrolldir & SCROLL_DOWN)
+        else if (scrolldir & SCROLL_DOWN2)
             t -= 2;
         /*
          * Place sprite in middle of screen
@@ -275,19 +276,56 @@ int main(int argc, char **argv)
         /*
          * Change scroll direction at map boundaries
          */
-        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT | SCROLL_RIGHT;
-        if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP   | SCROLL_DOWN;
+        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT2 | SCROLL_RIGHT2;
+        if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP2   | SCROLL_DOWN2;
         /*
          * Move origin based on scroll direction
          */
-        if (scrolldir & SCROLL_LEFT)
+        if (scrolldir & SCROLL_LEFT2)
             s += 2;
-        else if (scrolldir & SCROLL_RIGHT)
+        else if (scrolldir & SCROLL_RIGHT2)
+            s -= 2;
+        if (scrolldir & SCROLL_UP2)
+            t += 2;
+        else if (scrolldir & SCROLL_DOWN2)
+            t -= 2;
+        /*
+         * Place sprite in middle of screen
+         */
+        tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
+        st = tileScroll(scrolldir);
+        s  = st;
+        t  = st >> 16;
+        cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        //if (getch() == 'Q') {txt80(); return 0;}
+    }
+    getch();
+    /*
+     * Switch to scrolling vertically by one
+     */
+    if (scrolldir & SCROLL_UP2)
+        scrolldir ^= SCROLL_UP2 | SCROLL_UP;
+    else if (scrolldir & SCROLL_DOWN2)
+        scrolldir ^= SCROLL_DOWN2 | SCROLL_DOWN;
+    while (!kbhit())
+    {
+        /*
+         * Change scroll direction at map boundaries
+         */
+        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT2 | SCROLL_RIGHT2;
+        if (t == ((16 << 4) - 101) || t == 0) scrolldir ^= SCROLL_UP    | SCROLL_DOWN;
+        /*
+         * Move origin based on scroll direction
+         */
+        if (scrolldir & SCROLL_LEFT2)
+            s += 2;
+        else if (scrolldir & SCROLL_RIGHT2)
             s -= 2;
         if (scrolldir & SCROLL_UP)
-            t += 2;
+            t++;
         else if (scrolldir & SCROLL_DOWN)
-            t -= 2;
+            t--;
         /*
          * Place sprite in middle of screen
          */

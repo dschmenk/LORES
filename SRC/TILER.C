@@ -6,7 +6,7 @@
  * Fast edge fill routines
  */
 void setStartAddr(int addr);
-void _cpyEdgeH(int addr);
+void _cpyEdgeH(int addr, int count);
 void _cpyEdgeV(int addr);
 void _cpyBuf(int addr, int width, int height, int span, unsigned char far *buf);
 void _cpyBufSnow(int addr, int width, int height, int span, unsigned char far *buf);
@@ -64,8 +64,8 @@ void tileScrn(unsigned int s, unsigned int t)
     unsigned char far * far *tileptr;
 
     tileptr = tileMap + (t >> 4) * spanMap + (s >> 4);
-    s &= 0x0E;
-    t &= 0x0E;
+    s &= 0x0F;
+    t &= 0x0F;
     y  = 16 - t;
     tileRow(0, s, t, y, tileptr);
     tileptr += spanMap;
@@ -126,8 +126,8 @@ void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsign
     unsigned char far * far *tileptr;
 
     tileptr = tileMap + (t >> 4) * spanMap + (s >> 4);
-    s &= 0x0E;
-    t &= 0x0E;
+    s &= 0x0F;
+    t &= 0x0F;
     y  = 16 - t; // y is the height of the first tile and start of second tile row
     if (y >= heightBuf)
         /*
@@ -254,9 +254,9 @@ void tileEdgeV(unsigned int s, unsigned int t, unsigned char far * far *tileptr)
 }
 unsigned long tileScroll(int scrolldir)
 {
-    unsigned int haddr, vaddr;
+    unsigned int hcount, haddr, vaddr;
 
-    if (scrolldir & SCROLL_LEFT)
+    if (scrolldir & SCROLL_LEFT2)
     {
         if (orgS < maxOrgS)
         {
@@ -264,72 +264,112 @@ unsigned long tileScroll(int scrolldir)
             orgAddr = (orgAddr + 2) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_LEFT | SCROLL_RIGHT);
+            scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
     }
-    else if (scrolldir & SCROLL_RIGHT)
+    else if (scrolldir & SCROLL_RIGHT2)
     {
         if (orgS > 0)
         {
-            orgS   -= 2;
+            orgS    = (orgS - 2) & 0x0FFFE;
             orgAddr = (orgAddr - 2) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_LEFT | SCROLL_RIGHT);
+        scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
     }
-    if (scrolldir & SCROLL_UP)
+    if (scrolldir & SCROLL_UP2)
     {
         if (orgT < maxOrgT)
         {
-            orgT   += 2;
+            orgT    = (orgT + 2) & 0x0FFFE;
             orgAddr = (orgAddr + 320) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+    }
+    else if (scrolldir & SCROLL_DOWN2)
+    {
+        if (orgT > 0)
+        {
+            orgT    = (orgT - 2) & 0x0FFFE;
+            orgAddr = (orgAddr - 320) & 0x3FFF;
+        }
+        else
+            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+    }
+    else if (scrolldir & SCROLL_UP)
+    {
+        if (orgT < maxOrgT + 1)
+        {
+            orgT++;
+            orgAddr = (orgAddr + 160) & 0x3FFF;
+        }
+        else
+            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
     }
     else if (scrolldir & SCROLL_DOWN)
     {
         if (orgT > 0)
         {
-            orgT   -= 2;
-            orgAddr = (orgAddr - 320) & 0x3FFF;
+            orgT--;
+            orgAddr = (orgAddr - 160) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
     }
     /*
      * Pre-render edges based on scroll direction
      */
-    if (scrolldir & SCROLL_DOWN)
+     if (scrolldir & SCROLL_RIGHT2)
+     {
+         /*
+          * Fill in left edge
+          */
+         tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
+         vaddr = orgAddr;
+     }
+     else if (scrolldir & SCROLL_LEFT2)
+     {
+         /*
+          * Fill right edge
+          */
+         tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * spanMap + ((orgS + 158) >> 4));
+         vaddr = (orgAddr + 158) & 0x3FFF;
+     }
+    if (scrolldir & SCROLL_DOWN2)
     {
         /*
          * Fill in top edge
          */
         tileEdgeH(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
-        haddr = orgAddr;
+        hcount = 80/5; // Must agree without unrolled loop count in CGAOPS.ASM
+        haddr  = orgAddr;
+    }
+    else if (scrolldir & SCROLL_UP2)
+    {
+        /*
+         * Fill in botom edge
+         */
+        tileEdgeH(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * spanMap + (orgS >> 4));
+        hcount = 80/5; // Must agree without unrolled loop count in CGAOPS.ASM
+        haddr  = (orgAddr + 98 * 160) & 0x3FFF;
+    }
+    else if (scrolldir & SCROLL_DOWN)
+    {
+        /*
+         * Fill in top edge
+         */
+        tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
+        haddr  = orgAddr;
+        hcount = 40/5; // Must agree without unrolled loop count in CGAOPS.ASM
     }
     else if (scrolldir & SCROLL_UP)
     {
         /*
          * Fill in botom edge
          */
-        tileEdgeH(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * spanMap + (orgS >> 4));
-        haddr = (orgAddr + 98 * 160) & 0x3FFF;
-    }
-    if (scrolldir & SCROLL_RIGHT)
-    {
-        /*
-         * Fill in left edge
-         */
-        tileEdgeV(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
-        vaddr = orgAddr;
-    }
-    else if (scrolldir & SCROLL_LEFT)
-    {
-        /*
-         * Fill right edge
-         */
-        tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * spanMap + ((orgS + 158) >> 4));
-        vaddr = (orgAddr + 158) & 0x3FFF;
+        tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * spanMap + (orgS >> 4));
+        haddr  = (orgAddr + 99 * 160) & 0x3FFF;
+        hcount = 40/5; // Must agree without unrolled loop count in CGAOPS.ASM
     }
     /*
      * The following happens during VBlank
@@ -338,9 +378,9 @@ unsigned long tileScroll(int scrolldir)
     /*
      * Fill in edges
      */
-    if (scrolldir & (SCROLL_UP | SCROLL_DOWN))
-        _cpyEdgeH(haddr);
-    if (scrolldir & (SCROLL_LEFT | SCROLL_RIGHT))
+    if (scrolldir & (SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN))
+        _cpyEdgeH(haddr, hcount);
+    if (scrolldir & (SCROLL_LEFT2 | SCROLL_RIGHT2))
         _cpyEdgeV(vaddr);
     /*
      * Return updated origin as 32 bit value
@@ -355,8 +395,8 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     maxT    = (height << 4) - 2;
     maxOrgS = maxS - 160;
     maxOrgT = maxT - 100;
-    orgS    = s & 0xFFFE;
-    orgT    = t & 0xFFFE;
+    orgS    = s & 0xFFFE; // S always even
+    orgT    = t;
     orgAddr = (orgT * 160 + orgS | 1) & 0x3FFF;
     setStartAddr(orgAddr >> 1);
     outp(0x3D8, 0x00);  /* Turn off video */
