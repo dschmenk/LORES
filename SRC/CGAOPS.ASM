@@ -110,6 +110,7 @@ __cpyBuf    PROC NEAR
         mov     bp, sp
         push    di
         push    si
+        push    ds
 ; pixaddr       = 4
 ; width/2       = 6
 ; height        = 8
@@ -118,7 +119,7 @@ __cpyBuf    PROC NEAR
         mov     ax, 0B800H
         mov     es, ax
         mov     di, WORD PTR [bp+4]     ; pixaddr
-        mov     si, WORD PTR [bp+12]    ; pixbuf
+        lds     si, DWORD PTR [bp+12]   ; pixbuf
 cpybufv:
         mov     cx, WORD PTR [bp+6]     ; width/2
         push    si
@@ -152,6 +153,7 @@ cpybufnxt:
         add     si, WORD PTR [bp+10]
         dec     WORD PTR [bp+8]
         jnz    cpybufv
+        pop     ds
         pop     si
         pop     di
         mov     sp, bp
@@ -165,6 +167,7 @@ __cpyBufSnow PROC NEAR
         mov     bp, sp
         push    di
         push    si
+        push    ds
 ; pixaddr       = 4
 ; width/2       = 6
 ; height        = 8
@@ -174,7 +177,7 @@ __cpyBufSnow PROC NEAR
         mov     ax, 0B800H
         mov     es, ax
         mov     di, WORD PTR [bp+4]     ; pixaddr
-        mov     si, WORD PTR [bp+12]    ; pixbuf
+        lds     si, DWORD PTR [bp+12]   ; pixbuf
 cpybufsv:
         mov     cx, WORD PTR [bp+6]     ; width/2
         push    si
@@ -224,6 +227,7 @@ cpybufsnxt:
         add     si, WORD PTR [bp+10]
         dec     WORD PTR [bp+8]
         jnz    cpybufsv
+        pop     ds
         pop     si
         pop     di
         mov     sp, bp

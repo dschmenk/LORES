@@ -8,8 +8,8 @@
 void setStartAddr(int addr);
 void _cpyEdgeH(int addr);
 void _cpyEdgeV(int addr);
-void _cpyBuf(int addr, int width, int height, int span, unsigned char *buf);
-void _cpyBufSnow(int addr, int width, int height, int span, unsigned char *buf);
+void _cpyBuf(int addr, int width, int height, int span, unsigned char far *buf);
+void _cpyBufSnow(int addr, int width, int height, int span, unsigned char far *buf);
 #ifndef CPYBUF
 #define CPYBUF  _cpyBufSnow
 #endif
@@ -23,9 +23,9 @@ unsigned int orgS = 0;
 unsigned int orgT = 0;
 unsigned int maxS, maxT, maxOrgS, maxOrgT;
 unsigned int spanMap;
-unsigned char **tileMap;
+unsigned char far * far *tileMap;
 
-int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char *tileptr)
+int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tileptr)
 {
 #ifdef CPYBUF
     CPYBUF((y * 160 + x + orgAddr) & 0x3FFF, width >> 1, height, 8, tileptr + t * 8 + (s >> 1));
@@ -45,7 +45,7 @@ int tile(int x, int y, unsigned int s, unsigned int t, int width, int height, un
     }
 #endif
 }
-void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char **tileptr)
+void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr)
 {
     int x;
 
@@ -61,7 +61,7 @@ void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char **
 void tileScrn(unsigned int s, unsigned int t)
 {
     int y;
-    unsigned char **tileptr;
+    unsigned char far * far *tileptr;
 
     tileptr = tileMap + (t >> 4) * spanMap + (s >> 4);
     s &= 0x0E;
@@ -80,7 +80,7 @@ void tileScrn(unsigned int s, unsigned int t)
 /*
  * Tile into memory buffer
  */
-int tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char *tile, int span, unsigned char *buf)
+int tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tile, int span, unsigned char far *buf)
 {
     int w;
 
@@ -95,7 +95,7 @@ int tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height,
         tile += 8;
     }
 }
-void tileBufRow(int y, unsigned int s, unsigned int t, int height, unsigned char **tileptr, int widthBuf, unsigned char *buf)
+void tileBufRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr, int widthBuf, unsigned char far *buf)
 {
     int x, span;
 
@@ -120,10 +120,10 @@ void tileBufRow(int y, unsigned int s, unsigned int t, int height, unsigned char
         tileMem(x, y, 0, t, widthBuf - x, height, *tileptr, span, buf);
     }
 }
-void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsigned char *buf)
+void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsigned char far *buf)
 {
     int y;
-    unsigned char **tileptr;
+    unsigned char far * far *tileptr;
 
     tileptr = tileMap + (t >> 4) * spanMap + (s >> 4);
     s &= 0x0E;
@@ -153,7 +153,7 @@ void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsign
 /*
  * Copy buffer to screen
  */
-void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char *buf)
+void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf)
 {
     int w, span;
     unsigned int extS, extT;
@@ -210,7 +210,7 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
 /*
  * Tile into edge buffer
  */
-void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char *tile)
+void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
 {
     tile   += (t << 3) + (s >> 1);
     x     >>= 1;
@@ -221,7 +221,7 @@ void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char *t
         edgeH[1][x + width] = tile[8 + width];
     }
 }
-void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char *tile)
+void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char far *tile)
 {
     tile += (t << 3) + (s >> 1);
     while (height--)
@@ -230,7 +230,7 @@ void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char *
         tile      += 8;
     }
 }
-void tileEdgeH(unsigned int s, unsigned int t, unsigned char **tileptr)
+void tileEdgeH(unsigned int s, unsigned int t, unsigned char far * far*tileptr)
 {
     int x;
 
@@ -239,7 +239,7 @@ void tileEdgeH(unsigned int s, unsigned int t, unsigned char **tileptr)
         tileMemH(x, 0, t, 16, *tileptr++);
     tileMemH(x, 0, t, 160 - x, *tileptr++);
 }
-void tileEdgeV(unsigned int s, unsigned int t, unsigned char **tileptr)
+void tileEdgeV(unsigned int s, unsigned int t, unsigned char far * far *tileptr)
 {
     int y;
 
@@ -347,7 +347,7 @@ unsigned long tileScroll(int scrolldir)
      */
      return ((unsigned long)orgT << 16) | orgS;
 }
-void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char **map)
+void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
 {
     tileMap = map;
     spanMap = width;

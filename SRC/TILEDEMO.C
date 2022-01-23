@@ -86,7 +86,7 @@ unsigned char water[] = {  0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
                            0x11, 0x11, 0x11, 0x11, 0x99, 0x11, 0x99, 0x11,
                            0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
                            0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11};
-unsigned char *tilemap[16][16];
+unsigned char far *tilemap[16][16];
 /*
  * Build map from text representation
  *  . = grass
@@ -113,7 +113,7 @@ unsigned char *map[] = {"................",
 void buildmap(void)
 {
     int row, col;
-    unsigned char *tileptr;
+    unsigned char far *tileptr;
 
     for (row = 0; row < 16; row++)
     {
@@ -236,7 +236,7 @@ int main(int argc, char **argv)
     /*
      * Use software scrolling
      */
-    tileInit(0, 0, 16, 16, (unsigned char **)tilemap);
+    tileInit(0, 0, 16, 16, (unsigned char far * far *)tilemap);
     while (!kbhit())
     {
         /*
@@ -269,7 +269,7 @@ int main(int argc, char **argv)
     /*
      * Use hardware scrolling
      */
-    tileInit(s, t, 16, 16, (unsigned char **)tilemap);
+    tileInit(s, t, 16, 16, (unsigned char far * far *)tilemap);
     while (!kbhit())
     {
         /*
