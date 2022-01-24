@@ -173,46 +173,45 @@ __cpyBufSnow    PROC NEAR
 ; bufptr        = 12
         mov     dx, 03DAh
         mov     ax, 0B800H
-        mov     es, ax
+        mov     ds, ax
+        ASSUME  DS: NOTHING
         mov     di, WORD PTR [bp+4]     ; pixaddr
-        lds     si, DWORD PTR [bp+12]   ; pixbuf
+        les     si, DWORD PTR [bp+12]   ; pixbuf
 cpybufsv:
         mov     cx, WORD PTR [bp+6]     ; width/2
         push    si
         push    di
         shr     cx, 1
         jae     SHORT cpybufsh
+        mov     bl, es:[si]
+        inc     si
 @@:     in      al, dx
         shr     al, 1
         jae     @B
-        movsb
+        mov     [di], bl
         jcxz    cpybufsnxt
-        inc     di
+        add     di, 2
 cpybufsh:
         REPT    unrollcpybuf
+        mov     bx, es:[si]
+        add     si, 2
 @@:     in      al, dx
         shr     al, 1
         jae     @B
-        movsb
-        inc     di
-@@:     in      al, dx
-        shr     al, 1
-        jae     @B
-        movsb
-        inc     di
+        mov     [di], bl
+        mov     [di+2], bh
+        add     di, 4
         dec     cx
         jz      SHORT cpybufsnxt
         ENDM
+        mov     bx, es:[si]
+        add     si, 2
 @@:     in      al, dx
         shr     al, 1
         jae     @B
-        movsb
-        inc     di
-@@:     in      al, dx
-        shr     al, 1
-        jae     @B
-        movsb
-        inc     di
+        mov     [di], bl
+        mov     [di+2], bh
+        add     di, 4
         loop    cpybufsh
 cpybufsnxt:
         pop     di
