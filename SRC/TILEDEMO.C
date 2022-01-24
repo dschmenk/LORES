@@ -3,6 +3,7 @@
 #include <conio.h>
 #include "lores.h"
 #include "tiler.h"
+#include "sprite.h"
 /*
  * Map and tile data
  */
@@ -169,49 +170,6 @@ unsigned char face[FACE_HEIGHT*FACE_WIDTH/2] = {
      0x88, 0xE8, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0x8E, 0x88,
      0x88, 0x88, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0xEE, 0x88, 0x88,
      0x88, 0x88, 0x88, 0xE8, 0xEE, 0xEE, 0x8E, 0x88, 0x88, 0x88};
-void spriteBuf(int x, int y, int width, int height, unsigned char *spriteptr, int span, unsigned char *bufptr)
-{
-    int w;
-    unsigned char pix;
-
-    bufptr += y * span + (x >> 1);
-    width >>= 1;
-    span   -= width;
-    if (x & 1)
-    {
-        while (height--)
-        {
-            for (w = 0; w < width; w++)
-            {
-                pix = *spriteptr & 0x0F;
-                if (pix != 0x08)
-                    *bufptr = (*bufptr & 0x0F) | (pix << 4);
-                bufptr++;
-                pix = *spriteptr++ & 0xF0;
-                if (pix != 0x80)
-                    *bufptr = (*bufptr & 0xF0) | (pix >> 4);
-            }
-            bufptr += span;
-        }
-    }
-    else
-    {
-        while (height--)
-        {
-            for (w = 0; w < width; w++)
-            {
-                pix = *spriteptr & 0x0F;
-                if (pix != 0x08)
-                    *bufptr = (*bufptr & 0xF0) | pix;
-                pix = *spriteptr++ & 0xF0;
-                if (pix != 0x80)
-                    *bufptr = (*bufptr & 0x0F) | pix;
-                bufptr++;
-            }
-            bufptr += span;
-        }
-    }
-}
 /*
  * Demo tiling and scrolling screen
  */

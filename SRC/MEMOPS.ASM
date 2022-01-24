@@ -236,5 +236,179 @@ tilememv:
 
 _tileMemV	ENDP
 
+PUBLIC	_spriteBuf
+
+;void spriteBuf(int x, int y, int width, int height, unsigned char *spriteptr, int span, unsigned char *bufptr)
+;{
+;    int w;
+;    unsigned char pix;
+;
+;    bufptr += y * span + (x >> 1);
+;    width >>= 1;
+;    span   -= width;
+;    if (x & 1)
+;    {
+;        while (height--)
+;        {
+;            for (w = 0; w < width; w++)
+;            {
+;                pix = *spriteptr & 0x0F;
+;                if (pix != 0x08)
+;                    *bufptr = (*bufptr & 0x0F) | (pix << 4);
+;                bufptr++;
+;                pix = *spriteptr++ & 0xF0;
+;                if (pix != 0x80)
+;                    *bufptr = (*bufptr & 0xF0) | (pix >> 4);
+;            }
+;            bufptr += span;
+;        }
+;    }
+;    else
+;    {
+;        while (height--)
+;        {
+;            for (w = 0; w < width; w++)
+;            {
+;                pix = *spriteptr & 0x0F;
+;                if (pix != 0x08)
+;                    *bufptr = (*bufptr & 0xF0) | pix;
+;                pix = *spriteptr++ & 0xF0;
+;                if (pix != 0x80)
+;                    *bufptr = (*bufptr & 0x0F) | pix;
+;                bufptr++;
+;            }
+;            bufptr += span;
+;        }
+;    }
+;}
+
+_spriteBuf      PROC NEAR
+        push    bp
+        mov     bp, sp
+;        sub     sp, 6
+        push    di
+        push    si
+;	x = 4
+;	y = 6
+;	width = 8
+;	height = 10
+;	spriteptr = 12
+;	span = 14
+;	bufptr = 16
+;	w = -4
+;	pix = -2
+        mov     ax, WORD PTR [bp+6]     ; y
+        imul    WORD PTR [bp+14]        ; span
+        mov     cx, WORD PTR [bp+4]     ; x
+        sar     cx, 1
+        add     ax, cx
+        add     WORD PTR [bp+16], ax    ; bufptr
+        sar     WORD PTR [bp+8], 1      ; width
+        mov     ax, WORD PTR [bp+8]     ; width
+        sub     WORD PTR [bp+14],ax     ; span
+        test    BYTE PTR [bp+4], 1      ; x
+        je      $I382
+        mov     si, WORD PTR [bp+16]    ; bufptr
+        jmp     SHORT $L20007
+$L20005:
+;        mov     WORD PTR [bp-4], 0      ; w
+        cmp     WORD PTR [bp+8], 0      ; width
+        jle     $FB388
+        mov     ax, WORD PTR [bp+8]     ; width
+        mov     WORD PTR [bp-6], ax
+;        add     WORD PTR [bp-4], ax     ; w
+        mov     di, WORD PTR [bp+12]    ; spriteptr
+$L20003:
+        mov     dl, BYTE PTR [di]
+        and     dl, 0Fh
+        cmp     dl, 8                   ; Transparent?
+        je      $I389
+        mov     al, BYTE PTR [si]
+        and     al, 0Fh
+        mov     bx, dx
+        mov     cl, 4
+        shl     bl, cl
+        or      al, bl
+        mov     BYTE PTR [si], al
+$I389:
+        inc     si
+        mov     dl, BYTE PTR [di]
+        and     dl,0F0h
+        inc     di
+        cmp     dl, 128
+        je      $I390
+        mov     ax, dx
+        sub     ah, ah
+        mov     cl,4
+        shr     ax, cl
+        mov     cl, BYTE PTR [si]
+        and     cl, 0F0h
+        or      al, cl
+        mov     BYTE PTR [si], al
+$I390:
+        dec     WORD PTR [bp-6]
+        jne     $L20003
+        mov     WORD PTR [bp+12], di    ; spriteptr
+;        mov     BYTE PTR [bp-2], dl     ; pix
+$FB388:
+        add     si, WORD PTR [bp+14]    ; span
+$L20007:
+        mov     ax, WORD PTR [bp+10]    ; height
+        dec     WORD PTR [bp+10]        ; height
+        or      ax, ax
+        jne     $L20005
+        jmp     SHORT $L20021
+
+$I382:
+        mov     si, WORD PTR [bp+16]    ; bufptr
+        jmp     SHORT $L20012
+$L20010:
+;        mov     WORD PTR [bp-4], 0      ; w
+        cmp     WORD PTR [bp+8], 0      ; width
+        jle     $FB397
+        mov     dx, WORD PTR [bp+8]     ; width
+;        add     WORD PTR [bp-4], dx     ; w
+        mov     di, WORD PTR [bp+12]    ; spriteptr
+$L20008:
+        mov     cl ,BYTE PTR [di]
+        and     cl, 0Fh
+        cmp     cl, 8                   ; Transparent?
+        je      $I398
+        mov     al, BYTE PTR [si]
+        and     al, 0F0h
+        or      al, cl
+        mov     BYTE PTR [si], al
+$I398:
+        mov     cl, BYTE PTR [di]
+        and     cl, 0F0h
+        inc     di
+        cmp     cl, 128
+        je      $I399
+        mov     al, BYTE PTR [si]
+        and     al, 0Fh
+        or      al, cl
+        mov     BYTE PTR [si], al
+$I399:
+        inc     si
+        dec     dx
+        jne     $L20008
+        mov     WORD PTR [bp+12], di    ; spriteptr
+;        mov     BYTE PTR [bp-2], cl     ; pix
+$FB397:
+        add     si, WORD PTR [bp+14]    ; span
+$L20012:
+        mov     ax, WORD PTR [bp+10]    ; height
+        dec     WORD PTR [bp+10]        ; height
+        or      ax, ax
+        jne     $L20010
+$L20021:
+        pop     si
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+
+_spriteBuf      ENDP
+
 _TEXT   ENDS
 END
