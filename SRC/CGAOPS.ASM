@@ -17,7 +17,7 @@ _TEXT   SEGMENT
 
 unrolledgeh     = 5
 unrolledgev     = 5
-unrollcpybuf    = 3
+unrollcpybuf    = 1
 
         PUBLIC  _setStartAddr
 _setStartAddr   PROC NEAR
@@ -122,13 +122,13 @@ cpybufv:
         mov     cx, WORD PTR [bp+6]     ; width/2
         push    si
         push    di
+        shr     cx, 1
+        jz      cpybufnxt
 cpybufh:
         REPT    unrollcpybuf
         lodsw
         stosb
         inc     di
-        dec     cx
-        jz      SHORT cpybufnxt
         mov     al, ah
         stosb
         inc     di
@@ -138,14 +138,14 @@ cpybufh:
         lodsw
         stosb
         inc     di
-        dec     cx
-        jz      SHORT cpybufnxt
         mov     al, ah
         stosb
         inc     di
         loop    cpybufh
 cpybufnxt:
-        pop     di
+        jae     SHORT @F
+        movsb
+@@:     pop     di
         add     di, 160
         pop     si
         add     si, WORD PTR [bp+10]
@@ -180,42 +180,38 @@ cpybufsv:
         mov     cx, WORD PTR [bp+6]     ; width/2
         push    si
         push    di
+        shr     cx, 1
+        jae     SHORT cpybufsh
+@@:     in      al, dx
+        shr     al, 1
+        jae     @B
+        movsb
+        jcxz    cpybufsnxt
+        inc     di
 cpybufsh:
         REPT    unrollcpybuf
-        lodsw
-        mov     bx, ax
 @@:     in      al, dx
-        test    al, 01h
-        jz      @B
-        mov     al, bl
-        stosb
+        shr     al, 1
+        jae     @B
+        movsb
         inc     di
-        dec     cx
-        jz      SHORT cpybufsnxt
 @@:     in      al, dx
-        test    al, 01h
-        jz      @B
-        mov     al, bh
-        stosb
+        shr     al, 1
+        jae     @B
+        movsb
         inc     di
         dec     cx
         jz      SHORT cpybufsnxt
         ENDM
-        lodsw
-        mov     bx, ax
 @@:     in      al, dx
-        test    al, 01h
-        jz      @B
-        mov     al, bl
-        stosb
+        shr     al, 1
+        jae     @B
+        movsb
         inc     di
-        dec     cx
-        jz      SHORT cpybufsnxt
 @@:     in      al, dx
-        test    al, 01h
-        jz      @B
-        mov     al, bh
-        stosb
+        shr     al, 1
+        jae     @B
+        movsb
         inc     di
         loop    cpybufsh
 cpybufsnxt:

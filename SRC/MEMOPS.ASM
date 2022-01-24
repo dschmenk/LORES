@@ -66,7 +66,7 @@ tilemem:
         push    di
         shr     cx, 1
     rep movsw
-        jae     tmeven                  ; jump carry clear
+        jae     SHORT tmeven                  ; jump carry clear
         movsb
 tmeven:
         pop     di
@@ -126,7 +126,7 @@ _tileMemH2      PROC NEAR
 ;        edgeH[0][x + width] = tile[width];
         sar     cx, 1
     rep movsw
-        jae     th2even0
+        jae     SHORT th2even0
         movsb
 th2even0:
 ;        edgeH[1][x + width] = tile[8 + width];
@@ -137,7 +137,7 @@ th2even0:
         mov     cx, dx
         sar     cx, 1
     rep movsw
-        jae     th2even1
+        jae     SHORT th2even1
         movsb
 th2even1:
         pop     ds
