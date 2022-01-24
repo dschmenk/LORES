@@ -15,7 +15,7 @@ EXTRN   _edgeV:	BYTE
 _TEXT   SEGMENT
 ;        ASSUME  CS: _TEXT, DS: DGROUP
 
-unrollcpybuf    = 3
+unrollcpybuf    = 1
 
         PUBLIC  _setStartAddr
 _setStartAddr   PROC NEAR
@@ -159,46 +159,61 @@ __cpyBufSnow    PROC NEAR
 ; bufptr        = 12
         mov     dx, 03DAh
         mov     ax, 0B800H
-        mov     ds, ax
-        ASSUME  DS: NOTHING
+        mov     es, ax
         mov     di, WORD PTR [bp+4]     ; pixaddr
-        les     si, DWORD PTR [bp+12]   ; pixbuf
+        lds     si, DWORD PTR [bp+12]   ; pixbuf
+        ASSUME  DS: NOTHING
 cpybufsv:
         mov     cx, WORD PTR [bp+6]     ; width/2
         push    si
         push    di
         shr     cx, 1
-        jae     SHORT cpybufsh
-        mov     bl, es:[si]
-        inc     si
+        jae     SHORT cpybufsh2
 @@:     in      al, dx
         shr     al, 1
         jae     @B
-        mov     [di], bl
+        movsb
         jcxz    cpybufsnxt
-        add     di, 2
-cpybufsh:
-        REPT    unrollcpybuf
-        mov     bx, es:[si]
-        add     si, 2
+        inc     di
+cpybufsh2:
+        shr     cx, 1
+        jae     SHORT cpybufsh4
 @@:     in      al, dx
         shr     al, 1
         jae     @B
-        mov     [di], bl
-        mov     [di+2], bh
-        add     di, 4
+        movsb
+        inc     di
+        movsb
+        jcxz    cpybufsnxt
+        inc     di
+cpybufsh4:
+        REPT    unrollcpybuf
+@@:     in      al, dx
+        shr     al, 1
+        jae     @B
+        movsb
+        inc     di
+        movsb
+        inc     di
+        movsb
+        inc     di
+        movsb
+        inc     di
         dec     cx
         jz      SHORT cpybufsnxt
         ENDM
-        mov     bx, es:[si]
-        add     si, 2
 @@:     in      al, dx
         shr     al, 1
         jae     @B
-        mov     [di], bl
-        mov     [di+2], bh
-        add     di, 4
-        loop    cpybufsh
+        movsb
+        inc     di
+        movsb
+        inc     di
+        movsb
+        inc     di
+        movsb
+        inc     di
+        loop    cpybufsh4
 cpybufsnxt:
         pop     di
         add     di, 160
