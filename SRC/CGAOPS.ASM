@@ -15,9 +15,7 @@ EXTRN   _edgeV:	BYTE
 _TEXT   SEGMENT
 ;        ASSUME  CS: _TEXT, DS: DGROUP
 
-unrolledgeh     = 5
-unrolledgev     = 5
-unrollcpybuf    = 1
+unrollcpybuf    = 3
 
         PUBLIC  _setStartAddr
 _setStartAddr   PROC NEAR
@@ -59,20 +57,17 @@ __cpyEdgeH      PROC NEAR
         mov     si, OFFSET DGROUP:_edgeH
         mov     cx, WORD PTR [bp+6]     ; hcount
 cpyedgeh:
-        REPT    unrolledgeh
-        lodsw
-        stosb
-        inc     di
-        mov     al, ah
-        stosb
+        REPT    80
+        movsb
         inc     di
         ENDM
-        loop    cpyedgeh
+        loop    SHORT @F
         pop     si
         pop     di
         mov     sp, bp
         pop     bp
         ret
+@@:     jmp     cpyedgeh
 __cpyEdgeH      ENDP
 
         PUBLIC  __cpyEdgeV
@@ -85,16 +80,11 @@ __cpyEdgeV      PROC NEAR
         mov     es, ax
         mov     di, WORD PTR [bp+4]     ;pixaddr
         mov     si, OFFSET DGROUP:_edgeV
-        mov     cx, 50/unrolledgev
 cpyedgev:
-        REPT    unrolledgev
-        lodsw
-        mov     es:[di], al
-        add     di, 160
-        mov     es:[di], ah
-        add     di, 160
+        REPT    100
+        movsb
+        add     di, 159
         ENDM
-        loop    cpyedgev
         pop     si
         pop     di
         mov     sp, bp
@@ -126,20 +116,16 @@ cpybufv:
         jz      cpybufnxt
 cpybufh:
         REPT    unrollcpybuf
-        lodsw
-        stosb
+        movsb
         inc     di
-        mov     al, ah
-        stosb
+        movsb
         inc     di
         dec     cx
         jz      SHORT cpybufnxt
         ENDM
-        lodsw
-        stosb
+        movsb
         inc     di
-        mov     al, ah
-        stosb
+        movsb
         inc     di
         loop    cpybufh
 cpybufnxt:

@@ -312,7 +312,7 @@ unsigned long tileScroll(int scrolldir)
          * Fill in top edge
          */
         tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
-        hcount = 80/5; // Must agree without unrolled loop count in CGAOPS.ASM
+        hcount = 2;
         haddr  = orgAddr;
     }
     else if (scrolldir & SCROLL_UP2)
@@ -321,7 +321,7 @@ unsigned long tileScroll(int scrolldir)
          * Fill in botom edge
          */
         tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * spanMap + (orgS >> 4));
-        hcount = 80/5; // Must agree without unrolled loop count in CGAOPS.ASM
+        hcount = 2;
         haddr  = (orgAddr + 98 * 160) & 0x3FFF;
     }
     else if (scrolldir & SCROLL_DOWN)
@@ -331,7 +331,7 @@ unsigned long tileScroll(int scrolldir)
          */
         tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
         haddr  = orgAddr;
-        hcount = 40/5; // Must agree without unrolled loop count in CGAOPS.ASM
+        hcount = 1;
     }
     else if (scrolldir & SCROLL_UP)
     {
@@ -340,7 +340,7 @@ unsigned long tileScroll(int scrolldir)
          */
         tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * spanMap + (orgS >> 4));
         haddr  = (orgAddr + 99 * 160) & 0x3FFF;
-        hcount = 40/5; // Must agree without unrolled loop count in CGAOPS.ASM
+        hcount = 1;
     }
     /*
      * The following happens during VBlank
