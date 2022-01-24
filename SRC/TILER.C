@@ -15,7 +15,6 @@ void _cpyBufSnow(int addr, int width, int height, int span, unsigned char far *b
 #ifndef CPYBUF
 #define CPYBUF  _cpyBufSnow
 #endif
-#ifdef MEMOPS
 /*
  * Fast memory routines
  */
@@ -23,7 +22,6 @@ void tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height
 void tileMemH2(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile);
 void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile);
 void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char far *tile);
-#endif
 /*
  * Graphics routines for 160x100x16 color mode
  */
@@ -91,51 +89,6 @@ void tileScrn(unsigned int s, unsigned int t)
 /*
  * Tile into memory buffer
  */
-#ifndef MEMOPS
-void tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tile, int span, unsigned char far *buf)
-{
-    int w;
-
-    buf    += y * span + (x >> 1);
-    tile   += t * 8 + (s >> 1);
-    width >>= 1;
-    while (height--)
-    {
-        for (w = 0; w < width; w++)
-            buf[w] = tile[w];
-        buf  += span;
-        tile += 8;
-    }
-}
-void tileMemH2(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
-{
-    tile   += (t << 3) + (s >> 1);
-    x     >>= 1;
-    width >>= 1;
-    while (width--)
-    {
-        edgeH[0][x + width] = tile[width];
-        edgeH[1][x + width] = tile[8 + width];
-    }
-}
-void tileMemH(int x, unsigned int s, unsigned int t, int width, unsigned char far *tile)
-{
-    tile   += (t << 3) + (s >> 1);
-    x     >>= 1;
-    width >>= 1;
-    while (width--)
-        edgeH[0][x + width] = tile[width];
-}
-void tileMemV(int y, unsigned int s, unsigned int t, int height, unsigned char far *tile)
-{
-    tile += (t << 3) + (s >> 1);
-    while (height--)
-    {
-        edgeV[y++] = *tile;
-        tile      += 8;
-    }
-}
-#endif
 void tileBufRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr, int widthBuf, unsigned char far *buf)
 {
     int x, span;
@@ -234,19 +187,7 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
     /*
      * Copy to video memory
      */
-#ifdef CPYBUF
     CPYBUF((scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
-#else
-    pixaddr = (scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF;
-    width >>= 1;
-    while (height--)
-    {
-        for (w = 0; w < width; w++)
-            vidmem[pixaddr + (w << 1)] = buf[w];
-        pixaddr += 160;
-        buf     += span;
-    }
-#endif
 }
 /*
  * Tile into edge buffer
