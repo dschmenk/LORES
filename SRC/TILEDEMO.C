@@ -290,12 +290,15 @@ int main(int argc, char **argv)
         tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
         st = tileScroll(scrolldir);
+        outp(0x3D9, 0x00);
         s  = st;
         t  = st >> 16;
         cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        outp(0x3D9, 0x06);
         //if (getch() == 'Q') {txt80(); return 0;}
     }
-    getch();
     txt80();
+    tileExit();
+    getch();
     return 0;
 }

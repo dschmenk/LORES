@@ -25,15 +25,15 @@ _setStartAddr   PROC NEAR
         mov     sp, bp
         pop     bp
 ; Wait for beginning of VBlank
-        mov     dx, 03DAh               ; CGA status
-waitvbl:
-        in      al, dx
-        test    al, 08h
-        jnz     waitvbl
-waitact:
-        in      al, dx
-        test    al, 08h
-        jz      waitact
+;        mov     dx, 03DAh               ; CGA status
+;waitvbl:
+;        in      al, dx
+;        test    al, 08h
+;        jnz     waitvbl
+;waitact:
+;        in      al, dx
+;        test    al, 08h
+;        jz      waitact
 ; Update CGA start address
         mov     dx, 03D4h
         mov     al, 12
