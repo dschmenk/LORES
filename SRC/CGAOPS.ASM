@@ -9,11 +9,19 @@ _BSS	ENDS
 DGROUP	GROUP	CONST, _BSS, _DATA
         ASSUME  CS: _TEXT, DS: DGROUP, SS: DGROUP
 
-EXTRN   _edgeH:	BYTE
-EXTRN   _edgeV:	BYTE
+EXTRN   _edgeH: BYTE
+EXTRN   _edgeV: BYTE
+EXTRN   _rasterTimer: BYTE
+
+_DATA   SEGMENT
+
+cpybufsel       DW  cpybufh8, cpybufh1, cpybufh2, cpybufh3
+                DW  cpybufh4, cpybufh5, cpybufh6, cpybufh7
+
+_DATA   ENDS
+
 
 _TEXT   SEGMENT
-;        ASSUME  CS: _TEXT, DS: DGROUP
 
 unrollcpybuf    = 1
 
@@ -24,18 +32,16 @@ _setStartAddr   PROC NEAR
         mov     bx, WORD PTR [bp+4]     ;startaddr
         mov     sp, bp
         pop     bp
-; Wait for beginning of VBlank
-;        mov     dx, 03DAh               ; CGA status
-;waitvbl:
-;        in      al, dx
-;        test    al, 08h
-;        jnz     waitvbl
-;waitact:
-;        in      al, dx
-;        test    al, 08h
-;        jz      waitact
-; Update CGA start address
-        mov     dx, 03D4h
+        mov     dx, 03DAh               ; CGA status
+        mov     BYTE PTR DGROUP:_rasterTimer, 1
+waitact:                                ; Wait for end of active video
+        mov     al, DGROUP:_rasterTimer
+        or      al, al
+        jnz     waitact
+@@:     in      al, dx
+        shr     al, 1
+        jae     @B
+        mov     dx, 03D4h               ; Update CGA start address
         mov     al, 12
         mov     ah, bh
         out     dx, ax
@@ -108,36 +114,55 @@ __cpyBuf        PROC NEAR
         mov     es, ax
         mov     di, WORD PTR [bp+4]     ; pixaddr
         lds     si, DWORD PTR [bp+12]   ; pixbuf
-cpybufv:
+        ASSUME  DS: NOTHING
+        mov     dx, WORD PTR [bp+8]     ; height
         mov     cx, WORD PTR [bp+6]     ; width/2
-        push    si
-        push    di
+        sub     WORD PTR [bp+10], cx    ; span -= width/2
+        mov     bx, cx
+        and     bx, 07h
+        shl     bx, 1
+        mov     bx, cpybufsel[bx]
+cpybufv:
+        add     cx, 7                   ; Round up iteration count
         shr     cx, 1
-        jz      cpybufnxt
-cpybufh:
-        REPT    unrollcpybuf
+        shr     cx, 1
+        shr     cx, 1
+        jmp     bx
+cpybufh8:
         movsb
         inc     di
+cpybufh7:
         movsb
         inc     di
-        dec     cx
-        jz      SHORT cpybufnxt
-        ENDM
+cpybufh6:
         movsb
         inc     di
+cpybufh5:
         movsb
         inc     di
-        loop    cpybufh
+cpybufh4:
+        movsb
+        inc     di
+cpybufh3:
+        movsb
+        inc     di
+cpybufh2:
+        movsb
+        inc     di
+cpybufh1:
+        movsb
+        inc     di
+        loop    cpybufh8
 cpybufnxt:
-        jae     SHORT @F
-        movsb
-@@:     pop     di
         add     di, 160
-        pop     si
+        mov     cx, WORD PTR [bp+6]     ; width/2
+        sub     di, cx
+        sub     di, cx
         add     si, WORD PTR [bp+10]
-        dec     WORD PTR [bp+8]
-        jnz    cpybufv
+        dec     dx
+        jnz     cpybufv
         pop     ds
+        ASSUME  DS: DGROUP
         pop     si
         pop     di
         mov     sp, bp
@@ -157,68 +182,41 @@ __cpyBufSnow    PROC NEAR
 ; height        = 8
 ; span          = 10
 ; bufptr        = 12
-        mov     dx, 03DAh
         mov     ax, 0B800H
         mov     es, ax
         mov     di, WORD PTR [bp+4]     ; pixaddr
         lds     si, DWORD PTR [bp+12]   ; pixbuf
         ASSUME  DS: NOTHING
+        mov     bx, WORD PTR [bp+6]     ; width/2
+        sub     WORD PTR [bp+10], bx    ; span -= width/2
+        mov     dx, 03DAh
 cpybufsv:
-        mov     cx, WORD PTR [bp+6]     ; width/2
-        push    si
-        push    di
+        mov     cx, bx
         shr     cx, 1
-        jae     SHORT cpybufsh2
+        jae     SHORT cpybufsh
 @@:     in      al, dx
         shr     al, 1
         jae     @B
         movsb
+        inc     di
         jcxz    cpybufsnxt
-        inc     di
-cpybufsh2:
-        shr     cx, 1
-        jae     SHORT cpybufsh4
+cpybufsh:
 @@:     in      al, dx
         shr     al, 1
         jae     @B
         movsb
         inc     di
-        movsb
-        jcxz    cpybufsnxt
-        inc     di
-cpybufsh4:
-        REPT    unrollcpybuf
 @@:     in      al, dx
         shr     al, 1
         jae     @B
         movsb
         inc     di
-        movsb
-        inc     di
-        movsb
-        inc     di
-        movsb
-        inc     di
-        dec     cx
-        jz      SHORT cpybufsnxt
-        ENDM
-@@:     in      al, dx
-        shr     al, 1
-        jae     @B
-        movsb
-        inc     di
-        movsb
-        inc     di
-        movsb
-        inc     di
-        movsb
-        inc     di
-        loop    cpybufsh4
+        loop    cpybufsh
 cpybufsnxt:
-        pop     di
         add     di, 160
-        pop     si
         add     si, WORD PTR [bp+10]
+        sub     di, bx
+        sub     di, bx
         dec     WORD PTR [bp+8]
         jnz    cpybufsv
         pop     ds

@@ -250,14 +250,21 @@ int main(int argc, char **argv)
         /*
          * Place sprite in middle of screen
          */
+        outp(0x3D9, 0x0F);
         tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        //tileBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
+        outp(0x3D9, 0x06);
         st = tileScroll(scrolldir);
+        outp(0x3D9, 0x00);
         s  = st;
         t  = st >> 16;
         cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        //cpyBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        outp(0x3D9, 0x06);
         //if (getch() == 'Q') {txt80(); return 0;}
     }
+#if 0
     getch();
     /*
      * Switch to scrolling vertically by one
@@ -287,8 +294,10 @@ int main(int argc, char **argv)
         /*
          * Place sprite in middle of screen
          */
+        outp(0x3D9, 0x0F);
         tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
+        outp(0x3D9, 0x06);
         st = tileScroll(scrolldir);
         outp(0x3D9, 0x00);
         s  = st;
@@ -297,6 +306,7 @@ int main(int argc, char **argv)
         outp(0x3D9, 0x06);
         //if (getch() == 'Q') {txt80(); return 0;}
     }
+#endif
     txt80();
     tileExit();
     getch();

@@ -3,11 +3,11 @@
 #include "lores.h"
 #include "tiler.h"
 extern unsigned int scanline[100]; // Precalculated scanline offsets
-extern volatile unsigned char rasterActive;
 extern volatile unsigned int frameCount;
+extern volatile unsigned char rasterTimer;
 int enableRasterTimer(int scanline);
 int disableRasterTimer(void);
-int rasterStatus();
+int statusRasterTimer();
 /*
  * Fast CGA routines
  */
@@ -17,7 +17,7 @@ void _cpyEdgeV(int addr);
 void _cpyBuf(int addr, int width, int height, int span, unsigned char far *buf);
 void _cpyBufSnow(int addr, int width, int height, int span, unsigned char far *buf);
 #ifndef CPYBUF
-#define CPYBUF  _cpyBufSnow
+#define CPYBUF  _cpyBuf
 #endif
 /*
  * Fast memory routines
@@ -349,10 +349,8 @@ unsigned long tileScroll(int scrolldir)
     /*
      * The following happens during VBlank
      */
-    rasterActive = 1;
-    while (rasterStatus());
-    outp(0x3D9, 0x00);
     setStartAddr(orgAddr >> 1);
+    outp(0x3D9, 0x00);
     /*
      * Fill in edges
      */
@@ -363,8 +361,8 @@ unsigned long tileScroll(int scrolldir)
     /*
      * Return updated origin as 32 bit value
      */
-     outp(0x3D9, 0x06);
-     return ((unsigned long)orgT << 16) | orgS;
+    outp(0x3D9, 0x06);
+    return ((unsigned long)orgT << 16) | orgS;
 }
 void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
 {
@@ -377,14 +375,13 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     orgS    = s & 0xFFFE; // S always even
     orgT    = t;
     orgAddr = (orgT * 160 + orgS | 1) & 0x3FFF;
-    setStartAddr(orgAddr >> 1);
     outp(0x3D8, 0x00);  /* Turn off video */
     tileScrn(orgS, orgT);
     outp(0x3D8, 0x09);  /* Turn on video */
     enableRasterTimer(199);
+    setStartAddr(orgAddr >> 1);
 }
 void tileExit(void)
 {
     disableRasterTimer();
-    printf("Frame Count:%u\n", frameCount);
 }

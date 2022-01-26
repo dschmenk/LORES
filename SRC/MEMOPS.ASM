@@ -38,8 +38,8 @@ _tileMem        PROC NEAR
 ;    buf    += y * span + (x >> 1);
         mov     ax, WORD PTR [bp+6]     ; y
         mov     di, WORD PTR [bp+4]	    ; x
+        shr     di, 1
         imul    WORD PTR [bp+20]        ; span
-        sar     di, 1
         add     di, ax
         add     di, WORD PTR [bp+22]    ; OFFSET buf
         mov     es, WORD PTR [bp+24]    ; SEG buf
@@ -54,28 +54,20 @@ _tileMem        PROC NEAR
         add     si, WORD PTR [bp+16]    ; OFFSET tile
         mov     ds, WORD PTR [bp+18]    ; SEG TILE
         ASSUME DS: NOTHING
-;    width >>= 1;
-        sar     WORD PTR [bp+12], 1     ; width
-;    do {
+        mov     bx, WORD PTR [bp+12]    ; width
+        shr     bx, 1
+        sub     WORD PTR [bp+20], bx    ; span
         mov     dx, WORD PTR [bp+14]    ; height
 tilemem:
-;        for (w = 0; w < width; w++)
-;            buf[w] = tile[w];
-        mov     cx, WORD PTR [bp+12]    ; width
-        push    si
-        push    di
+        mov     cx, bx
         shr     cx, 1
     rep movsw
-        jae     SHORT tmeven                  ; jump carry clear
+        jae     SHORT tmeven            ; jump carry clear
         movsb
 tmeven:
-        pop     di
-        pop     si
-;        buf  += span;
         add     di, WORD PTR [bp+20]    ; span
-;        tile += 8;
         add     si, 8                   ; tile
-;    } while (--height);
+        sub     si, bx
         dec     dx                      ; height
         jne     tilemem
         pop     ds
@@ -103,7 +95,7 @@ _tileMemH2      PROC NEAR
 ;	tile = 12
 ;    x     >>= 1;
         mov     di, WORD PTR [bp+4]     ; x
-        sar     di, 1
+        shr     di, 1
         add     di, OFFSET DGROUP:_edgeH
         mov     ax, ds
         mov     es, ax
@@ -119,23 +111,23 @@ _tileMemH2      PROC NEAR
         mov     ds, WORD PTR [bp+14]    ; SEG tile
         ASSUME DS: NOTHING
 ;    width >>= 1;
-        mov     cx, WORD PTR [bp+10]    ; width
-        sar     cx, 1
+        mov     bx, WORD PTR [bp+10]    ; width
+        shr     bx, 1
 ;    while (width--)
-        mov     dx, cx
+        mov     cx, bx
 ;        edgeH[0][x + width] = tile[width];
-        sar     cx, 1
+        shr     cx, 1
     rep movsw
         jae     SHORT th2even0
         movsb
 th2even0:
 ;        edgeH[1][x + width] = tile[8 + width];
-        sub     si, dx
-        sub     di, dx
+        sub     si, bx
+        sub     di, bx
         add     si, 8
         add     di, 80
-        mov     cx, dx
-        sar     cx, 1
+        mov     cx, bx
+        shr     cx, 1
     rep movsw
         jae     SHORT th2even1
         movsb
@@ -160,9 +152,8 @@ _tileMemH	PROC NEAR
 ;	t = 8
 ;	width = 10
 ;	tile = 12
-;    x     >>= 1;
         mov     di, WORD PTR [bp+4]     ; x
-        sar     di, 1
+        shr     di, 1
         add     di, OFFSET DGROUP:_edgeH
         mov     ax, ds
         mov     es, ax
@@ -179,10 +170,10 @@ _tileMemH	PROC NEAR
         ASSUME DS: NOTHING
 ;    width >>= 1;
         mov     cx, WORD PTR [bp+10]    ; width
-        sar     cx, 1
+        shr     cx, 1
 ;    while (width--)
 ;        edgeH[0][x + width] = tile[width];
-        sar     cx, 1
+        shr     cx, 1
     rep movsw
         jae     theven
         movsb
@@ -203,32 +194,49 @@ _tileMemV       PROC NEAR
         mov     bp, sp
         push    di
         push    si
+        push    ds
 ;	y = 4
 ;	s = 6
 ;	t = 8
 ;	height = 10
 ;	tile = 12
+        mov     di, WORD PTR [bp+4]     ; y
+        add     di, OFFSET DGROUP:_edgeV
+        mov     ax, ds
+        mov     es, ax
 ;    tile += (t << 3) + (s >> 1);
-        mov     di, WORD PTR [bp+8]     ; t
-        shl     di, 1
-        shl     di, 1
-        shl     di, 1
+        mov     si, WORD PTR [bp+8]     ; t
+        shl     si, 1
+        shl     si, 1
+        shl     si, 1
         mov     cx, WORD PTR [bp+6]     ; s
         shr     cx, 1
-        add     di, cx
-        add     di, WORD PTR [bp+12]    ; OFFSET tile
-        mov     es, WORD PTR [bp+14]    ; SEG tile
-        mov     si, WORD PTR [bp+4]     ; y
+        add     si, cx
+        add     si, WORD PTR [bp+12]    ; OFFSET tile
+        mov     ds, WORD PTR [bp+14]    ; SEG tile
+        ASSUME  DS: NOTHING
 ;    while (height--)
         mov     cx, WORD PTR [bp+10]    ; height
+        shr     cx, 1
+        jae     tilememv
+        movsb
+        jz      tilememvx
+        add     si, 7
 tilememv:
-;        edgeV[y++] = *tile;
-;        tile      += 8;
-        mov     al, BYTE PTR es:[di]
-        add     di, 8
-        mov     BYTE PTR _edgeV[si], al
-        inc     si
+        movsb
+        add     si, 7
+        movsb
+        dec     cx
+        jz      SHORT tilememvx
+        add     si, 7
+        movsb
+        add     si, 7
+        movsb
+        add     si, 7
         loop    tilememv
+tilememvx:
+        pop     ds
+        ASSUME  DS: DGROUP
         pop     si
         pop     di
         pop     bp
@@ -239,49 +247,6 @@ _tileMemV	ENDP
 PUBLIC	_spriteBuf
 
 ;void spriteBuf(int x, int y, int width, int height, unsigned char *spriteptr, int span, unsigned char *bufptr)
-;{
-;    int w;
-;    unsigned char pix;
-;
-;    bufptr += y * span + (x >> 1);
-;    width >>= 1;
-;    span   -= width;
-;    if (x & 1)
-;    {
-;        while (height--)
-;        {
-;            for (w = 0; w < width; w++)
-;            {
-;                pix = *spriteptr & 0x0F;
-;                if (pix != 0x08)
-;                    *bufptr = (*bufptr & 0x0F) | (pix << 4);
-;                bufptr++;
-;                pix = *spriteptr++ & 0xF0;
-;                if (pix != 0x80)
-;                    *bufptr = (*bufptr & 0xF0) | (pix >> 4);
-;            }
-;            bufptr += span;
-;        }
-;    }
-;    else
-;    {
-;        while (height--)
-;        {
-;            for (w = 0; w < width; w++)
-;            {
-;                pix = *spriteptr & 0x0F;
-;                if (pix != 0x08)
-;                    *bufptr = (*bufptr & 0xF0) | pix;
-;                pix = *spriteptr++ & 0xF0;
-;                if (pix != 0x80)
-;                    *bufptr = (*bufptr & 0x0F) | pix;
-;                bufptr++;
-;            }
-;            bufptr += span;
-;        }
-;    }
-;}
-
 _spriteBuf      PROC NEAR
         push    bp
         mov     bp, sp
@@ -297,32 +262,44 @@ _spriteBuf      PROC NEAR
 ;	bufptr = 16
 ;	w = -4
 ;	pix = -2
+;    bufptr += y * span + (x >> 1);
         mov     ax, WORD PTR [bp+6]     ; y
-        imul    WORD PTR [bp+14]        ; span
         mov     cx, WORD PTR [bp+4]     ; x
-        sar     cx, 1
+        shr     cx, 1
+        imul    WORD PTR [bp+14]        ; span
         add     ax, cx
         add     WORD PTR [bp+16], ax    ; bufptr
+        ;    width >>= 1;
         sar     WORD PTR [bp+8], 1      ; width
+;    span   -= width;
         mov     ax, WORD PTR [bp+8]     ; width
         sub     WORD PTR [bp+14],ax     ; span
+;    if (x & 1)
+;    {
         test    BYTE PTR [bp+4], 1      ; x
         je      $I382
+;        while (height--)
+;        {
+        mov     di, WORD PTR [bp+12]    ; spriteptr
         mov     si, WORD PTR [bp+16]    ; bufptr
         jmp     SHORT $L20007
 $L20005:
+;            for (w = 0; w < width; w++)
+;            {
 ;        mov     WORD PTR [bp-4], 0      ; w
         cmp     WORD PTR [bp+8], 0      ; width
         jle     $FB388
         mov     ax, WORD PTR [bp+8]     ; width
         mov     WORD PTR [bp-6], ax
 ;        add     WORD PTR [bp-4], ax     ; w
-        mov     di, WORD PTR [bp+12]    ; spriteptr
-$L20003:
+;                pix = *spriteptr & 0x0F;
         mov     dl, BYTE PTR [di]
         and     dl, 0Fh
+$L20003:
+;                if (pix != 0x08)
         cmp     dl, 8                   ; Transparent?
         je      $I389
+;                    *bufptr = (*bufptr & 0x0F) | (pix << 4);
         mov     al, BYTE PTR [si]
         and     al, 0Fh
         mov     bx, dx
@@ -331,12 +308,16 @@ $L20003:
         or      al, bl
         mov     BYTE PTR [si], al
 $I389:
+;                bufptr++;
         inc     si
+;                pix = *spriteptr++ & 0xF0;
         mov     dl, BYTE PTR [di]
         and     dl,0F0h
         inc     di
+;                if (pix != 0x80)
         cmp     dl, 128
         je      $I390
+;                    *bufptr = (*bufptr & 0xF0) | (pix >> 4);
         mov     ax, dx
         sub     ah, ah
         mov     cl,4
@@ -346,11 +327,13 @@ $I389:
         or      al, cl
         mov     BYTE PTR [si], al
 $I390:
+;            }
         dec     WORD PTR [bp-6]
         jne     $L20003
         mov     WORD PTR [bp+12], di    ; spriteptr
 ;        mov     BYTE PTR [bp-2], dl     ; pix
 $FB388:
+;            bufptr += span;
         add     si, WORD PTR [bp+14]    ; span
 $L20007:
         mov     ax, WORD PTR [bp+10]    ; height
@@ -358,49 +341,54 @@ $L20007:
         or      ax, ax
         jne     $L20005
         jmp     SHORT $L20021
+;        }
+;    }
 
 $I382:
-        mov     si, WORD PTR [bp+16]    ; bufptr
-        jmp     SHORT $L20012
+;    else
+        mov     si, WORD PTR [bp+12]    ; spriteptr
+        mov     di, WORD PTR [bp+16]    ; bufptr
+        mov     ax, ds
+        mov     es, ax
+        mov     dx, WORD PTR [bp+10]    ; height
 $L20010:
-;        mov     WORD PTR [bp-4], 0      ; w
-        cmp     WORD PTR [bp+8], 0      ; width
-        jle     $FB397
-        mov     dx, WORD PTR [bp+8]     ; width
-;        add     WORD PTR [bp-4], dx     ; w
-        mov     di, WORD PTR [bp+12]    ; spriteptr
+        mov     cx, WORD PTR [bp+8]     ; width
 $L20008:
-        mov     cl ,BYTE PTR [di]
-        and     cl, 0Fh
-        cmp     cl, 8                   ; Transparent?
-        je      $I398
-        mov     al, BYTE PTR [si]
-        and     al, 0F0h
-        or      al, cl
-        mov     BYTE PTR [si], al
-$I398:
-        mov     cl, BYTE PTR [di]
-        and     cl, 0F0h
-        inc     di
-        cmp     cl, 128
-        je      $I399
-        mov     al, BYTE PTR [si]
+        lodsb
+        cmp     al, 088h                ; Both transparent?
+        je      nextpix
+        mov     bl, al
+        mov     bh, al
+        and     bx, 0F00Fh
+        cmp     bl, 08h                 ; Even transparent?
+        je      xparevn
+        cmp     bh, 080h                ; Odd transparent?
+        je      xparodd
+        stosb
+        loop    $L20008
+        jmp     SHORT $FB397
+xparevn:
+        mov     al, BYTE PTR es:[di]
         and     al, 0Fh
-        or      al, cl
-        mov     BYTE PTR [si], al
-$I399:
-        inc     si
-        dec     dx
-        jne     $L20008
-        mov     WORD PTR [bp+12], di    ; spriteptr
-;        mov     BYTE PTR [bp-2], cl     ; pix
+        or      al, bh
+        stosb
+        loop    $L20008
+        jmp     SHORT $FB397
+xparodd:
+        mov     al, BYTE PTR es:[di]
+        and     al, 0F0h
+        or      al, bl
+        stosb
+        loop    $L20008
+        jmp     SHORT $FB397
+nextpix:
+        inc     di
+        loop    $L20008
 $FB397:
-        add     si, WORD PTR [bp+14]    ; span
+        add     di, WORD PTR [bp+14]    ; span
 $L20012:
-        mov     ax, WORD PTR [bp+10]    ; height
-        dec     WORD PTR [bp+10]        ; height
-        or      ax, ax
-        jne     $L20010
+        dec     dx                      ; height
+        jnz     $L20010
 $L20021:
         pop     si
         pop     di
