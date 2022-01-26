@@ -4,6 +4,7 @@
 #include "lores.h"
 #include "tiler.h"
 #include "sprite.h"
+extern volatile unsigned int frameCount;
 /*
  * Map and tile data
  */
@@ -221,7 +222,7 @@ int main(int argc, char **argv)
         spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
         tileScrn(s, t);
         cpyBuf(80-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-        //if (getch() == 'Q') {txt80(); return 0;}
+        //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
     }
     getch();
 #endif
@@ -229,6 +230,7 @@ int main(int argc, char **argv)
      * Use hardware scrolling
      */
     tileInit(s, t, 16, 16, (unsigned char far * far *)tilemap);
+#if 0
     while (!kbhit())
     {
         /*
@@ -262,10 +264,11 @@ int main(int argc, char **argv)
         cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         //cpyBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         outp(0x3D9, 0x06);
-        //if (getch() == 'Q') {txt80(); return 0;}
+        if (getch() == 'Q') {txt80(); tileExit(); return 0;}
     }
-#if 0
     getch();
+#endif
+#if 1
     /*
      * Switch to scrolling vertically by one
      */
@@ -273,7 +276,8 @@ int main(int argc, char **argv)
         scrolldir ^= SCROLL_UP2 | SCROLL_UP;
     else if (scrolldir & SCROLL_DOWN2)
         scrolldir ^= SCROLL_DOWN2 | SCROLL_DOWN;
-    while (!kbhit())
+    //while (!kbhit())
+    while (frameCount < 600)
     {
         /*
          * Change scroll direction at map boundaries
@@ -304,11 +308,11 @@ int main(int argc, char **argv)
         t  = st >> 16;
         cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         outp(0x3D9, 0x06);
-        //if (getch() == 'Q') {txt80(); return 0;}
+        //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
     }
+    getch();
 #endif
     txt80();
     tileExit();
-    getch();
     return 0;
 }
