@@ -36,7 +36,7 @@ unsigned int orgAddr = 0;
 unsigned int orgS = 0;
 unsigned int orgT = 0;
 unsigned int maxS, maxT, maxOrgS, maxOrgT;
-unsigned int spanMap;
+unsigned int widthMap, spanMap;
 unsigned char far * far *tileMap;
 
 void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr)
@@ -56,16 +56,16 @@ void tileScrn(unsigned int s, unsigned int t)
     int y;
     unsigned char far * far *tileptr;
 
-    tileptr = tileMap + (t >> 4) * spanMap + (s >> 4);
+    tileptr = tileMap + (t >> 4) * widthMap + (s >> 4);
     s &= 0x0F;
     t &= 0x0F;
     y  = 16 - t;
     tileRow(0, s, t, y, tileptr);
-    tileptr += spanMap;
+    tileptr += widthMap;
     do
     {
         tileRow(y, s, 0, 16, tileptr);
-        tileptr += spanMap;
+        tileptr += widthMap;
         y       += 16;
     } while (y < 100 - 16);
     tileRow(y, s, 0, 100 - y, tileptr);
@@ -105,7 +105,7 @@ void tileScrn(unsigned int s, unsigned int t)
      int y;
      unsigned char far * far *tileptr;
 
-     tileptr = tileMap + (t >> 4) * spanMap + (s >> 4);
+     tileptr = tileMap + (t >> 4) * widthMap + (s >> 4);
      s &= 0x0F;
      t &= 0x0F;
      y  = 16 - t; // y is the height of the first tile and start of second tile row
@@ -120,12 +120,12 @@ void tileScrn(unsigned int s, unsigned int t)
           * Two or more tiles tall
           */
          tileBufRow(s, t, y, tileptr, widthBuf, buf);
-         tileptr += spanMap;
+         tileptr += widthMap;
          buf     += (widthBuf * y) >> 1;
          while (y < (heightBuf - 16))
          {
              tileBufRow(s, 0, 16, tileptr, widthBuf, buf);
-             tileptr += spanMap;
+             tileptr += widthMap;
              buf     += widthBuf * 8;
              y       += 16;
          }
@@ -145,8 +145,8 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
     /*
      * Calc screen extents
      */
-    extS = orgS + 158;
-    extT = orgT + 99;
+    extS = orgS + 160;
+    extT = orgT + 100;
     /*
      * Quick reject
      */
@@ -250,7 +250,7 @@ unsigned long tileScroll(int scrolldir)
          /*
           * Fill in left edge
           */
-         tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
+         tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
          vaddr = orgAddr;
      }
      else if (scrolldir & SCROLL_LEFT2)
@@ -258,7 +258,7 @@ unsigned long tileScroll(int scrolldir)
          /*
           * Fill right edge
           */
-         tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * spanMap + ((orgS + 158) >> 4));
+         tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + ((orgS + 158) >> 4));
          vaddr = (orgAddr + 158) & 0x3FFF;
      }
     if (scrolldir & SCROLL_DOWN2)
@@ -266,7 +266,7 @@ unsigned long tileScroll(int scrolldir)
         /*
          * Fill in top edge
          */
-        tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
+        tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
         hcount = 2;
         haddr  = orgAddr;
     }
@@ -275,7 +275,7 @@ unsigned long tileScroll(int scrolldir)
         /*
          * Fill in botom edge
          */
-        tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * spanMap + (orgS >> 4));
+        tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * widthMap + (orgS >> 4));
         hcount = 2;
         haddr  = (orgAddr + 98 * 160) & 0x3FFF;
     }
@@ -284,7 +284,7 @@ unsigned long tileScroll(int scrolldir)
         /*
          * Fill in top edge
          */
-        tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * spanMap + (orgS >> 4));
+        tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
         haddr  = orgAddr;
         hcount = 1;
     }
@@ -293,7 +293,7 @@ unsigned long tileScroll(int scrolldir)
         /*
          * Fill in botom edge
          */
-        tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * spanMap + (orgS >> 4));
+        tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * widthMap + (orgS >> 4));
         haddr  = (orgAddr + 99 * 160) & 0x3FFF;
         hcount = 1;
     }
@@ -317,15 +317,16 @@ unsigned long tileScroll(int scrolldir)
 }
 void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
 {
-    tileMap = map;
-    spanMap = width;
-    maxS    = (width  << 4) - 2;
-    maxT    = (height << 4) - 2;
-    maxOrgS = maxS - 160;
-    maxOrgT = maxT - 100;
-    orgS    = s & 0xFFFE; // S always even
-    orgT    = t;
-    orgAddr = (orgT * 160 + orgS | 1) & 0x3FFF;
+    tileMap  = map;
+    widthMap = width;
+    spanMap  = widthMap << 2;
+    maxS     = (width  << 4) - 2;
+    maxT     = (height << 4) - 2;
+    maxOrgS  = maxS - 160;
+    maxOrgT  = maxT - 100;
+    orgS     = s & 0xFFFE; // S always even
+    orgT     = t;
+    orgAddr  = (orgT * 160 + orgS | 1) & 0x3FFF;
     outp(0x3D8, 0x00);  /* Turn off video */
     tileScrn(orgS, orgT);
     outp(0x3D8, 0x09);  /* Turn on video */

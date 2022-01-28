@@ -1,1 +1,1 @@
-void spriteBuf(int x, int y, int width, int height, unsigned char *spriteptr, int span, unsigned char *bufptr);
+void spriteBuf(int x, int y, int width, int height, unsigned char far *sprite, int span, unsigned char far *buf);

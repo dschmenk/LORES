@@ -180,6 +180,7 @@ int main(int argc, char **argv)
     unsigned long st;
     int scrolldir;
     unsigned char *facebuf;
+    unsigned char *scrnbuf;
 
     buildmap();
     gr160(0);
@@ -197,6 +198,7 @@ int main(int argc, char **argv)
      * Use software scrolling
      */
     tileInit(0, 0, 16, 16, (unsigned char far * far *)tilemap);
+#if 0
     while (!kbhit())
     {
         /*
@@ -226,11 +228,43 @@ int main(int argc, char **argv)
     }
     getch();
 #endif
+#if 1
+    scrnbuf = (unsigned char *)malloc(160/2*100);
+    while (!kbhit())
+    {
+        /*
+         * Change scroll direction at map boundaries
+         */
+        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT2 | SCROLL_RIGHT2;
+        if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP2   | SCROLL_DOWN2;
+        /*
+         * Move origin based on scroll direction
+         */
+        if (scrolldir & SCROLL_LEFT2)
+            s += 2;
+        else if (scrolldir & SCROLL_RIGHT2)
+            s -= 2;
+        if (scrolldir & SCROLL_UP2)
+            t += 2;
+        else if (scrolldir & SCROLL_DOWN2)
+            t -= 2;
+        /*
+         * Place sprite in middle of screen
+         */
+        tileBuf(s, t, 160, 100, scrnbuf);
+        spriteBuf(80-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACE_WIDTH, FACE_HEIGHT, face, 80, scrnbuf);
+        cpyBuf(0, 0, 160, 100, scrnbuf);
+        //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
+    }
+    getch();
+    free(scrnbuf);
+#endif
+#else // SW_SCROLL
     /*
      * Use hardware scrolling
      */
     tileInit(s, t, 16, 16, (unsigned char far * far *)tilemap);
-#if 0
+#if 1
     while (!kbhit())
     {
         /*
@@ -264,11 +298,11 @@ int main(int argc, char **argv)
         cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         //cpyBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         outp(0x3D9, 0x06);
-        if (getch() == 'Q') {txt80(); tileExit(); return 0;}
+        //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
     }
     getch();
 #endif
-#if 1
+#if 0
     /*
      * Switch to scrolling vertically by one
      */
@@ -315,6 +349,7 @@ int main(int argc, char **argv)
     }
     getch();
 #endif
+#endif // SW_SCROLL
     txt80();
     tileExit();
     return 0;
