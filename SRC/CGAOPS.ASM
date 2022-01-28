@@ -51,8 +51,8 @@ waitact:                                ; Wait for end of active video
         ret
 _setStartAddr   ENDP
 
-        PUBLIC  __cpyEdgeH
-__cpyEdgeH      PROC NEAR
+        PUBLIC  _cpyEdgeH
+_cpyEdgeH       PROC NEAR
         push    bp
         mov     bp, sp
         push    di
@@ -74,10 +74,10 @@ cpyedgeh:
         pop     bp
         ret
 @@:     jmp     cpyedgeh
-__cpyEdgeH      ENDP
+_cpyEdgeH       ENDP
 
-        PUBLIC  __cpyEdgeV
-__cpyEdgeV      PROC NEAR
+        PUBLIC  _cpyEdgeV
+_cpyEdgeV       PROC NEAR
         push    bp
         mov     bp, sp
         push    di
@@ -96,7 +96,7 @@ cpyedgev:
         mov     sp, bp
         pop     bp
         ret
-__cpyEdgeV      ENDP
+_cpyEdgeV       ENDP
 
         PUBLIC  __cpyBuf
 __cpyBuf        PROC NEAR

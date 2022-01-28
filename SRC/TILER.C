@@ -12,8 +12,8 @@ int statusRasterTimer();
  * Fast CGA routines
  */
 void setStartAddr(int addr);
-void _cpyEdgeH(int addr, int count);
-void _cpyEdgeV(int addr);
+void cpyEdgeH(int addr, int count);
+void cpyEdgeV(int addr);
 void _cpyBuf(int addr, int width, int height, int span, unsigned char far *buf);
 void _cpyBufSnow(int addr, int width, int height, int span, unsigned char far *buf);
 #ifndef CPYBUF
@@ -23,7 +23,7 @@ void _cpyBufSnow(int addr, int width, int height, int span, unsigned char far *b
 /*
  * Fast memory routines
  */
-void tileMem(int x, int y, unsigned int s, unsigned int t, int width, int height, unsigned char far *tile, int span, unsigned char far *buf);
+void tileMem(unsigned int s, unsigned int t, int width, int height, unsigned char far *tile, int span, unsigned char far *buf);
 void tileEdgeH(unsigned int s, unsigned int t, unsigned char far * far*tileptr);
 void tileEdgeH2(unsigned int s, unsigned int t, unsigned char far * far*tileptr);
 void tileEdgeV(unsigned int s, unsigned int t, unsigned char far * far *tileptr);
@@ -45,11 +45,10 @@ void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char fa
 
     x = 16 - s;
     tile(0, y, s, t, x, height, *tileptr++);
-    while (x < 160 - 16)
-    {
+    do {
         tile(x, y, 0, t, 16, height, *tileptr++);
         x += 16;
-    }
+    } while (x < 160 - 16);
     tile(x, y, 0, t, 160 - x, height, *tileptr);
 }
 void tileScrn(unsigned int s, unsigned int t)
@@ -63,72 +62,77 @@ void tileScrn(unsigned int s, unsigned int t)
     y  = 16 - t;
     tileRow(0, s, t, y, tileptr);
     tileptr += spanMap;
-    while (y < 100 - 16)
+    do
     {
         tileRow(y, s, 0, 16, tileptr);
         tileptr += spanMap;
         y       += 16;
-    }
+    } while (y < 100 - 16);
     tileRow(y, s, 0, 100 - y, tileptr);
 }
+#if 0
 /*
  * Tile into memory buffer
  */
-void tileBufRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr, int widthBuf, unsigned char far *buf)
-{
-    int x, span;
+ void tileBufRow(unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr, int widthBuf, unsigned char far *buf)
+ {
+     int x;
 
-    span = widthBuf >> 1;
-    x    = 16 - s; // x is the width of the first tile and start of the second tile column
-    if (x >= widthBuf)
-        /*
-         * Only one tile wide
-         */
-        tileMem(0, y, s, t, widthBuf, height, *tileptr, span, buf);
-    else
-    {
-        /*
-         * Two or more tiles wide
-         */
-        tileMem(0, y, s, t, x, height, *tileptr++, span, buf);
-        while (x < widthBuf - 16)
-        {
-            tileMem(x, y, 0, t, 16, height, *tileptr++, span, buf);
-            x += 16;
-        }
-        tileMem(x, y, 0, t, widthBuf - x, height, *tileptr, span, buf);
-    }
-}
-void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsigned char far *buf)
-{
-    int y;
-    unsigned char far * far *tileptr;
+     x = 16 - s; // x is the width of the first tile and start of the second tile column
+     if (x >= widthBuf)
+         /*
+          * Only one tile wide
+          */
+         tileMem(s, t, widthBuf, height, *tileptr, widthBuf >> 1, buf);
+     else
+     {
+         /*
+          * Two or more tiles wide
+          */
+         tileMem(s, t, x, height, *tileptr++, widthBuf >> 1, buf);
+         buf += x >> 1;
+         while (x < (widthBuf - 16))
+         {
+             tileMem(0, t, 16, height, *tileptr++, widthBuf >> 1, buf);
+             buf += 8;
+             x   += 16;
+         }
+         tileMem(0, t, widthBuf - x, height, *tileptr, widthBuf >> 1, buf);
+     }
+ }
+ void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsigned char far *buf)
+ {
+     int y;
+     unsigned char far * far *tileptr;
 
-    tileptr = tileMap + (t >> 4) * spanMap + (s >> 4);
-    s &= 0x0F;
-    t &= 0x0F;
-    y  = 16 - t; // y is the height of the first tile and start of second tile row
-    if (y >= heightBuf)
-        /*
-         * Only one tile tall
-         */
-        tileBufRow(0, s, t, heightBuf, tileptr, widthBuf, buf);
-    else
-    {
-        /*
-         * Two or more tiles tall
-         */
-        tileBufRow(0, s, t, y, tileptr, widthBuf, buf);
-        tileptr += spanMap;
-        while (y < heightBuf - 16)
-        {
-            tileBufRow(y, s, 0, 16, tileptr, widthBuf, buf);
-            tileptr += spanMap;
-            y       += 16;
-        }
-        tileBufRow(y, s, 0, heightBuf - y, tileptr, widthBuf, buf);
-    }
+     tileptr = tileMap + (t >> 4) * spanMap + (s >> 4);
+     s &= 0x0F;
+     t &= 0x0F;
+     y  = 16 - t; // y is the height of the first tile and start of second tile row
+     if (y >= heightBuf)
+         /*
+          * Only one tile tall
+          */
+         tileBufRow(s, t, heightBuf, tileptr, widthBuf, buf);
+     else
+     {
+         /*
+          * Two or more tiles tall
+          */
+         tileBufRow(s, t, y, tileptr, widthBuf, buf);
+         tileptr += spanMap;
+         buf     += (widthBuf * y) >> 1;
+         while (y < (heightBuf - 16))
+         {
+             tileBufRow(s, 0, 16, tileptr, widthBuf, buf);
+             tileptr += spanMap;
+             buf     += widthBuf * 8;
+             y       += 16;
+         }
+         tileBufRow(s, 0, heightBuf - y, tileptr, widthBuf, buf);
+     }
 }
+#endif
 /*
  * Copy buffer to screen
  */
@@ -302,9 +306,9 @@ unsigned long tileScroll(int scrolldir)
      * Fill in edges
      */
     if (scrolldir & (SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN))
-        _cpyEdgeH(haddr, hcount);
+        cpyEdgeH(haddr, hcount);
     if (scrolldir & (SCROLL_LEFT2 | SCROLL_RIGHT2))
-        _cpyEdgeV(vaddr);
+        cpyEdgeV(vaddr);
     /*
      * Return updated origin as 32 bit value
      */
