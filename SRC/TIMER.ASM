@@ -24,7 +24,7 @@ _TEXT   SEGMENT
         ASSUME	CS: _TEXT
 
 chainPIT        DD  0
-chainCount      DB  2
+chainCount      DB  3
 
 _enableRasterTimer  PROC NEAR
         mov     ax, WORD PTR cs:chainPIT+2
@@ -78,7 +78,7 @@ waitscan:                               ; Count number of scanlines before reloa
         stosw
         mov     ax, cs
         stosw
-        mov     BYTE PTR cs:chainCount, 2 ; Set chain count - chain to old PIT handler every third IRQ
+        mov     BYTE PTR cs:chainCount, 3 ; Set chain count - chain to old PIT handler every third IRQ
         sti
         xor     ax, ax
         inc     ax                      ; Return success
@@ -141,7 +141,7 @@ timerISR        PROC FAR
         pop     ax
         iret
 @@:     pop     ax
-        mov     BYTE PTR cs:chainCount, 2
+        mov     BYTE PTR cs:chainCount, 3
         jmp     DWORD PTR cs:[chainPIT]
 timerISR        ENDP
 _TEXT   ENDS
