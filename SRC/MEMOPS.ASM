@@ -9,7 +9,6 @@ _BSS    ENDS
 DGROUP  GROUP    CONST, _BSS, _DATA
         ASSUME  CS: _TEXT, DS: DGROUP, SS: DGROUP
 
-EXTRN   _scanline:BYTE
 EXTRN   _edgeH:BYTE
 EXTRN   _edgeV:BYTE
 EXTRN   _tileMap:BYTE
@@ -20,25 +19,25 @@ _TEXT   SEGMENT
         ASSUME  DS: NOTHING
 
 _tileMem        PROC NEAR
-;   s         = bp+4
-;   t         = bp+6
-;   widthBuf  = bp+8
-;   heightBuf = bp+10
-;   buf       = bp+12, bp+14
-;   x         = bp-2
-;   y         = bp-4
-;   ss        = bp-6
-;   tilerow   = bp-10, bp-8
-;   tile      = bp-14, bp-12
-;   span      = bp-16
-;   width     = bp-18
-;   height    = bp-20
+; s             = bp+4
+; t             = bp+6
+; widthBuf      = bp+8
+; heightBuf     = bp+10
+; buf           = bp+12, bp+14
+; x             = bp-2
+; y             = bp-4
+; ss            = bp-6
+; tilerow       = bp-10, bp-8
+; tile          = bp-14, bp-12
+; span          = bp-16
+; width         = bp-18
+; height        = bp-20
 ; es:di => buf
 ; ds:si => tile
 ; bx => width
 ; dx => height
         les     di, DWORD PTR [bp+12]   ; buf
-;    tile   += t * 8 + (s >> 1);
+; tile   += t * 8 + (s >> 1);
         mov     si, WORD PTR [bp+6]     ; t
         shl     si, 1
         shl     si, 1
@@ -74,19 +73,19 @@ _tileMem        ENDP
 ; Tile into memory buffer
 ;
 _tileBufRow     PROC NEAR
-;   s         = bp+4
-;   t         = bp+6
-;   widthBuf  = bp+8
-;   heightBuf = bp+10
-;   buf       = bp+12, bp+14
-;   x         = bp-2
-;   y         = bp-4
-;   ss        = bp-6
-;   tilerow   = bp-10, bp-8
-;   tile      = bp-14, bp-12
-;   span      = bp-16
-;   width     = bp-18
-;   height    = bp-20
+; s             = bp+4
+; t             = bp+6
+; widthBuf      = bp+8
+; heightBuf     = bp+10
+; buf           = bp+12, bp+14
+; x             = bp-2
+; y             = bp-4
+; ss            = bp-6
+; tilerow       = bp-10, bp-8
+; tile          = bp-14, bp-12
+; span          = bp-16
+; width         = bp-18
+; height        = bp-20
         mov     ax, WORD PTR [bp+4]     ; s
         mov     WORD PTR [bp-6], ax     ; ss
 ; x = 16 - s; // x is the width of the first tile and start of the second tile column
@@ -168,19 +167,19 @@ _tileBuf    PROC NEAR
         sub     sp, 24
         push    di
         push    si
-;   s         = bp+4
-;   t         = bp+6
-;   widthBuf  = bp+8
-;   heightBuf = bp+10
-;   buf       = bp+12, bp+14
-;   x         = bp-2
-;   y         = bp-4
-;   ss        = bp-6
-;   tilerow   = bp-10, bp-8
-;   tile      = bp-14, bp-12
-;   span      = bp-16
-;   width     = bp-18
-;   height    = bp-20
+; s             = bp+4
+; t             = bp+6
+; widthBuf      = bp+8
+; heightBuf     = bp+10
+; buf           = bp+12, bp+14
+; x             = bp-2
+; y             = bp-4
+; ss            = bp-6
+; tilerow       = bp-10, bp-8
+; tile          = bp-14, bp-12
+; span          = bp-16
+; width         = bp-18
+; height        = bp-20
 ;
 ; unsigned char far * far *tilerow;
 ; tilerow = tileMap + (t >> 4) * spanMap + (s >> 4);
@@ -284,12 +283,12 @@ _tileEdgeH      PROC NEAR
         mov     bp, sp
         push    di
         push    si
-;   s    = 4
-;   t    = 6
-;   tile = 8
-;   es:di => &edgeH[x]
-;   dx:bx => tile
-;   ds:si => *tile
+; s             = bp+4
+; t             = bp+6
+; tile          = bp+8
+; es:di => &edgeH[x]
+; dx:bx => tile
+; ds:si => *tile
         push    ds
         mov     ax, ds
         mov     es, ax
@@ -353,13 +352,12 @@ _tileEdgeH2     PROC NEAR
         mov     bp, sp
         push    di
         push    si
-;   s    = bp+4
-;   t    = bp+6
-;   tile = bp+8
-;   x    = bp-2
-;   es:di => &edgeH[x]
-;   dx:bx => tile
-;   ds:si => *tile
+; s             = bp+4
+; t             = bp+6
+; tile          = bp+8
+; es:di => &edgeH[x]
+; dx:bx => tile
+; ds:si => *tile
         push    ds
         mov     ax, ds
         mov     es, ax
@@ -367,7 +365,7 @@ _tileEdgeH2     PROC NEAR
         mov     di, OFFSET DGROUP:_edgeH
         mov     bx, WORD PTR [bp+8]         ; OFFSET tile
         mov     dx, WORD PTR [bp+10]        ; SEG tile
-; tileMemH2(0, s, t, 16 - s, *tileptr++);
+; tileMemH2(0, s, t, 16 - s, *tile++);
         mov     ds, dx
         lds     si, [bx]                    ; *tile
         mov     cx, 8
@@ -407,7 +405,7 @@ _tileEdgeH2     PROC NEAR
         add     bx, 4                       ; tile++
 ; for (x = 16 - s; x < 160 - 16; x += 16)
 tileedgeh2:
-; tileMemH2(x, 0, t, 16, *tileptr++);
+; tileMemH2(x, 0, t, 16, *tile++);
         mov     ds, dx
         lds     si, [bx]                    ; *tile
         add     si, WORD PTR [bp+6]         ; t << 3
@@ -426,7 +424,7 @@ tileedgeh2:
         add     bx, 4                       ; tile++;
         cmp     di, OFFSET DGROUP:_edgeH + (160 - 16) / 2
         jb      tileedgeh2
-; tileMemH2(x, 0, t, 160 - x, *tileptr++);
+; tileMemH2(x, 0, t, 160 - x, *tile++);
         mov     ds, dx
         lds     si, [bx]                    ; *tile
         mov     cx, OFFSET DGROUP:_edgeH + 160 / 2
@@ -467,12 +465,12 @@ _tileEdgeV      PROC NEAR
         mov     bp, sp
         push    di
         push    si
-;   s = bp+4
-;   t = bp+6
-;   tileptr = bp+8
-;   es:di => &edgeV[y]
-;   dx:bx => tile
-;   ds:si => *tile
+; s             = bp+4
+; t             = bp+6
+; tileptr       = bp+8
+; es:di => &edgeV[y]
+; dx:bx => tile
+; ds:si => *tile
         push    ds
         mov     ax, ds
         mov     es, ax
@@ -508,7 +506,7 @@ tileedgev:
         movsb
         add     si, 7
         ENDM
-; tileptr += spanMap;
+; tile += spanMap;
         add     bx, DGROUP: es:_spanMap     ; tile
         cmp     di, OFFSET DGROUP:_edgeV + 100 - 16
         jb      tileedgev
@@ -540,13 +538,13 @@ _spriteBuf      PROC NEAR
         push    si
         push    ds
         ASSUME  DS: NOTHING
-;    x      = bp+4
-;    y      = bp+6
-;    width  = bp+8
-;    height = bp+10
-;    sprite = bp+12, bp+14
-;    span   = bp+16
-;    buf    = bp+18, bp+20
+; x             = bp+4
+; y             = bp+6
+; width         = bp+8
+; height        = bp+10
+; sprite        = bp+12, bp+14
+; span          = bp+16
+; buf           = bp+18, bp+20
 ; buf += y * span + (x >> 1);
         mov     ax, WORD PTR [bp+6]     ; y
         mov     cx, WORD PTR [bp+4]     ; x

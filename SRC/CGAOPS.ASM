@@ -20,10 +20,7 @@ cpybufsel       DW  cpybufh8, cpybufh1, cpybufh2, cpybufh3
 
 _DATA   ENDS
 
-
 _TEXT   SEGMENT
-
-unrollcpybuf    = 1
 
         PUBLIC  _setStartAddr
 _setStartAddr   PROC NEAR
@@ -40,7 +37,7 @@ waitact:                                ; Wait for end of active video
         jnz     waitact
 @@:     in      al, dx
         shr     al, 1
-        jae     @B
+        jnc     @B
         mov     dx, 03D4h               ; Update CGA start address
         mov     al, 12
         mov     ah, bh
@@ -105,23 +102,23 @@ __cpyBuf        PROC NEAR
         push    di
         push    si
         push    ds
-; pixaddr       = 4
-; width/2       = 6
-; height        = 8
-; span          = 10
-; bufptr        = 12
-        mov     ax, 0B800H
-        mov     es, ax
-        mov     di, WORD PTR [bp+4]     ; pixaddr
-        lds     si, DWORD PTR [bp+12]   ; pixbuf
-        ASSUME  DS: NOTHING
+; pixaddr       = bp+4
+; width/2       = bp+6
+; height        = bp+8
+; span          = bp+10
+; buf           = bp+12
         mov     dx, WORD PTR [bp+8]     ; height
         mov     cx, WORD PTR [bp+6]     ; width/2
-        sub     WORD PTR [bp+10], cx    ; span -= width/2
         mov     bx, cx
+        sub     WORD PTR [bp+10], cx    ; span -= width/2
         and     bx, 07h
         shl     bx, 1
         mov     bx, cpybufsel[bx]
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     di, WORD PTR [bp+4]     ; pixaddr
+        lds     si, DWORD PTR [bp+12]   ; buf
+        ASSUME  DS: NOTHING
 cpybufv:
         add     cx, 7                   ; Round up iteration count
         shr     cx, 1
@@ -158,7 +155,7 @@ cpybufnxt:
         mov     cx, WORD PTR [bp+6]     ; width/2
         sub     di, cx
         sub     di, cx
-        add     si, WORD PTR [bp+10]
+        add     si, WORD PTR [bp+10]    ; span
         dec     dx
         jnz     cpybufv
         pop     ds
@@ -177,11 +174,11 @@ __cpyBufSnow    PROC NEAR
         push    di
         push    si
         push    ds
-; pixaddr       = 4
-; width/2       = 6
-; height        = 8
-; span          = 10
-; bufptr        = 12
+; pixaddr       = bp+4
+; width/2       = bp+6
+; height        = bp+8
+; span          = bp+10
+; bufptr        = bp+12
         mov     ax, 0B800H
         mov     es, ax
         mov     di, WORD PTR [bp+4]     ; pixaddr
@@ -196,28 +193,28 @@ cpybufsv:
         jae     SHORT cpybufsh
 @@:     in      al, dx
         shr     al, 1
-        jae     @B
+        jnc     @B
         movsb
         inc     di
         jcxz    cpybufsnxt
 cpybufsh:
 @@:     in      al, dx
         shr     al, 1
-        jae     @B
+        jnc     @B
         movsb
         inc     di
 @@:     in      al, dx
         shr     al, 1
-        jae     @B
+        jnc     @B
         movsb
         inc     di
         loop    cpybufsh
 cpybufsnxt:
         add     di, 160
-        add     si, WORD PTR [bp+10]
+        add     si, WORD PTR [bp+10]    ; span
         sub     di, bx
         sub     di, bx
-        dec     WORD PTR [bp+8]
+        dec     WORD PTR [bp+8]         ; height
         jnz    cpybufsv
         pop     ds
         pop     si
