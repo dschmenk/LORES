@@ -49,10 +49,10 @@ waitvbl:
 waitscan:                               ; Count number of scanlines before reloading PIT to synchronize
 @@:     in      al, dx                  ; Wait while display inactive
         shr     al, 1
-        jb      @B
+        jc      @B
 @@:     in      al, dx                  ; Wait while display active
         shr     al, 1
-        jae     @B
+        jnc     @B
         loop    waitscan
         mov     al, 036h                ; Program PIT to count 19912
         out     043h, al                ; Timer 0, LSB, MSB, mode 3

@@ -70,69 +70,6 @@ void tileScrn(unsigned int s, unsigned int t)
     } while (y < 100 - 16);
     tileRow(y, s, 0, 100 - y, tileptr);
 }
-#if 0
-/*
- * Tile into memory buffer
- */
- void tileBufRow(unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr, int widthBuf, unsigned char far *buf)
- {
-     int x;
-
-     x = 16 - s; // x is the width of the first tile and start of the second tile column
-     if (x >= widthBuf)
-         /*
-          * Only one tile wide
-          */
-         tileMem(s, t, widthBuf, height, *tileptr, widthBuf >> 1, buf);
-     else
-     {
-         /*
-          * Two or more tiles wide
-          */
-         tileMem(s, t, x, height, *tileptr++, widthBuf >> 1, buf);
-         buf += x >> 1;
-         while (x < (widthBuf - 16))
-         {
-             tileMem(0, t, 16, height, *tileptr++, widthBuf >> 1, buf);
-             buf += 8;
-             x   += 16;
-         }
-         tileMem(0, t, widthBuf - x, height, *tileptr, widthBuf >> 1, buf);
-     }
- }
- void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsigned char far *buf)
- {
-     int y;
-     unsigned char far * far *tileptr;
-
-     tileptr = tileMap + (t >> 4) * widthMap + (s >> 4);
-     s &= 0x0F;
-     t &= 0x0F;
-     y  = 16 - t; // y is the height of the first tile and start of second tile row
-     if (y >= heightBuf)
-         /*
-          * Only one tile tall
-          */
-         tileBufRow(s, t, heightBuf, tileptr, widthBuf, buf);
-     else
-     {
-         /*
-          * Two or more tiles tall
-          */
-         tileBufRow(s, t, y, tileptr, widthBuf, buf);
-         tileptr += widthMap;
-         buf     += (widthBuf * y) >> 1;
-         while (y < (heightBuf - 16))
-         {
-             tileBufRow(s, 0, 16, tileptr, widthBuf, buf);
-             tileptr += widthMap;
-             buf     += widthBuf * 8;
-             y       += 16;
-         }
-         tileBufRow(s, 0, heightBuf - y, tileptr, widthBuf, buf);
-     }
-}
-#endif
 /*
  * Copy buffer to screen
  */
@@ -298,7 +235,7 @@ unsigned long tileScroll(int scrolldir)
         hcount = 1;
     }
     /*
-     * The following happens during VBlank
+     * The following happens after last active scanline
      */
     setStartAddr(orgAddr >> 1);
     outp(0x3D9, 0x00);
@@ -330,7 +267,7 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     outp(0x3D8, 0x00);  /* Turn off video */
     tileScrn(orgS, orgT);
     outp(0x3D8, 0x09);  /* Turn on video */
-    enableRasterTimer(199);
+    enableRasterTimer(198);
     setStartAddr(orgAddr >> 1);
 }
 void tileExit(void)

@@ -15,8 +15,14 @@ EXTRN   _rasterTimer: BYTE
 
 _DATA   SEGMENT
 
-cpybufsel       DW  cpybufh8, cpybufh1, cpybufh2, cpybufh3
-                DW  cpybufh4, cpybufh5, cpybufh6, cpybufh7
+cpybufsel       DW  cpybufh32, cpybufh1,  cpybufh2,  cpybufh3
+                DW  cpybufh4,  cpybufh5,  cpybufh6,  cpybufh7
+                DW  cpybufh8,  cpybufh9,  cpybufh10, cpybufh11
+                DW  cpybufh12, cpybufh13, cpybufh14, cpybufh15
+                DW  cpybufh16, cpybufh17, cpybufh18, cpybufh19
+                DW  cpybufh20, cpybufh21, cpybufh22, cpybufh23
+                DW  cpybufh24, cpybufh25, cpybufh26, cpybufh27
+                DW  cpybufh28, cpybufh29, cpybufh30, cpybufh31
 
 _DATA   ENDS
 
@@ -111,7 +117,7 @@ __cpyBuf        PROC NEAR
         mov     bx, cx
         mov     dl, cl                  ; width/2 must be less than 80
         mov     dh, BYTE PTR [bp+8]     ; height must be 100 or less
-        and     bx, 07h
+        and     bx, 01Fh
         shl     bx, 1
         mov     bx, cpybufsel[bx]
         mov     ax, 0B800H
@@ -123,11 +129,85 @@ __cpyBuf        PROC NEAR
         mov     bp, WORD PTR [bp+10]    ; span
         sub     bp, cx                  ; span -= width/2
 cpybufv:
-        add     cx, 7                   ; Round up iteration count
+        add     cx, 31                  ; Round up iteration count
+        shr     cx, 1
+        shr     cx, 1
         shr     cx, 1
         shr     cx, 1
         shr     cx, 1
         jmp     bx
+cpybufh32:
+        movsb
+        inc     di
+cpybufh31:
+        movsb
+        inc     di
+cpybufh30:
+        movsb
+        inc     di
+cpybufh29:
+        movsb
+        inc     di
+cpybufh28:
+        movsb
+        inc     di
+cpybufh27:
+        movsb
+        inc     di
+cpybufh26:
+        movsb
+        inc     di
+cpybufh25:
+        movsb
+        inc     di
+cpybufh24:
+        movsb
+        inc     di
+cpybufh23:
+        movsb
+        inc     di
+cpybufh22:
+        movsb
+        inc     di
+cpybufh21:
+        movsb
+        inc     di
+cpybufh20:
+        movsb
+        inc     di
+cpybufh19:
+        movsb
+        inc     di
+cpybufh18:
+        movsb
+        inc     di
+cpybufh17:
+        movsb
+        inc     di
+cpybufh16:
+        movsb
+        inc     di
+cpybufh15:
+        movsb
+        inc     di
+cpybufh14:
+        movsb
+        inc     di
+cpybufh13:
+        movsb
+        inc     di
+cpybufh12:
+        movsb
+        inc     di
+cpybufh11:
+        movsb
+        inc     di
+cpybufh10:
+        movsb
+        inc     di
+cpybufh9:
+        movsb
+        inc     di
 cpybufh8:
         movsb
         inc     di
@@ -152,7 +232,7 @@ cpybufh2:
 cpybufh1:
         movsb
         inc     di
-        loop    cpybufh8
+        loop    cpybufh32
 cpybufnxt:
         add     di, 160
         mov     cl, dl                  ; width/2
@@ -219,7 +299,7 @@ cpybufsnxt:
         sub     di, bx
         sub     di, bx
         dec     WORD PTR [bp+8]         ; height
-        jnz    cpybufsv
+        jnz     cpybufsv
         pop     ds
         pop     si
         pop     di
