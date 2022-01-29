@@ -107,10 +107,10 @@ __cpyBuf        PROC NEAR
 ; height        = bp+8
 ; span          = bp+10
 ; buf           = bp+12
-        mov     dx, WORD PTR [bp+8]     ; height
         mov     cx, WORD PTR [bp+6]     ; width/2
         mov     bx, cx
-        sub     WORD PTR [bp+10], cx    ; span -= width/2
+        mov     dl, cl                  ; width/2 must be less than 80
+        mov     dh, BYTE PTR [bp+8]     ; height must be 100 or less
         and     bx, 07h
         shl     bx, 1
         mov     bx, cpybufsel[bx]
@@ -119,6 +119,9 @@ __cpyBuf        PROC NEAR
         mov     di, WORD PTR [bp+4]     ; pixaddr
         lds     si, DWORD PTR [bp+12]   ; buf
         ASSUME  DS: NOTHING
+        push    bp                      ; This is bad. Very bad
+        mov     bp, WORD PTR [bp+10]    ; span
+        sub     bp, cx                  ; span -= width/2
 cpybufv:
         add     cx, 7                   ; Round up iteration count
         shr     cx, 1
@@ -152,12 +155,13 @@ cpybufh1:
         loop    cpybufh8
 cpybufnxt:
         add     di, 160
-        mov     cx, WORD PTR [bp+6]     ; width/2
+        mov     cl, dl                  ; width/2
         sub     di, cx
         sub     di, cx
-        add     si, WORD PTR [bp+10]    ; span
-        dec     dx
+        add     si, bp                  ; span
+        dec     dh                      ; height
         jnz     cpybufv
+        pop     bp
         pop     ds
         ASSUME  DS: DGROUP
         pop     si
@@ -190,7 +194,7 @@ __cpyBufSnow    PROC NEAR
 cpybufsv:
         mov     cx, bx
         shr     cx, 1
-        jae     SHORT cpybufsh
+        jnc     SHORT cpybufsh
 @@:     in      al, dx
         shr     al, 1
         jnc     @B

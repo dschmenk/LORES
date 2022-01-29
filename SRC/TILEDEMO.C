@@ -251,9 +251,9 @@ int main(int argc, char **argv)
          * Place sprite in middle of screen
          */
         tileBuf(s, t, 160, 100, scrnbuf);
-        spriteBuf(80-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACE_WIDTH, FACE_HEIGHT, face, 80, scrnbuf);
+        spriteBuf(79-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACE_WIDTH, FACE_HEIGHT, face, 80, scrnbuf);
         cpyBuf(0, 0, 160, 100, scrnbuf);
-        //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
+        if (getch() == 'Q') {txt80(); tileExit(); return 0;}
     }
     getch();
     free(scrnbuf);
@@ -263,7 +263,7 @@ int main(int argc, char **argv)
      * Use hardware scrolling
      */
     tileInit(s, t, 16, 16, (unsigned char far * far *)tilemap);
-#if 0
+#if 1
     while (!kbhit())
     {
         frameCount = 0;

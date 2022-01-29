@@ -58,7 +58,7 @@ tilemem:
         mov     cx, bx
         shr     cx, 1
     rep movsw
-        jae     SHORT tmeven            ; jump carry clear
+        jnc     SHORT tmeven            ; jump carry clear
         movsb
 tmeven:
         add     di, WORD PTR [bp-16]    ; span
@@ -226,7 +226,7 @@ tiletallrows:
         pop     ds
 ; tilerow += spanMap;
         pop     ax
-        add     ax, WORD PTR _spanMap
+        add     ax, _spanMap
         mov     WORD PTR [bp-10], ax        ; OFFSET tilerow
 ; buf     += (widthBuf * y) >> 1;
         mov     ax, WORD PTR [bp+8]         ; widthBuf
@@ -247,7 +247,7 @@ tilemidrows:
         pop     ds
 ; tilerow += spanMap;
         pop     ax
-        add     ax, WORD PTR _spanMap
+        add     ax, _spanMap
         mov     WORD PTR [bp-10], ax        ; OFFSET tilerow
 ; buf     += widthBuf * 8;
         mov     ax, WORD PTR [bp+8]         ; widthBuf
@@ -313,7 +313,7 @@ _tileEdgeH      PROC NEAR
         add     si, ax
         shr     cx, 1
     rep movsw
-        jae     SHORT @F
+        jnc     SHORT @F
         movsb
 @@:     add     bx, 4                       ; tile++
 ; for (x = 16 - s; x < 160 - 16; x += 16)
@@ -335,7 +335,7 @@ tileedgeh:
         add     si, WORD PTR [bp+6]         ; t
         shr     cx, 1
     rep movsw
-        jae     SHORT @F
+        jnc     SHORT @F
         movsb
 @@:     pop     ds
         ASSUME  DS: DGROUP, ES: NOTHING
@@ -363,10 +363,8 @@ _tileEdgeH2     PROC NEAR
         mov     es, ax
         ASSUME  DS: NOTHING, ES: DGROUP
         mov     di, OFFSET DGROUP:_edgeH
-        mov     bx, WORD PTR [bp+8]         ; OFFSET tile
-        mov     dx, WORD PTR [bp+10]        ; SEG tile
+        lds     bx, DWORD PTR [bp+8]         ; OFFSET tile
 ; tileMemH2(0, s, t, 16 - s, *tile++);
-        mov     ds, dx
         lds     si, [bx]                    ; *tile
         mov     cx, 8
         mov     ax, WORD PTR [bp+4]         ; s
@@ -383,12 +381,12 @@ _tileEdgeH2     PROC NEAR
 ;
 ; Even row
 ;
-        push    cx
+        mov     dx, cx
         shr     cx, 1
     rep movsw
-        jae     SHORT @F
+        jnc     SHORT @F
         movsb
-@@:     pop     cx
+@@:     mov     cx, dx
 ;
 ; Odd row
 ;
@@ -399,10 +397,11 @@ _tileEdgeH2     PROC NEAR
         add     di, 80
         shr     cx, 1
     rep movsw
-        jae     SHORT @F
+        jnc     SHORT @F
         movsb
 @@:     sub     di, 80
         add     bx, 4                       ; tile++
+        mov     dx, WORD PTR [bp+10]        ; SEG tile
 ; for (x = 16 - s; x < 160 - 16; x += 16)
 tileedgeh2:
 ; tileMemH2(x, 0, t, 16, *tile++);
@@ -433,12 +432,12 @@ tileedgeh2:
 ;
 ; Even row
 ;
-        mov     bx, cx                      ; done with bx
+        mov     dx, cx                      ; done with bx
         shr     cx, 1
     rep movsw
-        jae     SHORT @F
+        jnc     SHORT @F
         movsb
-@@:     mov     cx, bx
+@@:     mov     cx, dx
 ;
 ; Odd row
 ;
@@ -446,7 +445,7 @@ tileedgeh2:
         add     di, 80
         shr     cx, 1
     rep movsw
-        jae     SHORT @F
+        jnc     SHORT @F
         movsb
 @@:     pop     ds
         ASSUME  DS: DGROUP, ES: NOTHING
@@ -467,7 +466,7 @@ _tileEdgeV      PROC NEAR
         push    si
 ; s             = bp+4
 ; t             = bp+6
-; tileptr       = bp+8
+; tile          = bp+8
 ; es:di => &edgeV[y]
 ; dx:bx => tile
 ; ds:si => *tile
@@ -495,7 +494,7 @@ _tileEdgeV      PROC NEAR
         add     si, 7
         loop    @B
 ; tile += spanMap;
-        add     bx, DGROUP: es:_spanMap     ; tile
+        add     bx, es:_spanMap             ; tile
 ; for (y = 16 - t; y < 100 - 16; y += 16)
 tileedgev:
 ; tileMemV(y, s, 0, 16, *tileptr);
@@ -507,7 +506,7 @@ tileedgev:
         add     si, 7
         ENDM
 ; tile += spanMap;
-        add     bx, DGROUP: es:_spanMap     ; tile
+        add     bx, es:_spanMap             ; tile
         cmp     di, OFFSET DGROUP:_edgeV + 100 - 16
         jb      tileedgev
 ; tileMemV(y, s, 0, 100 - y, *tileptr);
@@ -545,121 +544,134 @@ _spriteBuf      PROC NEAR
 ; sprite        = bp+12, bp+14
 ; span          = bp+16
 ; buf           = bp+18, bp+20
-; buf += y * span + (x >> 1);
         mov     ax, WORD PTR [bp+6]     ; y
         mov     cx, WORD PTR [bp+4]     ; x
         shr     cx, 1
         imul    WORD PTR [bp+16]        ; span
         add     ax, cx
         add     WORD PTR [bp+18], ax    ; OFFSET buf
-; width >>= 1;
         shr     WORD PTR [bp+8], 1      ; width
-; span   -= width;
-        mov     ax, WORD PTR [bp+8]     ; width
-        sub     WORD PTR [bp+16], ax    ; span
+        mov     cx, WORD PTR [bp+8]     ; width
+        sub     WORD PTR [bp+16], cx    ; span
+        mov     dx, WORD PTR [bp+10]    ; height
         lds     si, DWORD PTR [bp+12]   ; sprite
         les     di, DWORD PTR [bp+18]   ; buf
-; if (x & 1)
         test    BYTE PTR [bp+4], 1      ; x
-        je      evenx
-; while (height--)
-        jmp     SHORT $L20007
-$L20005:
-; for (w = 0; w < width; w++)
-;        mov     WORD PTR [bp-4], 0      ; w
-        cmp     WORD PTR [bp+8], 0      ; width
-        jle     $FB388
-        mov     ax, WORD PTR [bp+8]     ; width
-        mov     WORD PTR [bp-6], ax
-;        add     WORD PTR [bp-4], ax     ; w
-; pix = *spriteptr & 0x0F;
-        mov     dl, BYTE PTR [si]
-        and     dl, 0Fh
-$L20003:
-; if (pix != 0x08)
-        cmp     dl, 8                   ; Transparent?
-        je      $I389
-; *buf = (*buf & 0x0F) | (pix << 4);
-        mov     al, BYTE PTR es:[di]
-        and     al, 0Fh
-        mov     bx, dx
-        mov     cl, 4
-        shl     bl, cl
-        or      al, bl
-        mov     BYTE PTR es:[di], al
-$I389:
-; buf++;
-        inc     si
-; pix = *sprite++ & 0xF0;
-        mov     dl, BYTE PTR [si]
-        and     dl, 0F0h
-        inc     di
-; if (pix != 0x80)
-        cmp     dl, 128
-        je      $I390
-; *buf = (*buf & 0xF0) | (pix >> 4);
-        mov     ax, dx
-        sub     ah, ah
-        mov     cl, 4
-        shr     ax, cl
-        mov     cl, BYTE PTR es:[di]
-        and     cl, 0F0h
-        or      al, cl
-        mov     BYTE PTR es:[di], al
-$I390:
-        dec     WORD PTR [bp-6]
-        jne     $L20003
-        mov     WORD PTR [bp+12], di    ; OFFSET sprite
-;        mov     BYTE PTR [bp-2], dl     ; pix
-$FB388:
-        add     di, WORD PTR [bp+16]    ; span
-$L20007:
-        mov     ax, WORD PTR [bp+10]    ; height
-        dec     WORD PTR [bp+10]        ; height
-        or      ax, ax
-        jne     $L20005
-        jmp     SHORT $L20021
-; else
+        jnz     SHORT dstodd
 evenx:
-        mov     dx, WORD PTR [bp+10]    ; height
-$L20010:
-        mov     cx, WORD PTR [bp+8]     ; width
-$L20008:
         lodsb
-        cmp     al, 088h                ; Both transparent?
-        je      nextpix
+        cmp     al, 088h                ; Both nybbles transparent?
+        je      evennxt
         mov     bl, al
         mov     bh, al
         and     bx, 0F00Fh
-        cmp     bl, 08h                 ; Even transparent?
-        je      xparevn
-        cmp     bh, 080h                ; Odd transparent?
-        je      xparodd
+        cmp     bl, 08h                 ; Low nybble transparent?
+        je      exparlo
+        cmp     bh, 080h                ; High nybble transparent?
+        je      exparhi
         stosb
-        loop    $L20008
-        jmp     SHORT $FB397
-xparevn:
-        mov     al, BYTE PTR es:[di]
+        loop    evenx
+        jmp     SHORT @F
+exparlo:
+        mov     al, es:[di]
         and     al, 0Fh
         or      al, bh
         stosb
-        loop    $L20008
-        jmp     SHORT $FB397
-xparodd:
-        mov     al, BYTE PTR es:[di]
+        loop    evenx
+        jmp     SHORT @F
+exparhi:
+        mov     al, es:[di]
         and     al, 0F0h
         or      al, bl
         stosb
-        loop    $L20008
-        jmp     SHORT $FB397
-nextpix:
+        loop    evenx
+        jmp     SHORT @F
+evennxt:
         inc     di
-        loop    $L20008
-$FB397:
+        loop    evenx
+@@:     mov     cx, WORD PTR [bp+8]     ; width
         add     di, WORD PTR [bp+16]    ; span
         dec     dx                      ; height
-        jnz     $L20010
-$L20021:
+        jnz     evenx
+        jmp    cpybufexit
+dstodd:
+        dec     WORD PTR [bp+16]        ; span
+oddfirst:
+        lodsb
+        mov     ah, al
+        mov     bh, al
+        shl     bh, 1
+        shl     bh, 1
+        shl     bh, 1
+        shl     bh, 1
+        cmp     bh, 80h;                ; High nybble transparent?
+        je      SHORT @F
+        mov     al, es:[di]
+        and     al, 0Fh
+        or      al, bh
+        mov     es:[di], al
+@@:     inc     di
+        loop    SHORT oddx
+        jmp     SHORT oddlast
+oddx:
+        mov     bl, ah
+        shr     bl, 1
+        shr     bl, 1
+        shr     bl, 1
+        shr     bl, 1
+        lodsb
+        mov     ah, al
+        mov     bh, al
+        shl     bh, 1
+        shl     bh, 1
+        shl     bh, 1
+        shl     bh, 1
+        cmp     bx, 08008h              ; Both nybbles transparent?
+        je      oddnxt
+        cmp     bl, 08h                 ; Low nybble transparent?
+        je      oxparlo
+        cmp     bh, 080h                ; High nybble transparent?
+        je      oxparhi
+        mov     al, bl
+        or      al, bh
+        stosb
+        loop    oddx
+        jmp     SHORT oddlast
+oxparlo:
+        mov     al, es:[di]
+        and     al, 0Fh
+        or      al, bh
+        stosb
+        loop    oddx
+        jmp     SHORT oddlast
+oxparhi:
+        mov     al, es:[di]
+        and     al, 0F0h
+        or      al, bl
+        stosb
+        loop    oddx
+        jmp     SHORT oddlast
+oddnxt:
+        inc     di
+        loop    oddx
+oddlast:
+        shr     ah, 1
+        shr     ah, 1
+        shr     ah, 1
+        shr     ah, 1
+        cmp     ah, 08h;                ; Low nybble transparent?
+        je      SHORT @F
+        mov     al, es:[di]
+        and     al, 0F0h
+        or      al, ah
+        mov     es:[di], al
+@@:     inc     di
+        mov     cx, WORD PTR [bp+8]     ; width
+        add     di, WORD PTR [bp+16]    ; span
+        dec     dx                      ; height
+        jz     cpybufexit
+        jmp     oddfirst
+cpybufexit:
         pop     ds
         ASSUME  DS: DGROUP
         pop     si
