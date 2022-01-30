@@ -597,74 +597,69 @@ evennxt:
 dstodd:
         dec     WORD PTR [bp+16]        ; span
 oddfirst:
+        xor     ax, ax
         lodsb
-        mov     ah, al
-        mov     bh, al
-        shl     bh, 1
-        shl     bh, 1
-        shl     bh, 1
-        shl     bh, 1
-        cmp     bh, 80h;                ; High nybble transparent?
+        ror     ax, 1
+        ror     ax, 1
+        ror     ax, 1
+        ror     ax, 1
+        cmp     ah, 80h;                ; High nybble transparent?
         je      @F
-        mov     al, es:[di]
-        and     al, 0Fh
-        or      al, bh
-        mov     es:[di], al
+        mov     bh, es:[di]
+        and     bh, 0Fh
+        or      ah, bh
+        mov     es:[di], ah
 @@:     inc     di
+        mov     bh, al
         loop    oddx
         jmp     SHORT oddlast
 oddx:
-        mov     bl, ah
-        shr     bl, 1
-        shr     bl, 1
-        shr     bl, 1
-        shr     bl, 1
+        xor     ax, ax
         lodsb
-        mov     ah, al
-        mov     bh, al
-        shl     bh, 1
-        shl     bh, 1
-        shl     bh, 1
-        shl     bh, 1
-        cmp     bx, 08008h              ; Both nybbles transparent?
+        ror     ax, 1
+        ror     ax, 1
+        ror     ax, 1
+        ror     ax, 1
+        mov     bl, bh
+        or      bl, ah
+        cmp     bl, 088h                ; Both nybbles transparent?
         je      oddnxt
-        cmp     bl, 08h                 ; Low nybble transparent?
+        cmp     bh, 08h                 ; Low nybble transparent?
         je      oxparlo
-        cmp     bh, 080h                ; High nybble transparent?
+        cmp     ah, 080h                ; High nybble transparent?
         je      oxparhi
+        mov     bh, al
         mov     al, bl
-        or      al, bh
         stosb
         loop    oddx
         jmp     SHORT oddlast
 oxparlo:
+        mov     bh, al
         mov     al, es:[di]
         and     al, 0Fh
-        or      al, bh
+        or      al, ah
         stosb
         loop    oddx
         jmp     SHORT oddlast
 oxparhi:
-        mov     al, es:[di]
-        and     al, 0F0h
+        xchg    bh, al
+        mov     bl, es:[di]
+        and     bl, 0F0h
         or      al, bl
         stosb
         loop    oddx
         jmp     SHORT oddlast
 oddnxt:
+        mov     bh, al
         inc     di
         loop    oddx
 oddlast:
-        shr     ah, 1
-        shr     ah, 1
-        shr     ah, 1
-        shr     ah, 1
-        cmp     ah, 08h;                ; Low nybble transparent?
+        cmp     bh, 08h;                ; Low nybble transparent?
         je      @F
-        mov     al, es:[di]
-        and     al, 0F0h
-        or      al, ah
-        mov     es:[di], al
+        mov     ah, es:[di]
+        and     ah, 0F0h
+        or      ah, bh
+        mov     es:[di], ah
 @@:     inc     di
         mov     cx, WORD PTR [bp+8]     ; width
         add     di, WORD PTR [bp+16]    ; span
