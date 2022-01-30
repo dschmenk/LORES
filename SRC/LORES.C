@@ -1,7 +1,8 @@
 #include <dos.h>
 #include <conio.h>
 
-char gr160regs[] = {113, 80, 88, 15, 127, 6, 100, 112, 2, 1, 32, 0, 0, 0};
+//char gr160regs[] = {113, 80, 88, 15, 127, 6, 100, 112, 2, 1, 32, 0, 0, 0};
+char gr160regs[] = {113, 80, 90, 15, 127, 6, 100, 112, 2, 1, 32, 0, 0, 0};
 unsigned int scanline[100]; // Precalculated scanline offsets
 
 void txt80(void)
