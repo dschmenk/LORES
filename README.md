@@ -11,16 +11,16 @@ In order to build, MSC 5.1 and MASM 5.1 are used to create a real-mode DOS progr
     MASM /ml TIMER.ASM;
     CL /Ox TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
 
-To build with software scrolling as part of demo, build as:
+To build the software scrolling demo, build as:
 
     CL /Ox /DSW_SCROLL TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
 
 To build with CGA snow checking:
 
-    CL /Ox /DCPYBUF=_cpyBufSnow TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
+    CL /Ox /DCGA_SNOW TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
 
-To build without CGA snow checking (now the default):
+To build without CGA snow checking (the default):
 
-    CL /Ox /DCPYBUF=_cpyBuf TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
+    CL /Ox TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
 
 To run on modern hardware, a DOS emulator such as DOSBox-X can be used. Note that DOSBox in it's current form has CGA emulation bugs (DOSBox-X works fine).
