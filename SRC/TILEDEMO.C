@@ -5,6 +5,7 @@
 #include "tiler.h"
 #include "sprite.h"
 extern volatile unsigned int frameCount;
+
 /*
  * Map and tile data
  */
@@ -253,7 +254,7 @@ int main(int argc, char **argv)
         tileBuf(s, t, 160, 100, scrnbuf);
         spriteBuf(79-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACE_WIDTH, FACE_HEIGHT, face, 80, scrnbuf);
         cpyBuf(0, 0, 160, 100, scrnbuf);
-        if (getch() == 'Q') {txt80(); tileExit(); return 0;}
+        //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
     }
     getch();
     free(scrnbuf);

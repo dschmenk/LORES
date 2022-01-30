@@ -14,12 +14,12 @@ int statusRasterTimer();
 void setStartAddr(int addr);
 void cpyEdgeH(int addr, int count);
 void cpyEdgeV(int addr);
-void _cpyBuf(int addr, int width, int height, int span, unsigned char far *buf);
-void _cpyBufSnow(int addr, int width, int height, int span, unsigned char far *buf);
-#ifndef CPYBUF
-#define CPYBUF  _cpyBuf
+#ifdef CGA_SNOW
+#define TILE    _tile
+#else
+#define TILE    _tileSnow
 #endif
-#define tile(x,y,s,t,w,h,p) CPYBUF((scanline[y]+(x)+orgAddr)&0x3FFF,(w)>>1,h,8,(p)+(t)*8+((s)>>1))
+#define tile(x,y,s,t,w,h,p) TILE((scanline[y]+(x)+orgAddr)&0x3FFF,(w)>>1,h,(p)+(t)*8+((s)>>1))
 /*
  * Fast memory routines
  */
@@ -70,6 +70,7 @@ void tileScrn(unsigned int s, unsigned int t)
     } while (y < 100 - 16);
     tileRow(y, s, 0, 100 - y, tileptr);
 }
+#if 0
 /*
  * Copy buffer to screen
  */
@@ -115,6 +116,7 @@ void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char
      */
     CPYBUF((scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
 }
+#endif
 unsigned long tileScroll(int scrolldir)
 {
     unsigned int hcount, haddr, vaddr;
@@ -267,7 +269,7 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     outp(0x3D8, 0x00);  /* Turn off video */
     tileScrn(orgS, orgT);
     outp(0x3D8, 0x09);  /* Turn on video */
-    enableRasterTimer(198);
+    enableRasterTimer(199);
     setStartAddr(orgAddr >> 1);
 }
 void tileExit(void)

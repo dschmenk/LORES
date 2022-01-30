@@ -58,7 +58,7 @@ tilemem:
         mov     cx, bx
         shr     cx, 1
     rep movsw
-        jnc     SHORT tmeven            ; jump carry clear
+        jnc     tmeven                  ; jump carry clear
         movsb
 tmeven:
         add     di, WORD PTR [bp-16]    ; span
@@ -94,7 +94,7 @@ _tileBufRow     PROC NEAR
         mov     WORD PTR [bp-2], ax     ; x
 ; if (x >= widthBuf)
         cmp     ax, WORD PTR [bp+8]     ; widthBuf
-        jl      SHORT tilewiderow
+        jl      tilewiderow
 ;
 ; Only one tile wide
 ;
@@ -206,7 +206,7 @@ _tileBuf    PROC NEAR
         mov     WORD PTR [bp-4], ax         ; y
 ; if (y >= heightBuf)
         cmp     ax, WORD PTR [bp+10]        ; heightBuf
-        jl      SHORT tiletallrows
+        jl      tiletallrows
 ;
 ; Only one tile tall
 ;
@@ -313,7 +313,7 @@ _tileEdgeH      PROC NEAR
         add     si, ax
         shr     cx, 1
     rep movsw
-        jnc     SHORT @F
+        jnc     @F
         movsb
 @@:     add     bx, 4                       ; tile++
 ; for (x = 16 - s; x < 160 - 16; x += 16)
@@ -335,7 +335,7 @@ tileedgeh:
         add     si, WORD PTR [bp+6]         ; t
         shr     cx, 1
     rep movsw
-        jnc     SHORT @F
+        jnc     @F
         movsb
 @@:     pop     ds
         ASSUME  DS: DGROUP, ES: NOTHING
@@ -384,7 +384,7 @@ _tileEdgeH2     PROC NEAR
         mov     dx, cx
         shr     cx, 1
     rep movsw
-        jnc     SHORT @F
+        jnc     @F
         movsb
 @@:     mov     cx, dx
 ;
@@ -397,7 +397,7 @@ _tileEdgeH2     PROC NEAR
         add     di, 80
         shr     cx, 1
     rep movsw
-        jnc     SHORT @F
+        jnc     @F
         movsb
 @@:     sub     di, 80
         add     bx, 4                       ; tile++
@@ -435,7 +435,7 @@ tileedgeh2:
         mov     dx, cx                      ; done with bx
         shr     cx, 1
     rep movsw
-        jnc     SHORT @F
+        jnc     @F
         movsb
 @@:     mov     cx, dx
 ;
@@ -445,7 +445,7 @@ tileedgeh2:
         add     di, 80
         shr     cx, 1
     rep movsw
-        jnc     SHORT @F
+        jnc     @F
         movsb
 @@:     pop     ds
         ASSUME  DS: DGROUP, ES: NOTHING
@@ -557,7 +557,7 @@ _spriteBuf      PROC NEAR
         lds     si, DWORD PTR [bp+12]   ; sprite
         les     di, DWORD PTR [bp+18]   ; buf
         test    BYTE PTR [bp+4], 1      ; x
-        jnz     SHORT dstodd
+        jnz     dstodd
 evenx:
         lodsb
         cmp     al, 088h                ; Both nybbles transparent?
@@ -593,7 +593,7 @@ evennxt:
         add     di, WORD PTR [bp+16]    ; span
         dec     dx                      ; height
         jnz     evenx
-        jmp    cpybufexit
+        jmp    sprtexit
 dstodd:
         dec     WORD PTR [bp+16]        ; span
 oddfirst:
@@ -605,13 +605,13 @@ oddfirst:
         shl     bh, 1
         shl     bh, 1
         cmp     bh, 80h;                ; High nybble transparent?
-        je      SHORT @F
+        je      @F
         mov     al, es:[di]
         and     al, 0Fh
         or      al, bh
         mov     es:[di], al
 @@:     inc     di
-        loop    SHORT oddx
+        loop    oddx
         jmp     SHORT oddlast
 oddx:
         mov     bl, ah
@@ -660,7 +660,7 @@ oddlast:
         shr     ah, 1
         shr     ah, 1
         cmp     ah, 08h;                ; Low nybble transparent?
-        je      SHORT @F
+        je      @F
         mov     al, es:[di]
         and     al, 0F0h
         or      al, ah
@@ -669,9 +669,9 @@ oddlast:
         mov     cx, WORD PTR [bp+8]     ; width
         add     di, WORD PTR [bp+16]    ; span
         dec     dx                      ; height
-        jz     cpybufexit
+        jz      sprtexit
         jmp     oddfirst
-cpybufexit:
+sprtexit:
         pop     ds
         ASSUME  DS: DGROUP
         pop     si
