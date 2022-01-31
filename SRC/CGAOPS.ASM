@@ -12,6 +12,8 @@ DGROUP	GROUP	CONST, _BSS, _DATA
 EXTRN   _scanline:      WORD
 EXTRN   _orgS:          WORD
 EXTRN   _orgT:          WORD
+EXTRN   _extS:          WORD
+EXTRN   _extT:          WORD
 EXTRN   _orgAddr:       WORD
 EXTRN   _edgeH:         BYTE
 EXTRN   _edgeV:         BYTE
@@ -117,29 +119,20 @@ __cpyBuf         PROC NEAR
 ; height        = bp+10
 ; buf           = bp+12
 ; span          = bp-2
-; extS          = bp-4
-; extT          = bp-6
-; extS = orgS + 160;
-        mov     ax, _orgS
-        add     ax, 160
-        mov     WORD PTR [bp-4], ax     ; extS => ax
-; extT = orgT + 100;
-        mov     dx, _orgT
-        add     dx, 100
-        mov     WORD PTR [bp-6], dx     ; extT => dx
 ;
 ; Quick reject
 ;
-; if ((s > extS) || (s + width  <= orgS) || (t > extT) || (t + height <= orgT))
-        cmp     WORD PTR [bp+4], ax     ; s > extS
-        ja      @B
-        mov     cx, WORD PTR [bp+8]     ; width
+; if ((s >= extS) || (s + width  <= orgS) || (t >= extT) || (t + height <= orgT))
         mov     ax, WORD PTR [bp+4]     ; s
+        cmp     ax, _extS               ; s >= extS
+        jae     @B
+        mov     cx, WORD PTR [bp+8]     ; width
         add     ax, cx
         cmp     ax, _orgS
         jbe     @B
-        cmp     WORD PTR [bp+6], dx     ; t > extT
-        ja      @B
+        mov     dx, WORD PTR [bp+6]     ; t
+        cmp     dx, _extT               ; t >= extT
+        jae      @B
         mov     ax, WORD PTR [bp+10]    ; height
         add     ax, WORD PTR [bp+6]     ; t
         cmp     ax, _orgT
@@ -166,10 +159,10 @@ __cpyBuf         PROC NEAR
 ; if (s + width > extS)
 @@:     mov     ax, WORD PTR [bp+8]     ; width
         add     ax, WORD PTR [bp+4]     ; s
-        cmp     ax, WORD PTR [bp-4]     ; extS
+        cmp     ax, _extS               ; extS
         jbe     cbclipt
 ; width = extS - s;
-        mov     ax, WORD PTR [bp-4]     ; extS
+        mov     ax, _extS               ; extS
         sub     ax, WORD PTR [bp+4]     ; s
         mov     WORD PTR [bp+8], ax     ; width
 ; if (t < orgT)
@@ -189,10 +182,10 @@ cbclipt:
 ; if (t + height > extT)
 @@:     mov     ax, WORD PTR [bp+10]    ; height
         add     ax, WORD PTR [bp+6]     ; t
-        cmp     ax, WORD PTR [bp-6]     ; extT
+        cmp     ax, _extT               ; extT
         jbe     cpybuf
 ; height = extT - t;
-        mov     ax, WORD PTR [bp-6]     ; extT
+        mov     ax, _extT               ; extT
         sub     ax, WORD PTR [bp+6]     ; t
         mov     WORD PTR [bp+10], ax    ; height
 ; CPYBUF((scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
@@ -309,29 +302,17 @@ __cpyBufSnow     PROC NEAR
 ; height        = bp+10
 ; buf           = bp+12
 ; span          = bp-2
-; extS          = bp-4
-; extT          = bp-6
-; extS = orgS + 160;
-        mov     ax, _orgS
-        add     ax, 160
-        mov     WORD PTR [bp-4], ax     ; extS => ax
-; extT = orgT + 100;
-        mov     dx, _orgT
-        add     dx, 100
-        mov     WORD PTR [bp-6], dx     ; extT => dx
-;
-; Quick reject
-;
-; if ((s > extS) || (s + width  <= orgS) || (t > extT) || (t + height <= orgT))
-        cmp     WORD PTR [bp+4], ax     ; s > extS
-        ja      @B
-        mov     cx, WORD PTR [bp+8]     ; width
+; if ((s >= extS) || (s + width  <= orgS) || (t >= extT) || (t + height <= orgT))
         mov     ax, WORD PTR [bp+4]     ; s
+        cmp     ax, _extS               ; s >= extS
+        jae     @B
+        mov     cx, WORD PTR [bp+8]     ; width
         add     ax, cx
         cmp     ax, _orgS
         jbe     @B
-        cmp     WORD PTR [bp+6], dx     ; t > extT
-        ja      @B
+        mov     dx, WORD PTR [bp+6]     ; t
+        cmp     dx, _extT               ; t >= extT
+        jae     @B
         mov     ax, WORD PTR [bp+10]    ; height
         add     ax, WORD PTR [bp+6]     ; t
         cmp     ax, _orgT
@@ -358,10 +339,10 @@ __cpyBufSnow     PROC NEAR
 ; if (s + width > extS)
 @@:     mov     ax, WORD PTR [bp+8]     ; width
         add     ax, WORD PTR [bp+4]     ; s
-        cmp     ax, WORD PTR [bp-4]     ; extS
+        cmp     ax, _extS               ; extS
         jbe     cbsclipt
 ; width = extS - s;
-        mov     ax, WORD PTR [bp-4]     ; extS
+        mov     ax, _extS               ; extS
         sub     ax, WORD PTR [bp+4]     ; s
         mov     WORD PTR [bp+8], ax     ; width
 ; if (t < orgT)
@@ -381,10 +362,10 @@ cbsclipt:
 ; if (t + height > extT)
 @@:     mov     ax, WORD PTR [bp+10]    ; height
         add     ax, WORD PTR [bp+6]     ; t
-        cmp     ax, WORD PTR [bp-6]     ; extT
+        cmp     ax, _extT               ; extT
         jbe     cpybufsnow
 ; height = extT - t;
-        mov     ax, WORD PTR [bp-6]     ; extT
+        mov     ax, _extT               ; extT
         sub     ax, WORD PTR [bp+6]     ; t
         mov     WORD PTR [bp+10], ax    ; height
 ; CPYBUF((scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);

@@ -6,6 +6,8 @@
 #define SCROLL_DOWN     0x20
 
 void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map);
+void tileExit(void);
+void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew);
 unsigned long tileScroll(int scrolldir);
 void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsigned char far *buf);
 void _cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);

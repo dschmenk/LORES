@@ -35,9 +35,16 @@ unsigned char edgeH[2][80], edgeV[100];
 unsigned int orgAddr = 0;
 unsigned int orgS = 0;
 unsigned int orgT = 0;
-unsigned int maxS, maxT, maxOrgS, maxOrgT;
+unsigned int maxS, maxT, maxOrgS, maxOrgT, extS, extT;
 unsigned int widthMap, spanMap;
 unsigned char far * far *tileMap;
+/*
+ * On-the-fly tile updates
+ */
+int                tileUpdateCount = 0;
+unsigned int       tileUpdateS[16];
+unsigned int       tileUpdateT[16];
+unsigned char far *tileUpdatePtr[16];
 
 void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr)
 {
@@ -70,53 +77,20 @@ void tileScrn(unsigned int s, unsigned int t)
     } while (y < 100 - 16);
     tileRow(y, s, 0, 100 - y, tileptr);
 }
-#if 0
 /*
- * Copy buffer to screen
+ * Update tile in map
  */
-void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf)
+void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew)
 {
-    int w, span;
-    unsigned int extS, extT;
-    unsigned int pixaddr;
-
-    /*
-     * Calc screen extents
-     */
-    extS = orgS + 160;
-    extT = orgT + 100;
-    /*
-     * Quick reject
-     */
-    if ((s > extS) || (s + width  <= orgS)
-     || (t > extT) || (t + height <= orgT))
-        return;
-    /*
-     * Clip to screen edges
-     */
-    span = width >> 1;
-    if (s < orgS)
+    *(tileMap + (j * widthMap) + i) = tileNew;
+    //if (tileUpdateCount < 16)
     {
-        width -= orgS - s;
-        buf   += (orgS - s) >> 1;
-        s      = orgS;
+        tileUpdatePtr[tileUpdateCount] = tileNew;
+        tileUpdateS[tileUpdateCount]   = i << 4;
+        tileUpdateT[tileUpdateCount]   = j << 4;
+        tileUpdateCount++;
     }
-    else if (s + width > extS)
-        width = extS - s;
-    if (t < orgT)
-    {
-        height -= orgT - t;
-        buf    += (orgT - t) * span;
-        t       = orgT;
-    }
-    else if (t + height > extT)
-        height = extT - t;
-    /*
-     * Copy to video memory
-     */
-    CPYBUF((scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
 }
-#endif
 unsigned long tileScroll(int scrolldir)
 {
     unsigned int hcount, haddr, vaddr;
@@ -126,6 +100,7 @@ unsigned long tileScroll(int scrolldir)
         if (orgS < maxOrgS)
         {
             orgS   += 2;
+            extS    = orgS + 160;
             orgAddr = (orgAddr + 2) & 0x3FFF;
         }
         else
@@ -136,6 +111,7 @@ unsigned long tileScroll(int scrolldir)
         if (orgS > 0)
         {
             orgS    = (orgS - 2) & 0x0FFFE;
+            extS    = orgS + 160;
             orgAddr = (orgAddr - 2) & 0x3FFF;
         }
         else
@@ -146,6 +122,7 @@ unsigned long tileScroll(int scrolldir)
         if (orgT < maxOrgT)
         {
             orgT    = (orgT + 2) & 0x0FFFE;
+            extT    = orgT + 100;
             orgAddr = (orgAddr + 320) & 0x3FFF;
         }
         else
@@ -156,6 +133,7 @@ unsigned long tileScroll(int scrolldir)
         if (orgT > 0)
         {
             orgT    = (orgT - 2) & 0x0FFFE;
+            extT    = orgT + 100;
             orgAddr = (orgAddr - 320) & 0x3FFF;
         }
         else
@@ -166,6 +144,7 @@ unsigned long tileScroll(int scrolldir)
         if (orgT < maxOrgT + 1)
         {
             orgT++;
+            extT    = orgT + 100;
             orgAddr = (orgAddr + 160) & 0x3FFF;
         }
         else
@@ -176,6 +155,7 @@ unsigned long tileScroll(int scrolldir)
         if (orgT > 0)
         {
             orgT--;
+            extT    = orgT + 100;
             orgAddr = (orgAddr - 160) & 0x3FFF;
         }
         else
@@ -184,22 +164,22 @@ unsigned long tileScroll(int scrolldir)
     /*
      * Pre-render edges based on scroll direction
      */
-     if (scrolldir & SCROLL_RIGHT2)
-     {
-         /*
-          * Fill in left edge
-          */
-         tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
-         vaddr = orgAddr;
-     }
-     else if (scrolldir & SCROLL_LEFT2)
-     {
-         /*
-          * Fill right edge
-          */
-         tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + ((orgS + 158) >> 4));
-         vaddr = (orgAddr + 158) & 0x3FFF;
-     }
+    if (scrolldir & SCROLL_RIGHT2)
+    {
+        /*
+         * Fill in left edge
+         */
+        tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
+        vaddr = orgAddr;
+    }
+    else if (scrolldir & SCROLL_LEFT2)
+    {
+        /*
+         * Fill right edge
+         */
+        tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + ((orgS + 158) >> 4));
+        vaddr = (orgAddr + 158) & 0x3FFF;
+    }
     if (scrolldir & SCROLL_DOWN2)
     {
         /*
@@ -249,6 +229,45 @@ unsigned long tileScroll(int scrolldir)
     if (scrolldir & (SCROLL_LEFT2 | SCROLL_RIGHT2))
         cpyEdgeV(vaddr);
     /*
+     * Draw any updated tiles
+     */
+    while (tileUpdateCount)
+    {
+        unsigned int s, t, width, height;
+        tileUpdateCount--;
+        /*
+         * Quick reject
+         */
+        if ((tileUpdateS[tileUpdateCount] >= extS) || (tileUpdateS[tileUpdateCount] + 16 <= orgS)
+         || (tileUpdateT[tileUpdateCount] >= extT) || (tileUpdateT[tileUpdateCount] + 16 <= orgT))
+            continue;
+        /*
+         * Clip to screen edges
+         */
+        s      = tileUpdateS[tileUpdateCount];
+        t      = tileUpdateT[tileUpdateCount];
+        width  =
+        height = 16;
+        if (s < orgS)
+        {
+            width = 16 - (orgS - s);
+            s     = orgS;
+        }
+        else if (s + 16 > extS)
+            width = extS - s;
+        if (t < orgT)
+        {
+            height = 16 - (orgT - t);
+            t      = orgT;
+        }
+        else if (t + 16 > extT)
+            height = extT - t;
+        /*
+         * BLT to video memory
+         */
+        tile(s - orgS, t - orgT, s & 0x0F, t & 0x0F, width, height, tileUpdatePtr[tileUpdateCount]);
+    }
+    /*
      * Return updated origin as 32 bit value
      */
     outp(0x3D9, 0x06);
@@ -265,6 +284,8 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     maxOrgT  = maxT - 100;
     orgS     = s & 0xFFFE; // S always even
     orgT     = t;
+    extS     = orgS + 160;
+    extT     = orgT + 100;
     orgAddr  = (orgT * 160 + orgS | 1) & 0x3FFF;
     outp(0x3D8, 0x00);  /* Turn off video */
     tileScrn(orgS, orgT);
