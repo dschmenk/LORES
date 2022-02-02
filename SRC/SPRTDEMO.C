@@ -227,9 +227,9 @@ unsigned char face[FACE_HEIGHT*FACE_WIDTH/2] = {
  */
 int main(int argc, char **argv)
 {
-    unsigned int s, t;
+    unsigned int faceS, s, faceT, t;
     unsigned long st;
-    int scrolldir;
+    int movedir, scrolldir;
     unsigned char cycle;
     unsigned char *facebuf;
     unsigned char *scrnbuf;
@@ -242,175 +242,58 @@ int main(int argc, char **argv)
      * Horizontal scroll increment must be two,
      * vertical scroll increment can be two or one.
      */
-    s = 2 << 4;
-    t = 4 << 4;
-    scrolldir = SCROLL_RIGHT2 | SCROLL_UP2;
-#ifdef SW_SCROLL
-    /*
-     * Use software scrolling
-     */
-    tileInit(0, 0, 16, 16, (unsigned char far * far *)tilemap);
-#if 1
-    while (!kbhit())
-    {
-        /*
-         * Change scroll direction at map boundaries
-         */
-        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT2 | SCROLL_RIGHT2;
-        if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP2   | SCROLL_DOWN2;
-        /*
-         * Move origin based on scroll direction
-         */
-        if (scrolldir & SCROLL_LEFT2)
-            s += 2;
-        else if (scrolldir & SCROLL_RIGHT2)
-            s -= 2;
-        if (scrolldir & SCROLL_UP2)
-            t += 2;
-        else if (scrolldir & SCROLL_DOWN2)
-            t -= 2;
-        /*
-         * Place sprite in middle of screen
-         */
-        tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-        spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
-        //outp(0x3D8, 0x00);  /* Turn off video */
-        tileScrn(s, t);
-        //outp(0x3D8, 0x09);  /* Turn on video */
-        cpyBuf(80-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-        //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
-    }
-    getch();
-#else
-    scrnbuf = (unsigned char *)malloc(160/2*100);
-    while (!kbhit())
-    {
-        /*
-         * Change scroll direction at map boundaries
-         */
-        if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT2 | SCROLL_RIGHT2;
-        if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP2   | SCROLL_DOWN2;
-        /*
-         * Move origin based on scroll direction
-         */
-        if (scrolldir & SCROLL_LEFT2)
-            s += 2;
-        else if (scrolldir & SCROLL_RIGHT2)
-            s -= 2;
-        if (scrolldir & SCROLL_UP2)
-            t += 2;
-        else if (scrolldir & SCROLL_DOWN2)
-            t -= 2;
-        /*
-         * Place sprite in middle of screen
-         */
-        tileBuf(s, t, 160, 100, scrnbuf);
-        spriteBuf(79-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACE_WIDTH, FACE_HEIGHT, face, 80, scrnbuf);
-        cpyBuf(0, 0, 160, 100, scrnbuf);
-        //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
-    }
-    getch();
-    free(scrnbuf);
-#endif
-#else // SW_SCROLL
+    movedir = MOVE_RIGHT2 | MOVE_DOWN2;
+    faceS   = 6 << 4;
+    faceT   = 10 << 4;
+    s       = (faceS + FACE_WIDTH/2)  - 80;
+    t       = (faceT + FACE_HEIGHT/2) - 50;
     /*
      * Use hardware scrolling
      */
     tileInit(s, t, 16, 16, (unsigned char far * far *)tilemap);
-#if 1
+    spriteInit();
+    spriteEnable(0, faceS, faceT, FACE_WIDTH, FACE_HEIGHT, face);
     cycle = 0;
     while (!kbhit())
     {
         frameCount = 0;
         while (frameCount < 60)
         {
-            /*
-             * Change scroll direction at map boundaries
-             */
-            if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT2 | SCROLL_RIGHT2;
-            if (t == ((16 << 4) - 102) || t == 0) scrolldir ^= SCROLL_UP2   | SCROLL_DOWN2;
-            /*
-             * Move origin based on scroll direction
-             */
-            if (scrolldir & SCROLL_LEFT2)
-                s += 2;
-            else if (scrolldir & SCROLL_RIGHT2)
-                s -= 2;
-            if (scrolldir & SCROLL_UP2)
-                t += 2;
-            else if (scrolldir & SCROLL_DOWN2)
-                t -= 2;
+            outp(0x3D9, 0x0F);
             /*
              * Update a tile on-the-fly
              */
             tileUpdate(8, 8, tileAnimate[cycle++ & 0x03]);
             /*
-             * Place sprite in middle of screen
-             */
-            outp(0x3D9, 0x0F);
-            tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-            //tileBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-            spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
-            outp(0x3D9, 0x06);
-            st = tileRefresh(scrolldir);
-            outp(0x3D9, 0x00);
-            s  = st;
-            t  = st >> 16;
-            cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-            //cpyBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-            outp(0x3D9, 0x06);
-            //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
-        }
-    }
-    getch();
-#else
-    /*
-     * Switch to scrolling vertically by one
-     */
-    if (scrolldir & SCROLL_UP2)
-        scrolldir ^= SCROLL_UP2 | SCROLL_UP;
-    else if (scrolldir & SCROLL_DOWN2)
-        scrolldir ^= SCROLL_DOWN2 | SCROLL_DOWN;
-    while (!kbhit())
-    {
-        frameCount = 0;
-        while (frameCount < 60)
-        {
-            /*
              * Change scroll direction at map boundaries
              */
-            if (s == ((16 << 4) - 162) || s == 0) scrolldir ^= SCROLL_LEFT2 | SCROLL_RIGHT2;
-            if (t == ((16 << 4) - 101) || t == 0) scrolldir ^= SCROLL_UP    | SCROLL_DOWN;
+            if ((faceS >= ((16 << 4) - FACE_WIDTH - 2))  || (faceS < 2)) movedir ^= MOVE_LEFT2 | MOVE_RIGHT2;
+            if ((faceT >= ((16 << 4) - FACE_HEIGHT - 2)) || (faceT < 2)) movedir ^= MOVE_UP2   | MOVE_DOWN2;
+            st = spriteMove(0, movedir);
+            faceS = st;
+            faceT = st >> 16;
             /*
-             * Move origin based on scroll direction
+             * Attempt to keep sprite centered by scrolling map
              */
-            if (scrolldir & SCROLL_LEFT2)
-                s += 2;
-            else if (scrolldir & SCROLL_RIGHT2)
-                s -= 2;
-            if (scrolldir & SCROLL_UP)
-                t++;
-            else if (scrolldir & SCROLL_DOWN)
-                t--;
-            /*
-             * Place sprite in middle of screen
-             */
-            outp(0x3D9, 0x0F);
-            tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-            spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
+            scrolldir = 0;
+            if (faceS < s + (80 - FACE_WIDTH/2))
+                scrolldir = SCROLL_RIGHT2;
+            else if (faceS > s + (80 - FACE_WIDTH/2))
+                scrolldir = SCROLL_LEFT2;
+            if (faceT < t + (50 - FACE_HEIGHT/2))
+                scrolldir |= SCROLL_DOWN2;
+            else if (faceT > t + (50 - FACE_HEIGHT/2))
+                scrolldir |= SCROLL_UP2;
             outp(0x3D9, 0x06);
             st = tileRefresh(scrolldir);
-            outp(0x3D9, 0x00);
+            spriteRefresh();
             s  = st;
             t  = st >> 16;
-            cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
             outp(0x3D9, 0x06);
             //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
         }
     }
     getch();
-#endif
-#endif // SW_SCROLL
     txt80();
     tileExit();
     return 0;

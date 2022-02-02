@@ -36,7 +36,7 @@ unsigned int orgAddr = 0;
 unsigned int orgS = 0;
 unsigned int orgT = 0;
 unsigned int maxS, maxT, maxOrgS, maxOrgT, extS, extT;
-unsigned int widthMap, spanMap;
+unsigned int widthMap, spanMap, heightMap;
 unsigned char far * far *tileMap;
 /*
  * On-the-fly tile updates
@@ -91,7 +91,10 @@ void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew)
         tileUpdateCount++;
     }
 }
-unsigned long tileScroll(int scrolldir)
+/*
+ * Update tile view
+ */
+unsigned long tileRefresh(int scrolldir)
 {
     unsigned int hcount, haddr, vaddr;
 
@@ -275,18 +278,19 @@ unsigned long tileScroll(int scrolldir)
 }
 void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
 {
-    tileMap  = map;
-    widthMap = width;
-    spanMap  = widthMap << 2;
-    maxS     = (width  << 4) - 2;
-    maxT     = (height << 4) - 2;
-    maxOrgS  = maxS - 160;
-    maxOrgT  = maxT - 100;
-    orgS     = s & 0xFFFE; // S always even
-    orgT     = t;
-    extS     = orgS + 160;
-    extT     = orgT + 100;
-    orgAddr  = (orgT * 160 + orgS | 1) & 0x3FFF;
+    tileMap   = map;
+    widthMap  = width;
+    spanMap   = widthMap << 2;
+    heightMap = height;
+    maxS      = (width  << 4) - 2;
+    maxT      = (height << 4) - 2;
+    maxOrgS   = maxS - 160;
+    maxOrgT   = maxT - 100;
+    orgS      = s & 0xFFFE; // S always even
+    orgT      = t;
+    extS      = orgS + 160;
+    extT      = orgT + 100;
+    orgAddr   = (orgT * 160 + orgS | 1) & 0x3FFF;
     outp(0x3D8, 0x00);  /* Turn off video */
     tileScrn(orgS, orgT);
     outp(0x3D8, 0x09);  /* Turn on video */
