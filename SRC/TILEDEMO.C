@@ -3,7 +3,6 @@
 #include <conio.h>
 #include "lores.h"
 #include "tiler.h"
-#include "sprite.h"
 extern volatile unsigned int frameCount;
 
 /*
