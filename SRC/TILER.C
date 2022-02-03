@@ -106,7 +106,7 @@ void tileScrn(unsigned int s, unsigned int t)
 void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew)
 {
     *(tileMap + (j * widthMap) + i) = tileNew;
-    //if (tileUpdateCount < 16)
+    if (tileUpdateCount < 16)
     {
         tileUpdatePtr[tileUpdateCount] = tileNew;
         tileUpdateS[tileUpdateCount]   = i << 4;
@@ -343,8 +343,8 @@ unsigned long viewRefresh(int scrolldir)
         /*
          * Fill in left edge
          */
-        tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
         vaddr = orgAddr;
+        tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
         spriteIntersect(orgS, orgT, 2, 100);
     }
     else if (scrolldir & SCROLL_LEFT2)
@@ -352,8 +352,8 @@ unsigned long viewRefresh(int scrolldir)
         /*
          * Fill right edge
          */
-        tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + ((orgS + 158) >> 4));
         vaddr = (orgAddr + 158) & 0x3FFF;
+        tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + ((orgS + 158) >> 4));
         spriteIntersect(orgS + 158, orgT, 2, 100);
     }
     if (scrolldir & SCROLL_DOWN2)
@@ -361,9 +361,9 @@ unsigned long viewRefresh(int scrolldir)
         /*
          * Fill in top edge
          */
-        tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
         hcount = 2;
         haddr  = orgAddr;
+        tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
         spriteIntersect(orgS, orgT, 160, 2);
     }
     else if (scrolldir & SCROLL_UP2)
@@ -371,9 +371,9 @@ unsigned long viewRefresh(int scrolldir)
         /*
          * Fill in botom edge
          */
-        tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * widthMap + (orgS >> 4));
         hcount = 2;
         haddr  = (orgAddr + 98 * 160) & 0x3FFF;
+        tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * widthMap + (orgS >> 4));
         spriteIntersect(orgS, orgT + 98, 160, 2);
     }
     else if (scrolldir & SCROLL_DOWN)
@@ -381,9 +381,9 @@ unsigned long viewRefresh(int scrolldir)
         /*
          * Fill in top edge
          */
-        tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
         haddr  = orgAddr;
         hcount = 1;
+        tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
         spriteIntersect(orgS, orgT, 160, 1);
     }
     else if (scrolldir & SCROLL_UP)
@@ -391,9 +391,9 @@ unsigned long viewRefresh(int scrolldir)
         /*
          * Fill in botom edge
          */
-        tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * widthMap + (orgS >> 4));
         haddr  = (orgAddr + 99 * 160) & 0x3FFF;
         hcount = 1;
+        tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * widthMap + (orgS >> 4));
         spriteIntersect(orgS, orgT + 99, 160, 1);
     }
     /*
@@ -425,36 +425,37 @@ unsigned long viewRefresh(int scrolldir)
         unsigned int s, t, width, height;
         tileUpdateCount--;
         /*
-         * Quick reject
+         * Quick on-screen check
          */
-        if ((tileUpdateS[tileUpdateCount] >= extS) || (tileUpdateS[tileUpdateCount] + 16 <= orgS)
-         || (tileUpdateT[tileUpdateCount] >= extT) || (tileUpdateT[tileUpdateCount] + 16 <= orgT))
-            continue;
-        /*
-         * Clip to screen edges
-         */
-        s      = tileUpdateS[tileUpdateCount];
-        t      = tileUpdateT[tileUpdateCount];
-        width  =
-        height = 16;
-        if (s < orgS)
+        if ((tileUpdateS[tileUpdateCount] < extS) && (tileUpdateS[tileUpdateCount] + 16 > orgS)
+         && (tileUpdateT[tileUpdateCount] < extT) && (tileUpdateT[tileUpdateCount] + 16 > orgT))
         {
-            width = 16 - (orgS - s);
-            s     = orgS;
+            /*
+             * Clip to screen edges
+             */
+            s      = tileUpdateS[tileUpdateCount];
+            t      = tileUpdateT[tileUpdateCount];
+            width  =
+            height = 16;
+            if (s < orgS)
+            {
+                width = 16 - (orgS - s);
+                s     = orgS;
+            }
+            else if (s + 16 > extS)
+                width = extS - s;
+            if (t < orgT)
+            {
+                height = 16 - (orgT - t);
+                t      = orgT;
+            }
+            else if (t + 16 > extT)
+                height = extT - t;
+            /*
+             * BLT to video memory
+             */
+            tile(s - orgS, t - orgT, s & 0x0F, t & 0x0F, width, height, tileUpdatePtr[tileUpdateCount]);
         }
-        else if (s + 16 > extS)
-            width = extS - s;
-        if (t < orgT)
-        {
-            height = 16 - (orgT - t);
-            t      = orgT;
-        }
-        else if (t + 16 > extT)
-            height = extT - t;
-        /*
-         * BLT to video memory
-         */
-        tile(s - orgS, t - orgT, s & 0x0F, t & 0x0F, width, height, tileUpdatePtr[tileUpdateCount]);
     }
     /*
      * Update sprites
