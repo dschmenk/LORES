@@ -35,8 +35,8 @@ unsigned char edgeH[2][80], edgeV[100];
 unsigned int orgAddr = 0;
 unsigned int orgS = 0;
 unsigned int orgT = 0;
-unsigned int maxS, maxT, maxOrgS, maxOrgT, extS, extT;
-unsigned int widthMap, spanMap, heightMap;
+unsigned int maxOrgS, maxOrgT, extS, extT;
+unsigned int widthMapS, widthMapT, widthMap, spanMap, heightMap;
 unsigned char far * far *tileMap;
 /*
  * On-the-fly tile updates
@@ -167,10 +167,10 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t)
     struct sprite_t *sprite;
 
     sprite = &spriteTable[index];
-    if (s > widthMap - sprite->width)
-        s = widthMap - sprite->width;
-    if (t > heightMap - sprite->height)
-        t = heightMap - sprite->height;
+    if (s > (widthMapS - sprite->width))
+        s = widthMapS - sprite->width;
+    if (t > (widthMapT - sprite->height))
+        t = widthMapT - sprite->height;
     if (s != sprite->s || t != sprite->t || sprite->state == STATE_MOVING)
     {
         deltaS = s - sprite->s;
@@ -507,10 +507,10 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     widthMap  = width;
     spanMap   = widthMap << 2;
     heightMap = height;
-    maxS      = (width  << 4) - 2;
-    maxT      = (height << 4) - 2;
-    maxOrgS   = maxS - 160;
-    maxOrgT   = maxT - 100;
+    widthMapS = width  << 4;
+    widthMapT = height << 4;
+    maxOrgS   = widthMapS - 160;
+    maxOrgT   = widthMapT - 100;
     orgS      = s & 0xFFFE; // S always even
     orgT      = t;
     extS      = orgS + 160;

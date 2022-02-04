@@ -432,7 +432,7 @@ tileedgeh2:
 ;
 ; Even row
 ;
-        mov     dx, cx                      ; done with bx
+        mov     dx, cx                      ; done with dx
         shr     cx, 1
     rep movsw
         jnc     @F
@@ -443,6 +443,8 @@ tileedgeh2:
 ;
         sub     di, cx
         add     di, 80
+        sub     si, cx
+        add     si, 8
         shr     cx, 1
     rep movsw
         jnc     @F

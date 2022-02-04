@@ -92,10 +92,11 @@ _cpyEdgeV       PROC NEAR
         mov     di, WORD PTR [bp+4]     ; pixaddr
         mov     si, OFFSET DGROUP:_edgeV
 cpyedgev:
-        REPT    100
+        REPT    99
         movsb
         add     di, 159
         ENDM
+        movsb
 @@:     pop     si                      ; Note that this can be called from _cpyBuf
         pop     di
         mov     sp, bp

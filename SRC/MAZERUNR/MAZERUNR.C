@@ -669,9 +669,10 @@ void buildmap(void)
     int row, col;
     unsigned char far *tileptr;
 
-    for (row = 0; row < 16; row++)
-        for (col = 0; col < 16; col++)
+    for (row = BORDER_TOP; row < BORDER_BOTTOM; row++)
+        for (col = BORDER_LEFT; col < BORDER_RIGHT; col++)
             tilemap[row][col] = maze2map[maze[row][col] & 0x0F];
+    tilemap[Exit][BORDER_RIGHT-1] = tileAnimate[0];
 }
 
 /*
@@ -698,8 +699,8 @@ int main(int argc, char **argv)
      */
     incS    = 2;
     incT    = 2;
-    faceS   = 8;
-    faceT   = 8;//Enter << 4;
+    faceS   = 0x02;
+    faceT   = Enter << 4;
     viewS   = 0;
     viewT   = 0;
     /*
@@ -719,7 +720,8 @@ int main(int argc, char **argv)
             /*
              * Update a tile on-the-fly
              */
-            //tileUpdate(8, 8, tileAnimate[cycle++ & 0x02]);
+            if (!(frameCount & 0x0F))
+                tileUpdate(BORDER_RIGHT-1, Exit, tileAnimate[cycle++ & 0x03]);
             /*
              * Change scroll direction at map boundaries
              */
