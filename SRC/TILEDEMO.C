@@ -351,7 +351,7 @@ int main(int argc, char **argv)
             //tileBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
             spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
             outp(0x3D9, 0x06);
-            st = tileRefresh(scrolldir);
+            st = viewRefresh(scrolldir);
             outp(0x3D9, 0x00);
             s  = st;
             t  = st >> 16;
