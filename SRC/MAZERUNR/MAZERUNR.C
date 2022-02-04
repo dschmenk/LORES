@@ -528,23 +528,16 @@ void buildmaze(void)
 
     for (j = 0; j < 100; j += 5)
         hlin(0, 159, j, 15);
-    hlin(0, 159, 99, 15);
     for (i = 0; i < 160; i += 8)
         vlin(i, 0, 99, 15);
-    vlin(159, 0, 99, 15);
     for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
         for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
             maze[j][i] = WALL_TOP | WALL_BOTTOM | WALL_LEFT | WALL_RIGHT;
     /*
-     * Pick entrance at left border
+     * Pick entrance at left border and exit at right border
      */
-    Enter = rand() % BORDER_BOTTOM;
-    vlin(0, Enter * 5 + 1, Enter * 5 + 4, 0);
-    /*
-     * Pick exit at right border
-     */
-    Exit = rand() % BORDER_BOTTOM;
-    vlin(159, Exit * 5 + 1, Exit * 5 + 4, 0);
+    Enter = (rand() % (BORDER_BOTTOM - 2)) + 1;
+    Exit  = (rand() % (BORDER_BOTTOM - 2)) + 1;
     /*
      * Make initial pass erasing boxed-in cells
      */
@@ -599,7 +592,7 @@ void buildmaze(void)
     do
     {
         solved = TRUE;
-        for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
+        for (i = BORDER_RIGHT-1; i >= BORDER_LEFT; i--)
         {
             for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
             {
@@ -663,6 +656,14 @@ void buildmaze(void)
             }
         }
     } while (!solved);
+    /*
+     * Add edges and entry/exit to view
+     */
+    hlin(0, 159, 99, 15);
+    vlin(159, 0, 99, 15);
+    vlin(0, Enter * 5 + 1, Enter * 5 + 4, 0);
+    vlin(159, Exit * 5 + 1, Exit * 5 + 4, 0);
+
 }
 void buildmap(void)
 {
@@ -692,6 +693,7 @@ int main(int argc, char **argv)
     gr160(0);
     buildmaze();
     buildmap();
+    getch();
     /*
      * Set initial coordinates and scroll direction.
      * Horizontal scroll increment must be two,
@@ -702,7 +704,7 @@ int main(int argc, char **argv)
     faceS   = 0x02;
     faceT   = Enter << 4;
     viewS   = 0;
-    viewT   = 0;
+    viewT   = faceT - 4;
     /*
      * Use hardware scrolling
      */
