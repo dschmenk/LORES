@@ -10,9 +10,9 @@ extern volatile unsigned int frameCount;
 #define WALL_LEFT       0x04
 #define WALL_RIGHT      0x08
 #define BORDER_TOP      0
-#define BORDER_BOTTOM   20
+#define BORDER_BOTTOM   (100/3)
 #define BORDER_LEFT     0
-#define BORDER_RIGHT    20
+#define BORDER_RIGHT    (160/3)
 #define FALSE           0
 #define TRUE            (!FALSE)
 #define DIR_ANY         0x00
@@ -362,7 +362,6 @@ unsigned char far *tilemap[BORDER_BOTTOM][BORDER_RIGHT];
  */
 #define FACE_WIDTH      10
 #define FACE_HEIGHT     10
-
 unsigned char face[FACE_HEIGHT*FACE_WIDTH/2] = {
     0x88, 0xE8, 0xEE, 0x8E, 0x88,
     0x88, 0xEE, 0xEE, 0xEE, 0x88,
@@ -380,13 +379,8 @@ int solve(int x, int y, unsigned char dirEntry)
     /*
      * Keep looking for a solution until exit or dead-end is found
      */
-    while (!(x == BORDER_RIGHT-1 && y == Exit))
+    while (!(maze[y][x] & CELL_SOLVED))
     {
-        /*
-         * Check if this cell already solved
-         */
-        if (maze[y][x] & CELL_SOLVED)
-            return TRUE;
         /*
          * Check if this cell already traced (avoid infinite recursion)
          */
@@ -443,41 +437,28 @@ int solve(int x, int y, unsigned char dirEntry)
                     if (dir == DIR_UP)
                     {
                         if (solve(x, y - 1, DIR_DOWN))
-                        {
-                            maze[y][x] |= CELL_SOLVED;
                             return TRUE;
-                        }
                     }
                     else if (dir == DIR_DOWN)
                     {
                         if (solve(x, y + 1, DIR_UP))
-                        {
-                            maze[y][x] |= CELL_SOLVED;
                             return TRUE;
-                        }
                     }
                     else if (dir == DIR_LEFT)
                     {
                         if (solve(x - 1, y, DIR_RIGHT))
-                        {
-                            maze[y][x] |= CELL_SOLVED;
                             return TRUE;
-                        }
                     }
                     else if (dir == DIR_RIGHT)
                     {
                         if (solve(x + 1, y, DIR_LEFT))
-                        {
-                            maze[y][x] |= CELL_SOLVED;
                             return TRUE;
-                        }
                     }
                 }
             }
             return FALSE;
         }
     }
-    maze[y][x] |= CELL_SOLVED;
     return TRUE;
 }
 void cleartrace(void)
@@ -493,10 +474,10 @@ int buildmaze(void)
     int i, j;
     unsigned char wall, solved, solveCount;
 
-    for (j = 0; j < 100; j += 5)
-        hlin(0, 159, j, 15);
-    for (i = 0; i < 160; i += 8)
-        vlin(i, 0, 99, 15);
+    for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
+        hlin(0, BORDER_RIGHT*3, j*3, 15);
+    for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
+        vlin(i*3, 0, BORDER_BOTTOM*3, 15);
     for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
         for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
             maze[j][i] = WALL_TOP | WALL_BOTTOM | WALL_LEFT | WALL_RIGHT;
@@ -506,12 +487,14 @@ int buildmaze(void)
     Enter = (rand() % (BORDER_BOTTOM - 2)) + 1;
     Exit  = (rand() % (BORDER_BOTTOM - 2)) + 1;
     /*
+     * Set exit as solved
+     */
+    maze[Exit][BORDER_RIGHT-1] |= CELL_SOLVED;
+    /*
      * Add edges and entry/exit to view
      */
-    hlin(0, 159, 99, 15);
-    vlin(159, 0, 99, 15);
-    vlin(0, Enter * 5 + 1, Enter * 5 + 4, 0);
-    vlin(159, Exit * 5 + 1, Exit * 5 + 4, 0);
+    vlin(BORDER_LEFT*3,  Enter * 3 + 1, Enter * 3 + 2, 0);
+    vlin(BORDER_RIGHT*3, Exit  * 3 + 1, Exit  * 3 + 2, 0);
     /*
      * Make initial pass erasing boxed-in cells
      */
@@ -538,23 +521,23 @@ int buildmaze(void)
                  */
                 if (wall == WALL_TOP)
                 {
-                    hlin(i * 8 + 1, i * 8 + 7, j * 5, 0);
                     maze[j - 1][i] ^= WALL_BOTTOM;
+                    hlin(i * 3 + 1, i * 3 + 2, j * 3, 0);
                 }
                 else if (wall == WALL_BOTTOM)
                 {
-                    hlin(i * 8 + 1, i * 8 + 7, (j + 1) * 5, 0);
                     maze[j + 1][i] ^= WALL_TOP;
+                    hlin(i * 3 + 1, i * 3 + 2, (j + 1) * 3, 0);
                 }
                 else if (wall == WALL_LEFT)
                 {
-                    vlin(i * 8, j * 5 + 1, j * 5 + 4, 0);
                     maze[j][i - 1] ^= WALL_RIGHT;
+                    vlin(i * 3, j * 3 + 1, j * 3 + 2, 0);
                 }
                 else if (wall == WALL_RIGHT)
                 {
-                    vlin((i + 1) * 8, j * 5 + 1, j * 5 + 4, 0);
                     maze[j][i + 1] ^= WALL_LEFT;
+                    vlin((i + 1) * 3, j * 3 + 1, j * 3 + 2, 0);
                 }
                 maze[j][i] ^= wall;
             }
@@ -605,28 +588,28 @@ int buildmaze(void)
                                 if (maze[yDeadEnd - 1][xDeadEnd] & CELL_TRACED)
                                     continue;
                                 maze[yDeadEnd - 1][xDeadEnd] ^= WALL_BOTTOM;
-                                hlin(xDeadEnd * 8 + 1, xDeadEnd * 8 + 7, yDeadEnd * 5, 0);
+                                hlin(xDeadEnd * 3 + 1, xDeadEnd * 3 + 2, yDeadEnd * 3, 0);
                             }
                             else if (wall == WALL_BOTTOM)
                             {
                                 if (maze[yDeadEnd + 1][xDeadEnd] & CELL_TRACED)
                                     continue;
                                 maze[yDeadEnd + 1][xDeadEnd] ^= WALL_TOP;
-                                hlin(xDeadEnd * 8 + 1, xDeadEnd * 8 + 7, (yDeadEnd + 1) * 5, 0);
+                                hlin(xDeadEnd * 3 + 1, xDeadEnd * 3 + 2, (yDeadEnd + 1) * 3, 0);
                             }
                             else if (wall == WALL_LEFT)
                             {
                                 if (maze[yDeadEnd][xDeadEnd - 1] & CELL_TRACED)
                                     continue;
                                 maze[yDeadEnd][xDeadEnd - 1] ^= WALL_RIGHT;
-                                vlin(xDeadEnd * 8, yDeadEnd * 5 + 1, yDeadEnd * 5 + 4, 0);
+                                vlin(xDeadEnd * 3, yDeadEnd * 3 + 1, yDeadEnd * 3 + 2, 0);
                             }
                             else if (wall == WALL_RIGHT)
                             {
                                 if (maze[yDeadEnd][xDeadEnd + 1] & CELL_TRACED)
                                     continue;
                                 maze[yDeadEnd][xDeadEnd + 1] ^= WALL_LEFT;
-                                vlin((xDeadEnd + 1) * 8, yDeadEnd * 5 + 1, yDeadEnd * 5 + 4, 0);
+                                vlin((xDeadEnd + 1) * 3, yDeadEnd * 3 + 1, yDeadEnd * 3 + 2, 0);
                             }
                             maze[yDeadEnd][xDeadEnd] ^= wall;
                             break;
@@ -648,7 +631,6 @@ void buildmap(void)
             tilemap[row][col] = maze2map[maze[row][col] & 0x0F];
     tilemap[Exit][BORDER_RIGHT-1] = tileExitAnimate[0];
 }
-
 /*
  * Demo tiling and scrolling screen
  */
@@ -668,7 +650,10 @@ int main(int argc, char **argv)
     while (!buildmaze())
     {
         if (kbhit() && (getch() == 'q'))
+        {
+            txt80();
             exit(-1);
+        }
     };
     buildmap();
     //getch();
