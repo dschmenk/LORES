@@ -488,10 +488,10 @@ void cleartrace(void)
         for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
             maze[j][i] &= ~CELL_TRACED;
 }
-void buildmaze(void)
+int buildmaze(void)
 {
     int i, j;
-    unsigned char wall, solved;
+    unsigned char wall, solved, solveCount;
 
     for (j = 0; j < 100; j += 5)
         hlin(0, 159, j, 15);
@@ -505,6 +505,13 @@ void buildmaze(void)
      */
     Enter = (rand() % (BORDER_BOTTOM - 2)) + 1;
     Exit  = (rand() % (BORDER_BOTTOM - 2)) + 1;
+    /*
+     * Add edges and entry/exit to view
+     */
+    hlin(0, 159, 99, 15);
+    vlin(159, 0, 99, 15);
+    vlin(0, Enter * 5 + 1, Enter * 5 + 4, 0);
+    vlin(159, Exit * 5 + 1, Exit * 5 + 4, 0);
     /*
      * Make initial pass erasing boxed-in cells
      */
@@ -556,8 +563,14 @@ void buildmaze(void)
     /*
      * Check every cell for a solution
      */
+    solveCount = 0;
     do
     {
+        /*
+         * Check for a stuck solver
+         */
+        if (solveCount++ > 1)
+            return FALSE;
         solved = TRUE;
         for (i = BORDER_RIGHT-1; i >= BORDER_LEFT; i--)
         {
@@ -623,14 +636,7 @@ void buildmaze(void)
             }
         }
     } while (!solved);
-    /*
-     * Add edges and entry/exit to view
-     */
-    hlin(0, 159, 99, 15);
-    vlin(159, 0, 99, 15);
-    vlin(0, Enter * 5 + 1, Enter * 5 + 4, 0);
-    vlin(159, Exit * 5 + 1, Exit * 5 + 4, 0);
-
+    return TRUE;
 }
 void buildmap(void)
 {
@@ -659,7 +665,11 @@ int main(int argc, char **argv)
     _dos_gettime(&time);
     srand((time.hsecond << 8) | time.second);
     gr160(0);
-    buildmaze();
+    while (!buildmaze())
+    {
+        if (kbhit() && (getch() == 'q'))
+            exit(-1);
+    };
     buildmap();
     //getch();
     /*
