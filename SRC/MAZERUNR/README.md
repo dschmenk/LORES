@@ -5,7 +5,7 @@ A playable demo to show off the tile and sprite library.
 
 https://youtu.be/yLsGmVFOSkE
 
-It generates a random maze and start the player on the left border. A arndomly
+It generates a random maze and start the player on the left border. A randomly
 placed exit will be on the right border. Find your way across the maze using
 the folowing keys:
 
