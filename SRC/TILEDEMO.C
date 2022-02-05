@@ -234,7 +234,7 @@ int main(int argc, char **argv)
     unsigned char *scrnbuf;
 
     buildmap();
-    gr160(0);
+    gr160(BLACK, BROWN);
     facebuf = (unsigned char *)malloc(FACEBUF_HEIGHT*FACEBUF_WIDTH/2);
     /*
      * Set initial coordinates and scroll direction.
@@ -346,18 +346,26 @@ int main(int argc, char **argv)
             /*
              * Place sprite in middle of screen
              */
-            outp(0x3D9, 0x0F);
+#ifdef PROFILE
+            outp(0x3D9, BLACK);
+#endif
             tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
             //tileBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
             spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
-            outp(0x3D9, 0x06);
+#ifdef PROFILE
+            outp(0x3D9, BROWN);
+#endif
             st = viewRefresh(scrolldir);
-            outp(0x3D9, 0x00);
+#ifdef PROFILE
+            outp(0x3D9, BLACK);
+#endif
             s  = st;
             t  = st >> 16;
             cpyBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
             //cpyBuf(s, t, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
-            outp(0x3D9, 0x06);
+#ifdef PROFILE
+            outp(0x3D9, BROWN);
+#endif
             //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
         }
     }

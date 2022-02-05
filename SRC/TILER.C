@@ -8,6 +8,10 @@ extern volatile unsigned char rasterTimer;
 int enableRasterTimer(int scanline);
 int disableRasterTimer(void);
 int statusRasterTimer();
+#ifdef PROFILE
+extern unsigned char borderColor;
+unsigned char borderProfile; // Contrasting border color
+#endif
 /*
  * Fast CGA routines
  */
@@ -105,13 +109,24 @@ void tileScrn(unsigned int s, unsigned int t)
  */
 void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew)
 {
+    unsigned int s, t;
+
     *(tileMap + (j * widthMap) + i) = tileNew;
-    if (tileUpdateCount < 16)
+    s = i << 4;
+    t = j << 4;
+    /*
+     * Check for on-screen update
+     */
+    if ((s < extS) && (s + 16 > orgS)
+     && (t < extT) && (t + 16 > orgT))
     {
-        tileUpdatePtr[tileUpdateCount] = tileNew;
-        tileUpdateS[tileUpdateCount]   = i << 4;
-        tileUpdateT[tileUpdateCount]   = j << 4;
-        tileUpdateCount++;
+        if (tileUpdateCount < 16)
+        {
+            tileUpdatePtr[tileUpdateCount] = tileNew;
+            tileUpdateS[tileUpdateCount]   = i << 4;
+            tileUpdateT[tileUpdateCount]   = j << 4;
+            tileUpdateCount++;
+        }
     }
 }
 /*
@@ -409,7 +424,9 @@ unsigned long viewRefresh(int scrolldir)
      * The following happens after last active scanline
      */
     setStartAddr(orgAddr >> 1);
-    outp(0x3D9, 0x00);
+#ifdef PROFILE
+    outp(0x3D9, borderProfile);
+#endif
     /*
      * Fill in edges
      */
@@ -422,40 +439,37 @@ unsigned long viewRefresh(int scrolldir)
      */
     while (tileUpdateCount)
     {
-        unsigned int s, t, width, height;
+        int s, t, width, height;
         tileUpdateCount--;
         /*
-         * Quick on-screen check
+         * Clip to screen edges
          */
-        if ((tileUpdateS[tileUpdateCount] < extS) && (tileUpdateS[tileUpdateCount] + 16 > orgS)
-         && (tileUpdateT[tileUpdateCount] < extT) && (tileUpdateT[tileUpdateCount] + 16 > orgT))
+        s      = tileUpdateS[tileUpdateCount];
+        t      = tileUpdateT[tileUpdateCount];
+        width  =
+        height = 16;
+        if (s < orgS)
         {
-            /*
-             * Clip to screen edges
-             */
-            s      = tileUpdateS[tileUpdateCount];
-            t      = tileUpdateT[tileUpdateCount];
-            width  =
-            height = 16;
-            if (s < orgS)
-            {
-                width = 16 - (orgS - s);
-                s     = orgS;
-            }
-            else if (s + 16 > extS)
-                width = extS - s;
-            if (t < orgT)
-            {
-                height = 16 - (orgT - t);
-                t      = orgT;
-            }
-            else if (t + 16 > extT)
-                height = extT - t;
+            width = 16 - (orgS - s);
+            s     = orgS;
+        }
+        else if (s + 16 > extS)
+            width = extS - s;
+        if (t < orgT)
+        {
+            height = 16 - (orgT - t);
+            t      = orgT;
+        }
+        else if (t + 16 > extT)
+            height = extT - t;
+        /*
+         * Check for on-screen values
+         */
+        if (width > 0 && width <= 16 && height > 0 && height <= 16)
             /*
              * BLT to video memory
              */
             tile(s - orgS, t - orgT, s & 0x0F, t & 0x0F, width, height, tileUpdatePtr[tileUpdateCount]);
-        }
     }
     /*
      * Update sprites
@@ -491,10 +505,12 @@ unsigned long viewRefresh(int scrolldir)
         }
         sprite++;
     }
+#ifdef PROFILE
+    outp(0x3D9, borderColor);
+#endif
     /*
      * Return updated origin as 32 bit value
      */
-    outp(0x3D9, 0x06);
     return ((unsigned long)orgT << 16) | orgS;
 }
 void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
@@ -526,6 +542,9 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
      */
     for (i = 0; i < NUM_SPRITES; i++)
         spriteTable[i].state = STATE_INACTIVE;
+#ifdef PROFILE
+    borderProfile = borderColor == BLACK ? WHITE : BLACK;
+#endif
 }
 void tileExit(void)
 {

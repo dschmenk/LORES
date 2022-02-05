@@ -258,7 +258,7 @@ int main(int argc, char **argv)
     unsigned char *scrnbuf;
 
     buildmap();
-    gr160(0);
+    gr160(BLACK, BROWN);
     facebuf = (unsigned char *)malloc(FACEBUF_HEIGHT*FACEBUF_WIDTH/2);
     /*
      * Set initial coordinates and scroll direction.
@@ -284,7 +284,9 @@ int main(int argc, char **argv)
         frameCount = 0;
         while (frameCount < 60)
         {
-            outp(0x3D9, 0x0F);
+#ifdef PROFILE
+            outp(0x3D9, BLACK);
+#endif
             /*
              * Update a tile on-the-fly
              */
@@ -309,11 +311,15 @@ int main(int argc, char **argv)
                 scrolldir |= SCROLL_DOWN2;
             else if (faceT > viewT + (50 - FACE_HEIGHT/2))
                 scrolldir |= SCROLL_UP2;
-            outp(0x3D9, 0x06);
+#ifdef PROFILE
+            outp(0x3D9, BROWN);
+#endif
             st = viewRefresh(scrolldir);
             viewS  = st;
             viewT  = st >> 16;
-            outp(0x3D9, 0x06);
+#ifdef PROFILE
+            outp(0x3D9, BROWN);
+#endif
             //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
         }
     }

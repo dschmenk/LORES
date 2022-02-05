@@ -91,7 +91,6 @@ unsigned char exitile3[] = {0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                            0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                            0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                            0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
-
 unsigned char far *tileExitAnimate[4] = {exitile0, exitile1, exitile2, exitile3};
 // WALL_TOP        0x01
 // WALL_BOTTOM     0x02
@@ -358,7 +357,7 @@ unsigned char far *maze2map[16] = {
                             tile8, tile9, tileA, tileB, tileC, tileD, tileE, tileF};
 unsigned char far *tilemap[BORDER_BOTTOM][BORDER_RIGHT];
 /*
- * 20X20 Sprite
+ * 10X10 Sprite
  */
 #define FACE_WIDTH      10
 #define FACE_HEIGHT     10
@@ -621,6 +620,9 @@ int buildmaze(void)
     } while (!solved);
     return TRUE;
 }
+/*
+ * convert maze into tile map
+ */
 void buildmap(void)
 {
     int row, col;
@@ -646,7 +648,7 @@ int main(int argc, char **argv)
 
     _dos_gettime(&time);
     srand((time.hsecond << 8) | time.second);
-    gr160(0);
+    gr160(BLACK, BLACK);
     while (!buildmaze())
     {
         if (kbhit() && (getch() == 'q'))
@@ -658,9 +660,7 @@ int main(int argc, char **argv)
     buildmap();
     //getch();
     /*
-     * Set initial coordinates and scroll direction.
-     * Horizontal scroll increment must be two,
-     * vertical scroll increment can be two or one.
+     * Set initial coordinates
      */
     mazeX   = BORDER_LEFT;
     mazeY   = Enter;
@@ -682,7 +682,9 @@ int main(int argc, char **argv)
     quit      = FALSE;
     while (!quit)
     {
-        outp(0x2D9, 0x0F);
+#ifdef PROFILE
+        outp(0x2D9, GREY); // Show game logic as grey border
+#endif
         /*
          * Update a Exit tile on-the-fly
          */
@@ -778,11 +780,12 @@ int main(int argc, char **argv)
             scrolldir |= SCROLL_DOWN2;
         else if (faceT > viewT + (50 - FACE_HEIGHT/2))
             scrolldir |= SCROLL_UP2;
-        outp(0x2D9, 0x06);
+#ifdef PROFILE
+        outp(0x2D9, BLACK);
+#endif
         st = viewRefresh(scrolldir);
         viewS  = st;
         viewT  = st >> 16;
-        outp(0x2D9, 0x06);
     }
     tileExit();
     txt80();

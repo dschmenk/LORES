@@ -15,7 +15,7 @@
 #define MAGENTA         (BLUE|RED)
 #define WHITE           (BLUE|GREEN|RED)
 void txt80(void);
-void gr160(unsigned char color);
+void gr160(unsigned char fill, unsigned char border);
 void plot(unsigned int x, unsigned int y, unsigned char color);
 void hlin(unsigned int x1, unsigned int x2, unsigned int y, unsigned char color);
 void vlin(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color);

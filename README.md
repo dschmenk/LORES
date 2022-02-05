@@ -5,22 +5,16 @@ A simple proof-of-concept demonstrating hardware scrolling with a tile based vir
 video : https://youtu.be/rIbONSlyQeU
 
 In order to build, MSC 5.1 and MASM 5.1 are used to create a real-mode DOS program.
+The build setup has been greatly expanded to create four versions of every binary/library.
+Options are:
 
-    MASM /ml CGAOPS.ASM;
-    MASM /ml MEMOPS.ASM;
-    MASM /ml TIMER.ASM;
-    CL /Ox TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
+- LORES.LIB: fast, no snow checking or profiling
+- LRPROF.LIB: fast with border color profiling
+- LRSNOW.LIB: snow checking
+- LRPROSNO.LIB: snow checking with border color profiling
 
-To build the software scrolling demo, build as:
+A library for each build option is located in the LIB directory. Header files are now under the INC directory.
 
-    CL /Ox /DSW_SCROLL TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
-
-To build with CGA snow checking:
-
-    CL /Ox /DCGA_SNOW TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
-
-To build without CGA snow checking (the default):
-
-    CL /Ox TILEDEMO.C LORES.C TILER.C TIMER.OBJ MEMOPS.OBJ CGAOPS.OBJ
+A playable demo, Maze Runner, is available in the SRC\\MAZERUNR directory. It also build four versions of the EXE for each option combination.
 
 To run on modern hardware, a DOS emulator such as DOSBox-X can be used. Note that DOSBox in it's current form has CGA emulation bugs (DOSBox-X works fine).
