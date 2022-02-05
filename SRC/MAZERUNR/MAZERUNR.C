@@ -10,9 +10,9 @@ extern volatile unsigned int frameCount;
 #define WALL_LEFT       0x04
 #define WALL_RIGHT      0x08
 #define BORDER_TOP      0
-#define BORDER_BOTTOM   (100/3)
+#define BORDER_BOTTOM   20 // (100/3)
 #define BORDER_LEFT     0
-#define BORDER_RIGHT    (160/3)
+#define BORDER_RIGHT    20 // (160/3)
 #define FALSE           0
 #define TRUE            (!FALSE)
 #define DIR_ANY         0x00
