@@ -2,8 +2,6 @@
 
 Real mode DOS library providing hardware assisted scrolling using a tile based virtual map and sprites.
 
-[Video](https://youtu.be/rIbONSlyQeU)
-
 Contents:
 
 - [Overview](#overview)
@@ -17,7 +15,9 @@ Contents:
   - [Tile Map](#tile-map)
   - [Sprites](#sprites-1)
   - [View](#view)
-- [Building](#building-the-library-and-demos)
+- [Building](#building)
+- [Samples and Demos](#samples-and-demos)
+  - [Video](https://youtu.be/rIbONSlyQeU)
 
 ## Overview
 The IBM PC was initially offered with two video cards. One was a monochrome, text only, 80 column by 25 line display. The other video card was the Color Graphics Adapter: CGA. It supported text and graphics mode, up to 640x200 high resolution single color graphics mode. A 320x200 four color graphics mode was also supported. However, a third mode, a low resolution 160x100 with sixteen colors was possible but not supported by the BIOS ROM. This third mode was in fact a tweaked 80 column text mode, setting the character cell to only two pixels high. By setting the text character to an extended code that split the cell in to foreground and background halves, each half cell could be set to one of sixteen colors creating 160x100 pseudo graphics mode.
@@ -160,7 +160,7 @@ Big daddy of them all. Coordinates tile, sprite and scrolling updates. Return (s
     unsigned long viewRefresh(int scrolldir);
 
 
-## Building the library and demos
+## Building
 
 In order to build, MSC 5.1 and MASM 5.1 are used to create a real-mode DOS program.
 The build setup has been greatly expanded to create four versions of every binary/library. It is very sophisticated - a DOS BATCH file: BUILD.BAT  ;-)
@@ -175,18 +175,6 @@ Built libraries are:
 
 Libraries are located in the LIB directory. Header files are in the INC directory.
 
-Two samples used to develop the library API are TILEDEMO.C and SPRTDEMO.C. TILEDEMO.EXE can be built using software or hardware scrolling:
-
-    cl /Ox /I..\inc /DSW_SCROLL tiledemo.c ..\lib\lores.lib
-
-for the software implementation.
-
-    cl /Ox /I..\inc tiledemo.c ..\lib\lores.lib
-
-for the hardware implementation. This is a testbed program, so it isn't very pretty. There are some #define options to change how each of the software and hardware versions will run.
-
-A playable demo, [Maze Runner](SRC/MAZERUNR/README.md), is available in the SRC\\MAZERUNR directory. It is also builds four versions of the EXE for each option combination using the BUILD.BAT in the Maze Runner directory.
-
 When building your own code, set the define for use with the correct library:
 
 For border color profiling:
@@ -200,5 +188,19 @@ For CGA snow checking:
 For both:
 
     /DPROFILE /DCGA_SNOW  : LRPROSNO.LIB
+
+## Samples and Demos
+
+Two samples used to develop the library API are TILEDEMO.C and SPRTDEMO.C. TILEDEMO.EXE can be built using software or hardware scrolling:
+
+    cl /Ox /I..\inc /DSW_SCROLL tiledemo.c ..\lib\lores.lib
+
+for the software implementation.
+
+    cl /Ox /I..\inc tiledemo.c ..\lib\lores.lib
+
+for the hardware implementation. This is a testbed program, so it isn't very pretty. There are some #define options to change how each of the software and hardware versions will run.
+
+A playable demo, [Maze Runner](SRC/MAZERUNR/README.md), is available in the SRC\\MAZERUNR directory. It is also builds four versions of the EXE for each option combination using the BUILD.BAT in the Maze Runner directory.
 
 To run on modern hardware, a DOS emulator such as DOSBox-X can be used. Note that DOSBox in it's current form has CGA emulation bugs (DOSBox-X works fine).
