@@ -1,8 +1,23 @@
-# CGA LoRes 160x100 16 color scrolling and sprite library
+# CGA LoRes 160x100 16 Color Scrolling Tile and Sprite Library
 
 Real mode DOS library providing hardware assisted scrolling using a tile based virtual map and sprites.
 
-video : https://youtu.be/rIbONSlyQeU
+[Video](https://youtu.be/rIbONSlyQeU)
+
+Contents:
+
+- [Overview](#overview)
+- [Implementation](#implementation)
+  - [Scrolling and Tile Maps](#scrolling-and-tile-maps)
+  - [Sprites](#sprites)
+- [Profiling](#profiling)
+- [Dealing with CGA snow](#dealing-with-cga-snow)
+- [The API](#the-api)
+  - [Basic LoRes Routines](#basic-lores-routines)
+  - [Tile Map](#tile-map)
+  - [Sprites](#sprites-1)
+  - [View](#view)
+- [Building](#building-the-library-and-demos)
 
 ## Overview
 The IBM PC was initially offered with two video cards. One was a monochrome, text only, 80 column by 25 line display. The other video card was the Color Graphics Adapter: CGA. It supported text and graphics mode, up to 640x200 high resolution single color graphics mode. A 320x200 four color graphics mode was also supported. However, a third mode, a low resolution 160x100 with sixteen colors was possible but not supported by the BIOS ROM. This third mode was in fact a tweaked 80 column text mode, setting the character cell to only two pixels high. By setting the text character to an extended code that split the cell in to foreground and background halves, each half cell could be set to one of sixteen colors creating 160x100 pseudo graphics mode.
@@ -30,7 +45,7 @@ To take advantage of the additional time available during inactive video, a pseu
 
 Graphics in games is always time critical, even more so with this library. In order to figure out where time is spent in the library and application code, a nifty feature of the CGA is used: border colors. The CGA allows real time updates to the border color. By changing the color of the border in sections of code, a bar graph of sorts is generated in the screen border regions. Because all rendering is synchronized to the inactive video timing, the changing of the border colors start with the updating of the on-screen view. It is informative to see where CPU time is spent throughout the code and can help optimize or change algorithms to fit the desired frame rate.
 
-## Dealing with CGA snow
+## Dealing with CGA Snow
 
 It is quite possible that all rendering tasks won't complete during inactive video, leading to snow if care isn't taken. The low level routines in the library come in two version, one that goes as fast as it can, the other checking for active video to avoid snow when writing to video memory. To completely avoid snow would make the low level routines unusably slow, so the code makes a "best effort" attempt to avoid snow. This is an area of continuing development.
 
@@ -38,7 +53,7 @@ It is quite possible that all rendering tasks won't complete during inactive vid
 
 This library takes a tiered approach to provide low level access to the CGA up to a fully managed tile map and sprite environment. There isn't a requirement to use all the features of the API, but some API calls are necessary provide baseline functionality.
 
-### Basic LoRes routines
+### Basic LoRes Routines
 
 The simplest functions set the mode and provide low level access to the graphics operations. Tiling and sprites need not even be enabled for these routines.
 
@@ -170,7 +185,7 @@ for the software implementation.
 
 for the hardware implementation. This is a testbed program, so it isn't very pretty. There are some #define options to change how each of the software and hardware versions will run.
 
-A playable demo, Maze Runner, is available in the SRC\\MAZERUNR directory. It is also builds four versions of the EXE for each option combination using the BUILD.BAT in the Maze Runner directory.
+A playable demo, [Maze Runner](SRC/MAZERUNR/README.md), is available in the SRC\\MAZERUNR directory. It is also builds four versions of the EXE for each option combination using the BUILD.BAT in the Maze Runner directory.
 
 When building your own code, set the define for use with the correct library:
 
