@@ -683,7 +683,7 @@ int main(int argc, char **argv)
     while (!quit)
     {
 #ifdef PROFILE
-        outp(0x2D9, GREY); // Show game logic as grey border
+        rasterBorder(GREY); // Show game logic as grey border
 #endif
         /*
          * Update a Exit tile on-the-fly
@@ -781,7 +781,7 @@ int main(int argc, char **argv)
         else if (faceT > viewT + (50 - FACE_HEIGHT/2))
             scrolldir |= SCROLL_UP2;
 #ifdef PROFILE
-        outp(0x2D9, BLACK);
+        rasterBorder(BLACK);
 #endif
         st = viewRefresh(scrolldir);
         viewS  = st;
