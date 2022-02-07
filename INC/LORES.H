@@ -15,7 +15,7 @@
 #define MAGENTA         (BLUE|RED)
 #define WHITE           (BLUE|GREEN|RED)
 #define rasterBorder(c) outp(0x3D9, c)
-#define rasterDisable() outp(0x3D8, 0x00)
+#define rasterDisable() outp(0x3D8, 0x01)
 #define rasterEnable()  outp(0x3D8, 0x09)
 void txt80(void);
 void gr160(unsigned char fill, unsigned char border);
