@@ -15,7 +15,7 @@ void tileScrn(unsigned int s, unsigned int t);
 void spriteBuf(int x, int y, int width, int height, unsigned char far *sprite, int span, unsigned char far *buf);
 void spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *sprite);
 void spriteDisable(int index);
-//void spriteImage(int index, unsigned char far *imageNew);
+void spriteImage(int index, unsigned char far *imageNew);
 void spriteUpdate(int index, unsigned char far *imageNew);
 unsigned long spritePosition(int index, unsigned int s, unsigned int t);
 /*
