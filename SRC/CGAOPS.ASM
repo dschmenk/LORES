@@ -546,7 +546,9 @@ __plot          PROC NEAR
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x
         add     di, dx
+        add     di, _orgAddr
         or      di, 0001h
+        and     di, 03FFFh
         mov     ah, BYTE PTR [bp+8]     ; color
         mov     al, es:[di]
         shr     dx, 1
@@ -584,7 +586,9 @@ __plotSnow    PROC NEAR
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x
         add     di, dx
+        add     di, _orgAddr
         or      di, 0001h
+        and     di, 03FFFh
         mov     ah, BYTE PTR [bp+8]     ; color
         mov     al, es:[di]
         shr     dx, 1
@@ -626,7 +630,9 @@ __hlin          PROC NEAR
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x1
         add     di, dx
+        add     di, _orgAddr
         or      di, 0001h
+        and     di, 03FFFh
         mov     ah, BYTE PTR [bp+10]     ; color
         mov     al, ah
         shl     ah, 1
@@ -692,7 +698,9 @@ __hlinSnow      PROC NEAR
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x1
         add     di, dx
+        add     di, _orgAddr
         or      di, 0001h
+        and     di, 03FFFh
         mov     ah, BYTE PTR [bp+10]     ; color
         mov     al, ah
         shl     ah, 1
@@ -778,7 +786,9 @@ __vlin          PROC NEAR
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x
         add     di, dx
+        add     di, _orgAddr
         or      di, 0001h
+        and     di, 03FFFh
         shr     bx, 1
         mov     cx, WORD PTR [bp+8]     ; y2
         sub     cx, bx
@@ -821,7 +831,9 @@ __vlinSnow      PROC NEAR
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x
         add     di, dx
+        add     di, _orgAddr
         or      di, 0001h
+        and     di, 03FFFh
         shr     bx, 1
         mov     cx, WORD PTR [bp+8]     ; y2
         sub     cx, bx

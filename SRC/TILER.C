@@ -4,10 +4,6 @@
 #include "tiler.h"
 
 extern unsigned int scanline[100]; // Precalculated scanline offsets
-extern volatile unsigned char rasterTimer;
-int enableRasterTimer(int scanline);
-int disableRasterTimer(void);
-int statusRasterTimer();
 #ifdef PROFILE
 extern unsigned char borderColor;
 unsigned char borderProfile; // Contrasting border color
@@ -15,7 +11,6 @@ unsigned char borderProfile; // Contrasting border color
 /*
  * Fast CGA routines
  */
-void setStartAddr(int addr);
 void cpyEdgeH(int addr, int count);
 void cpyEdgeV(int addr);
 #ifdef CGA_SNOW
@@ -425,7 +420,7 @@ unsigned long viewRefresh(int scrolldir)
      */
     setStartAddr(orgAddr >> 1);
 #ifdef PROFILE
-    outp(0x3D9, borderProfile);
+    rasterBorder(borderProfile);
 #endif
     /*
      * Fill in edges
@@ -506,7 +501,7 @@ unsigned long viewRefresh(int scrolldir)
         sprite++;
     }
 #ifdef PROFILE
-    outp(0x3D9, borderColor);
+    rasterBorder(borderColor);
 #endif
     /*
      * Return updated origin as 32 bit value
@@ -532,9 +527,9 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     extS      = orgS + 160;
     extT      = orgT + 100;
     orgAddr   = (orgT * 160 + orgS | 1) & 0x3FFF;
-    outp(0x3D8, 0x00);  /* Turn off video */
+    rasterDisable(); /* Turn off video */
     tileScrn(orgS, orgT);
-    outp(0x3D8, 0x09);  /* Turn on video */
+    rasterEnable();  /* Turn on video */
     enableRasterTimer(199);
     setStartAddr(orgAddr >> 1);
     /*

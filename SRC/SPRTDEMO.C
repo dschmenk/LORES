@@ -285,7 +285,7 @@ int main(int argc, char **argv)
         while (frameCount < 60)
         {
 #ifdef PROFILE
-            outp(0x3D9, BLACK);
+            rasterBorder(BLACK);
 #endif
             /*
              * Update a tile on-the-fly
@@ -312,13 +312,13 @@ int main(int argc, char **argv)
             else if (faceT > viewT + (50 - FACE_HEIGHT/2))
                 scrolldir |= SCROLL_UP2;
 #ifdef PROFILE
-            outp(0x3D9, BROWN);
+            rasterBorder(BROWN);
 #endif
             st = viewRefresh(scrolldir);
             viewS  = st;
             viewT  = st >> 16;
 #ifdef PROFILE
-            outp(0x3D9, BROWN);
+            rasterBorder(BROWN);
 #endif
             //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
         }

@@ -25,7 +25,8 @@ void gr160(unsigned char fill, unsigned char border)
         outp(0x3D4, i); outp(0x3D5, gr160regs[i]);
     }
     outp(0x3D8, 0x09);      // Turn off blink attribute
-    outp(0x3D9, border);    // Set border
+    borderColor = border & 0x0F;
+    rasterBorder(borderColor);    // Set border
     fill = (fill << 4) | fill;
     wfill = 221 | (fill << 8);
     for (i = 0; i < 8192; i++)
@@ -36,7 +37,7 @@ void gr160(unsigned char fill, unsigned char border)
     for (i = 0; i < 100; i++)
         scanline[i] = i * 160;
 }
-nt rect(unsigned int x, unsigned int y, int width, int height, unsigned char color)
+void rect(unsigned int x, unsigned int y, int width, int height, unsigned char color)
 {
     unsigned int x2;
 
@@ -157,5 +158,30 @@ void line(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, un
         vlin(x2, ps, y2, color); // Final span
     }
 }
-
+void text(unsigned int x, unsigned int y, unsigned char color, char *string)
+{
+    unsigned int ix, iy;
+    unsigned char glyphbits, scanbit;
+    unsigned char far *glyphptr;
+
+    while (*string)
+    {
+        glyphptr = (unsigned char far *)0xFFA6000EL + (unsigned char)*string++ * 8;
+        for (iy = y; iy < (y + 8); iy++)
+        {
+            if (glyphbits = *glyphptr++)
+            {
+                scanbit = 0x80;
+                for (ix = x; scanbit; ix++)
+                {
+                    if (scanbit & glyphbits)
+                        plot(ix, iy, color);
+                    scanbit >>= 1;
+                }
+            }
+        }
+        x += 8;
+    }
+}
+
 

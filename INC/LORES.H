@@ -14,10 +14,14 @@
 #define CYAN            (BLUE|GREEN)
 #define MAGENTA         (BLUE|RED)
 #define WHITE           (BLUE|GREEN|RED)
+#define rasterBorder(c) outp(0x3D9, c)
+#define rasterDisable() outp(0x3D8, 0x00)
+#define rasterEnable()  outp(0x3D8, 0x09)
 void txt80(void);
 void gr160(unsigned char fill, unsigned char border);
 void line(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned char color);
-int rect(unsigned int x, unsigned int y, int width, int height, unsigned char color);
+void rect(unsigned int x, unsigned int y, int width, int height, unsigned char color);
+void text(unsigned int x, unsigned int y, unsigned char color, char *string);
 void _plot(unsigned int x, unsigned int y, unsigned char color);
 void _hlin(unsigned int x1, unsigned int x2, unsigned int y, unsigned char color);
 void _vlin(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color);
@@ -37,3 +41,8 @@ void _cpyBufSnow(unsigned int s, unsigned int t, int width, int height, unsigned
 #define vlin    _vlin
 #define cpyBuf  _cpyBuf
 #endif
+extern volatile unsigned char rasterTimer;
+int enableRasterTimer(int scanline);
+int disableRasterTimer(void);
+int statusRasterTimer();
+void setStartAddr(int addr); // Synchronously set CRTC start address with end of active video
