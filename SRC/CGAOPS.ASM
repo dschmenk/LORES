@@ -530,5 +530,326 @@ tilesnxt:
         ret
 __tileSnow      ENDP
 
+        PUBLIC  __plot
+; void _plot(unsigned int x, unsigned int y, unsigned char color)
+__plot          PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+; x             = bp+4
+; y             = bp+6
+; color         = bp+8
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     bx, WORD PTR [bp+6]     ; y
+        shl     bx, 1
+        mov     di, WORD PTR _scanline[bx]
+        mov     dx, WORD PTR [bp+4]     ; x
+        add     di, dx
+        or      di, 0001h
+        mov     ah, BYTE PTR [bp+8]     ; color
+        mov     al, es:[di]
+        shr     dx, 1
+        jnc     @F
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        and     al, 0Fh
+        jmp     SHORT plotit
+@@:     and     ax, 0FF0h
+plotit:
+        or      al, ah
+        mov     es:[di], al
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+__plot          ENDP
+
+        PUBLIC  __plotSnow
+; void _plotSnow(unsigned int x, unsigned int y, unsigned char color)
+__plotSnow    PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+; x             = bp+4
+; y             = bp+6
+; color         = bp+8
+        ;
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     bx, WORD PTR [bp+6]     ; y
+        shl     bx, 1
+        mov     di, WORD PTR _scanline[bx]
+        mov     dx, WORD PTR [bp+4]     ; x
+        add     di, dx
+        or      di, 0001h
+        mov     ah, BYTE PTR [bp+8]     ; color
+        mov     al, es:[di]
+        shr     dx, 1
+        jnc     @F
+        and     ax, 0F00Fh
+        jmp     SHORT   plotsit
+@@:     shl     al, 1
+        shl     al, 1
+        shl     al, 1
+        shl     al, 1
+        and     ax, 0FF0h
+plotsit:
+        or      ah, al
+        mov     dx, 03DAh
+@@:     in      al, dx
+        shr     al, 1
+        jnc     @B
+        mov     es:[di], ah
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+__plotSnow      ENDP
+
+        PUBLIC  __hlin
+; void _hlin(unsigned int x1, unsigned int x2, unsigned int y, unsigned char color)
+__hlin          PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+; x1            = bp+4
+; x2            = bp+6
+; y             = bp+8
+; color         = bp+10
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     bx, WORD PTR [bp+8]     ; y
+        shl     bx, 1
+        mov     di, WORD PTR _scanline[bx]
+        mov     dx, WORD PTR [bp+4]     ; x1
+        add     di, dx
+        or      di, 0001h
+        mov     ah, BYTE PTR [bp+10]     ; color
+        mov     al, ah
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        or      ah, al
+        mov     cx, WORD PTR [bp+6]     ; x2
+        sub     cx, dx
+        jz      hlin_singl
+        inc     cx
+        shr     dx, 1
+        jnc     hlin
+        mov     al, es:[di]
+        and     al, 0Fh
+        mov     dh, ah
+        and     dh, 0F0h
+        or      al, dh
+        stosb
+        inc     di
+        dec     cx
+hlin:   mov     al, ah
+        shr     cx, 1
+        jz      hlin_last
+@@:     stosb
+        inc     di
+        loop    @B
+hlin_last:
+        jnc     hlin_ex
+@@:     mov     al, es:[di]
+        and     ax, 0FF0h
+        or      al, ah
+        stosb
+hlin_ex:
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+hlin_singl:
+        shr     dx, 1
+        jnc     @B
+        mov     al, es:[di]
+        and     ax, 0F00Fh
+        or      al, ah
+        stosb
+        jmp     hlin_ex
+__hlin          ENDP
+
+        PUBLIC  __hlinSnow
+; void _hlinSnow(unsigned int x1, unsigned int x2, unsigned int y, unsigned char color)
+__hlinSnow      PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+; x1            = bp+4
+; x2            = bp+6
+; y             = bp+8
+; color         = bp+10
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     bx, WORD PTR [bp+8]     ; y
+        shl     bx, 1
+        mov     di, WORD PTR _scanline[bx]
+        mov     dx, WORD PTR [bp+4]     ; x1
+        add     di, dx
+        or      di, 0001h
+        mov     ah, BYTE PTR [bp+10]     ; color
+        mov     al, ah
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        or      ah, al
+        mov     cx, WORD PTR [bp+6]     ; x2
+        sub     cx, dx
+        jz      hlins_singl
+        inc     cx
+        shr     dx, 1
+        mov     dx, 03DAh
+        jnc     hlins
+        mov     bl, es:[di]
+        and     bl, 0Fh
+        mov     bh, ah
+        and     bh, 0F0h
+        or      bl, bh
+@@:     in      al, dx
+        shr     al, 1
+        jnc     @B
+        mov     es:[di], bl
+        inc     di
+        inc     di
+        dec     cx
+hlins:  mov     bx, cx
+        shr     cx, 1
+        jz      hlins_last
+@@:     in      al, dx
+        shr     al, 1
+        jnc     @B
+        mov     es:[di], ah
+        inc     di
+        inc     di
+        loop    @B
+        shr     bx, 1
+hlins_last:
+        jnc     hlins_ex
+hlins_se:
+        mov     bl, es:[di]
+        and     bl, 0F0h
+        and     ah, 0Fh
+        or      bl, ah
+@@:     in      al, dx
+        shr     al, 1
+        jnc     @B
+        mov     es:[di], bl
+hlins_ex:
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+hlins_singl:
+        shr     dx, 1
+        mov     dx, 03DAh
+        jnc     hlins_se
+        mov     bl, es:[di]
+        and     bl, 0Fh
+        and     ah, 0F0h
+        or      bl, ah
+@@:     in      al, dx
+        shr     al, 1
+        jnc     @B
+        mov     es:[di], bl
+        jmp     hlins_ex
+__hlinSnow      ENDP
+
+        PUBLIC  __vlin
+; void _vlin(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color)
+__vlin          PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+; x             = bp+4
+; y1            = bp+6
+; y2            = bp+8
+; color         = bp+10
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     bx, WORD PTR [bp+6]     ; y1
+        shl     bx, 1
+        mov     di, WORD PTR _scanline[bx]
+        mov     dx, WORD PTR [bp+4]     ; x
+        add     di, dx
+        or      di, 0001h
+        shr     bx, 1
+        mov     cx, WORD PTR [bp+8]     ; y2
+        sub     cx, bx
+        inc     cx
+        mov     ah, BYTE PTR [bp+10]    ; color
+        mov     bl, 0F0h
+        shr     dx, 1
+        jnc     vlin
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        mov     bl, 0Fh
+vlin:   mov     al, es:[di]
+        and     al, bl
+        or      al, ah
+        mov     es:[di], al
+        add     di, 160
+        loop    vlin
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+__vlin          ENDP
+
+        PUBLIC  __vlinSnow
+; void _vlinSnow(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color)
+__vlinSnow      PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+; x             = bp+4
+; y1            = bp+6
+; y2            = bp+8
+; color         = bp+10
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     bx, WORD PTR [bp+6]     ; y1
+        shl     bx, 1
+        mov     di, WORD PTR _scanline[bx]
+        mov     dx, WORD PTR [bp+4]     ; x
+        add     di, dx
+        or      di, 0001h
+        shr     bx, 1
+        mov     cx, WORD PTR [bp+8]     ; y2
+        sub     cx, bx
+        inc     cx
+        mov     ah, BYTE PTR [bp+10]    ; color
+        mov     bl, 0F0h
+        shr     dx, 1
+        mov     dx, 03DAh
+        jnc     vlins
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        shl     ah, 1
+        mov     bl, 0Fh
+vlins:  mov     bh, es:[di]
+        and     bh, bl
+        or      bh, ah
+@@:     in      al, dx
+        shr     al, 1
+        jnc     @B
+        mov     es:[di], bh
+        add     di, 160
+        loop    vlins
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+__vlinSnow      ENDP
+
 _TEXT	ENDS
 END

@@ -16,15 +16,24 @@
 #define WHITE           (BLUE|GREEN|RED)
 void txt80(void);
 void gr160(unsigned char fill, unsigned char border);
-void plot(unsigned int x, unsigned int y, unsigned char color);
-void hlin(unsigned int x1, unsigned int x2, unsigned int y, unsigned char color);
-void vlin(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color);
 void line(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned char color);
 int rect(unsigned int x, unsigned int y, int width, int height, unsigned char color);
+void _plot(unsigned int x, unsigned int y, unsigned char color);
+void _hlin(unsigned int x1, unsigned int x2, unsigned int y, unsigned char color);
+void _vlin(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color);
+void _plotSnow(unsigned int x, unsigned int y, unsigned char color);
+void _hlinSnow(unsigned int x1, unsigned int x2, unsigned int y, unsigned char color);
+void _vlinSnow(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color);
 void _cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);
 void _cpyBufSnow(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);
 #ifdef CGA_SNOW
+#define plot    _plotSnow
+#define hlin    _hlinSnow
+#define vlin    _vlinSnow
 #define cpyBuf  _cpyBufSnow
 #else
+#define plot    _plot
+#define hlin    _hlin
+#define vlin    _vlin
 #define cpyBuf  _cpyBuf
 #endif
