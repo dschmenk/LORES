@@ -508,7 +508,7 @@ unsigned long viewRefresh(int scrolldir)
      */
     return ((unsigned long)orgT << 16) | orgS;
 }
-void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
+void viewInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
 {
     int i;
     /*
@@ -541,7 +541,7 @@ void tileInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     borderProfile = borderColor == BLACK ? WHITE : BLACK;
 #endif
 }
-void tileExit(void)
+void viewExit(void)
 {
     int i;
     /*

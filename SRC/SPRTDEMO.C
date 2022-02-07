@@ -274,7 +274,7 @@ int main(int argc, char **argv)
     /*
      * Use hardware scrolling
      */
-    tileInit(viewS, viewT, 16, 16, (unsigned char far * far *)tilemap);
+    viewInit(viewS, viewT, 16, 16, (unsigned char far * far *)tilemap);
     spriteEnable(0, faceS, faceT, FACE_WIDTH, FACE_HEIGHT, face);
     spriteEnable(1,0x94, 0x74, FACE_WIDTH, FACE_HEIGHT, angry);
     viewRefresh(0);
@@ -325,6 +325,6 @@ int main(int argc, char **argv)
     }
     getch();
     txt80();
-    tileExit();
+    viewExit();
     return 0;
 }

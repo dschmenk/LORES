@@ -248,7 +248,7 @@ int main(int argc, char **argv)
     /*
      * Use software scrolling
      */
-    tileInit(0, 0, 16, 16, (unsigned char far * far *)tilemap);
+    viewInit(0, 0, 16, 16, (unsigned char far * far *)tilemap);
 #if 1
     while (!kbhit())
     {
@@ -315,7 +315,7 @@ int main(int argc, char **argv)
     /*
      * Use hardware scrolling
      */
-    tileInit(s, t, 16, 16, (unsigned char far * far *)tilemap);
+    viewInit(s, t, 16, 16, (unsigned char far * far *)tilemap);
 #if 1
     cycle = 0;
     while (!kbhit())
@@ -410,7 +410,7 @@ int main(int argc, char **argv)
 #ifdef PROFILE
             rasterBorder(BROWN);
 #endif
-            st = tileRefresh(scrolldir);
+            st = viewRefresh(scrolldir);
 #ifdef PROFILE
             rasterBorder(BLACK);
 #endif
@@ -426,7 +426,7 @@ int main(int argc, char **argv)
     getch();
 #endif
 #endif // SW_SCROLL
+    viewExit();
     txt80();
-    tileExit();
     return 0;
 }

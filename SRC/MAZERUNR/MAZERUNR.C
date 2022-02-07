@@ -675,7 +675,7 @@ int main(int argc, char **argv)
     /*
      * Render initial view
      */
-    tileInit(viewS, viewT, BORDER_RIGHT, BORDER_BOTTOM, (unsigned char far * far *)tilemap);
+    viewInit(viewS, viewT, BORDER_RIGHT, BORDER_BOTTOM, (unsigned char far * far *)tilemap);
     spriteEnable(0, faceS, faceT, FACE_WIDTH, FACE_HEIGHT, face);
     viewRefresh(0);
     cycleExit = 0;
@@ -787,7 +787,7 @@ int main(int argc, char **argv)
         viewS  = st;
         viewT  = st >> 16;
     }
-    tileExit();
+    viewExit();
     txt80();
     return 0;
 }
