@@ -9,6 +9,7 @@ Contents:
   - [Scrolling and Tile Maps](#scrolling-and-tile-maps)
   - [Sprites](#sprites)
   - [Performance](#performance)
+  - [Alternate Usage](#alternate-usage)
 - [Profiling](#profiling)
 - [Dealing with CGA snow](#dealing-with-cga-snow)
 - [The API](#the-api)
@@ -47,6 +48,10 @@ To take advantage of the additional time available during inactive video, a pseu
 ### Performance
 
 The library is implemented in a combination of C and 8086 assembly. Any routine that touches pixel data is implemented in assembly for performance reasons. The higher level logic is generally written in C, for ease of understanding and development. Output from the C compiler is verified to not be doing anything horrifically inefficient. The code was profiled to get it fast. There may be a few more cycles to extract from the routines, but nothing that will change the overall approach to the library's implementation. Because there aren't many CPU cycles available between frames, incremental rendering and clever scheduling are the keys to creating a successful game.
+
+### Alternate Usage
+
+Although the library focusses on the ability to use the CRTC to assist in scrolling a virtual tile map, that isn't the only way to use the routines. It is quite easy to use the memory buffer routines to create an off-screen image and copy only those sections that change per frame. This could be useful when only a small part of the screen image changes and a high frame rate isn't required.
 
 ## Profiling
 
