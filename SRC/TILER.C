@@ -14,9 +14,9 @@ unsigned char borderProfile; // Contrasting border color
 void cpyEdgeH(int addr, int count);
 void cpyEdgeV(int addr);
 #ifdef CGA_SNOW
-#define TILE    _tile
-#else
 #define TILE    _tileSnow
+#else
+#define TILE    _tile
 #endif
 #define tile(x,y,s,t,w,h,p) TILE((scanline[y]+(x)+orgAddr)&0x3FFF,(w)>>1,h,(p)+(t)*8+((s)>>1))
 /*

@@ -448,15 +448,16 @@ __tile          PROC NEAR
 tilev:
         mov     cx, bx
         shr     cx, 1
+        jnc     tileh
+        movsb
+        inc     di
+        jcxz    tilenxt
 tileh:
         movsb
         inc     di
         movsb
         inc     di
         loop    tileh
-        jnc     tilenxt
-        movsb
-        inc     di
 tilenxt:
         add     si, 8                   ; span
         sub     si, bx
@@ -466,6 +467,7 @@ tilenxt:
         dec     dx                      ; height
         jnz     tilev
         pop     ds
+        ASSUME  DS: DGROUP
         pop     si
         pop     di
         mov     sp, bp
@@ -523,6 +525,7 @@ tilesnxt:
         dec     WORD PTR [bp+8]         ; height
         jnz     tilesv
         pop     ds
+        ASSUME  DS: DGROUP
         pop     si
         pop     di
         mov     sp, bp

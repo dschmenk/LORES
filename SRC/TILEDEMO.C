@@ -249,7 +249,7 @@ int main(int argc, char **argv)
      * Use software scrolling
      */
     viewInit(0, 0, 16, 16, (unsigned char far * far *)tilemap);
-#if 1
+#if 0
     while (!kbhit())
     {
         /*
@@ -273,10 +273,10 @@ int main(int argc, char **argv)
          */
         tileBuf(s + 80-FACEBUF_WIDTH/2, t + 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
         spriteBuf(2, 2, FACE_WIDTH, FACE_HEIGHT, face, FACEBUF_WIDTH/2, facebuf);
-        //rasterDisable;  /* Turn off video */
+        //rasterDisable();  /* Turn off video */
         tileScrn(s, t);
-        //rasterEnable;  /* Turn on video */
         cpyBuf(80-FACEBUF_WIDTH/2, 50-FACEBUF_HEIGHT/2, FACEBUF_WIDTH, FACEBUF_HEIGHT, facebuf);
+        //rasterEnable();  /* Turn on video */
         //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
     }
     getch();
