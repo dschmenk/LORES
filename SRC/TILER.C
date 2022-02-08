@@ -31,7 +31,7 @@ void tileEdgeV(unsigned int s, unsigned int t, unsigned char far * far *tileptr)
  */
 unsigned char far *vidmem = (unsigned char far *)0xB8000000L;
 unsigned char edgeH[2][80], edgeV[100];
-unsigned int orgAddr = 0;
+unsigned int orgAddr = 1;
 unsigned int orgS = 0;
 unsigned int orgT = 0;
 unsigned int maxOrgS, maxOrgT, extS, extT;
