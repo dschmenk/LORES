@@ -8,6 +8,7 @@ Contents:
 - [Implementation](#implementation)
   - [Scrolling and Tile Maps](#scrolling-and-tile-maps)
   - [Sprites](#sprites)
+  - [Performance](#performance)
 - [Profiling](#profiling)
 - [Dealing with CGA snow](#dealing-with-cga-snow)
 - [The API](#the-api)
@@ -40,6 +41,10 @@ In order to avoid visible anomalies during scrolling, all the updates have to ha
 ### Sprites
 
 To take advantage of the additional time available during inactive video, a pseudo sprite implementation was written to coordinate rendering bitmaps with transparency over the tile maps and scrolling view. The library tries to update the minimum number of pixels per frame and tries to avoid full erase and redraw if possible. Moving sprites by only a few pixels at a time allows for a background border to be included with a sprite update to remove the previous sprite image during a single pass rendering. All sprite images are pre-rendered into memory buffers before scrolling so they can be quickly updated. One rendering issue to be aware of is that overlapping sprites will not correctly render on top of each other. Each sprite only contends with its own image and tile background. You will need additional logic and rendering code to handle overlapping sprites.
+
+### Performance
+
+The library is implemented in a combination of C and 8086 assembly. Any routine that touches pixel data is implemented in assembly for performance reasons. The higher level logic is generally written in C, for ease of understanding and development. Output from the C compiler is verified to not be doing anything horrifically inefficient. The code was profiled to get it fast. There may be a few more cycles to extract from the routines, but nothing that will change the overall approach to the library's implementation.
 
 ## Profiling
 
