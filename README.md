@@ -51,7 +51,7 @@ The library is implemented in a combination of C and 8086 assembly. Any routine 
 
 ### Alternate Usage
 
-Although the library focusses on the ability to use the CRTC to assist in scrolling a virtual tile map, that isn't the only way to use the routines. It is quite easy to use the memory buffer routines to create an off-screen image and copy only those sections that change per frame. This could be useful when only a small part of the screen image changes and a high frame rate isn't required.
+Although the library focusses on the ability to use the CRTC to assist in scrolling a virtual tile map, that isn't the only way to use the routines. It is quite easy to use the memory buffer routines to create an off-screen image and copy only those sections that change per frame. This could be useful when a large part of the screen image changes and a high frame rate isn't required.
 
 ## Profiling
 
