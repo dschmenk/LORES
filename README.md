@@ -21,19 +21,21 @@ Contents:
   - [Video](https://youtu.be/rIbONSlyQeU)
 
 ## Overview
+
 The IBM PC was initially offered with two video cards. One was a monochrome, text only, 80 column by 25 line display. The other video card was the Color Graphics Adapter: CGA. It supported text and graphics mode, up to 640x200 high resolution single color graphics mode. A 320x200 four color graphics mode was also supported. However, a third mode, a low resolution 160x100 with sixteen colors was possible but not supported by the BIOS ROM. This third mode was in fact a tweaked 80 column text mode, setting the character cell to only two pixels high. By setting the text character to an extended code that split the cell in to foreground and background halves, each half cell could be set to one of sixteen colors creating 160x100 pseudo graphics mode.
 
 There are some great features of this mode that make it attractive as a game mode: high enough resolution to make interesting graphics screens using all 16 colors available to the CGA card on both composite color monitors and the more expensive RGB monitors. It was also low enough resolution that a poor 4.77 MHz 8088 could handle pushing pixels around at an interactive speed.
 
 Unfortunately, there are some big caveats with this mode: being a tweaked 80 column text mode, it suffers from video "snow" when accessed during active video generation. The way around this is to wait until inactive video before accessing the CGA's memory. Doing so incurs a huge performance penalty as the 8088 must busy wait until such time it can access the memory without conflict. Some compatible CGA card manufacturers designed their cards to avoid this conflict and could access the video memory without generating video "snow", thus achieving higher performance.
 
-In order to create fast graphics routines using this low resolution (lores) mode presents a real challenge, especially when coupled with a 4.77 MHz 8088. The goal of this project is to create a library of routines and tools to help build games that can take advantage of this under-utilized graphics mode.
+Creating fast graphics routines using this low resolution (lores) mode presents a real challenge, especially when coupled with a 4.77 MHz 8088. The goal of this project is to build a library of routines and tools to help write games that can take advantage of this under-utilized graphics mode.
 
 ## Implementation
 
 In order to get fast, interactive graphics on such a low end system will require clever coding tricks to update the bare minimum of pixels per screen. The main idea of this library is to use a feature of the 6845 CRTC chip that adjusts its scan out start address to any character in CGA memory. The standard CGA card contains 16K of RAM used for background, foreground and character information (in text mode). Interestingly, the CGA responds to a full 32K of address space in the 8088's memory map. The CRTC also wraps its video scan out at 16K. The lores graphics mode uses almost all of this 16K to display a single screen: 80 * 50 = 8000 characters. Two bytes per character (color and character code) takes up 16000 bytes of the 16384 bytes of CGA memory. This leaves just 384 bytes (= 384 pixels) left over. Combined, the CPU and CRTC can access data off the end of the 16K memory that wraps around to the beginning of CGA memory.
 
 ### Scrolling and tile maps
+
 With perfectly timed updates to the CRTC start address and updates to the border pixels, a virtual image can be scrolled around with only a little bit of overhead. This library is built around the concept of a map of 16x16 tiles. The coordinates are 12.4 fixed point values referred to as S and T, or (S,T) as a coordinate pair. The 4 bit fractional point allows for sub-tile coordinates. The on-screen view initially sets the (S,T) origin, then passes in a scroll direction during updates. There are limitations on how far scrolling happens during the update. Horizontally, the S coordinate will be forced to an even number. The CRTC chip can only set the start address to a character boundary. As lores mode uses a single character to represent two pixels, this limits the origin to even horizontal pixels. There is no such limitation on vertical pixels. Horizontally, scrolling occurs two pixels at a time. Vertically, scrolling can happen one pixel at a time, or to be consistent with the horizontal limitation, two pixels can optionally be vertically scrolled at a time.
 
 In order to avoid visible anomalies during scrolling, all the updates have to happen during inactive video. This is obviously a challenge. Initially, the code waited until the CRTC signaled vertical blanking before rendering the updates. However, this didn't give enough time to update the border pixels on a slow CPU. By co-opting the Programmable Interval Timer (PIT) to synchronize with the last active scan line, the entire inactive video time (back porch, front porch, and vertical blank) could be utilized to handle scrolling and a little bit of additional rendering tasks.
@@ -44,7 +46,7 @@ To take advantage of the additional time available during inactive video, a pseu
 
 ### Performance
 
-The library is implemented in a combination of C and 8086 assembly. Any routine that touches pixel data is implemented in assembly for performance reasons. The higher level logic is generally written in C, for ease of understanding and development. Output from the C compiler is verified to not be doing anything horrifically inefficient. The code was profiled to get it fast. There may be a few more cycles to extract from the routines, but nothing that will change the overall approach to the library's implementation.
+The library is implemented in a combination of C and 8086 assembly. Any routine that touches pixel data is implemented in assembly for performance reasons. The higher level logic is generally written in C, for ease of understanding and development. Output from the C compiler is verified to not be doing anything horrifically inefficient. The code was profiled to get it fast. There may be a few more cycles to extract from the routines, but nothing that will change the overall approach to the library's implementation. Because there aren't many CPU cycles available between frames, incremental rendering and clever scheduling are the keys to creating a successful game.
 
 ## Profiling
 
@@ -163,7 +165,6 @@ Clean everything up (must call to unhook PIT interrupt):
 Big daddy of them all. Coordinates tile, sprite and scrolling updates. Return (s,t) coordinate of screen origin:
 
     unsigned long viewRefresh(int scrolldir);
-
 
 ## Building
 
