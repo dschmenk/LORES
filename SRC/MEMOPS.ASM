@@ -678,5 +678,51 @@ sprtexit:
         ret
 _spriteBuf      ENDP
 
+        PUBLIC  _cpyBuf2Buf
+_cpyBuf2Buf     PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+        push    si
+        push    ds
+; width     = bp+4
+; height    = bp+6
+; spanSrc   = bp+8
+; bufSrc    = bp+10
+; spanDst   = bp+14
+; bufDst    = bp16
+        mov     dh, BYTE PTR [bp+6]     ; height
+        mov     cx, WORD PTR [bp+4]     ; width
+        shr     cx, 1
+        mov     dl, cl
+        les     di, DWORD PTR [bp+16]   ; bufDst
+        lds     si, DWORD PTR [bp+10]   ; bufSrc
+        ASSUME  DS: NOTHING
+        mov     bx, WORD PTR [bp+8]     ; spanSrc
+        push    bp
+        mov     bp, WORD PTR [bp+14]    ; spanDst
+@@:     shr     cx, 1
+    rep movsw
+        adc     cx, cx
+    rep movsb
+        mov     cl, dl
+        sub     si, cx
+        add     si, bx    ; bufSrc
+        sub     di, cx
+        add     di, bp    ; bufDst
+        dec     dh
+        jne     @B
+        pop     bp
+        pop	ds
+        ASSUME  DS: DGROUP
+        pop     si
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+
+_cpyBuf2Buf     ENDP
+
+
 _TEXT   ENDS
 END

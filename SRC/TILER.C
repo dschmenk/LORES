@@ -6,7 +6,6 @@
 extern unsigned int scanline[100]; // Precalculated scanline offsets
 #ifdef PROFILE
 extern unsigned char borderColor;
-unsigned char borderProfile; // Contrasting border color
 #endif
 /*
  * Fast CGA routines
@@ -26,10 +25,10 @@ void tileMem(unsigned int s, unsigned int t, int width, int height, unsigned cha
 void tileEdgeH(unsigned int s, unsigned int t, unsigned char far * far*tileptr);
 void tileEdgeH2(unsigned int s, unsigned int t, unsigned char far * far*tileptr);
 void tileEdgeV(unsigned int s, unsigned int t, unsigned char far * far *tileptr);
+void cpyBuf2Buf(int width, int height, int spanSrc, unsigned char far *bufSrc, int spanDst, unsigned char far *bufDst);
 /*
  * Graphics routines for 160x100x16 color mode
  */
-unsigned char far *vidmem = (unsigned char far *)0xB8000000L;
 unsigned char edgeH[2][80], edgeV[100];
 unsigned int orgAddr = 1;
 unsigned int orgS = 0;
@@ -257,15 +256,6 @@ void spriteIntersectRect(unsigned int leftS, unsigned int topT, int rectWidth, i
 /*
  * Update update buffer with lower priority sprites that intersect
  */
-void cpyBuf2Buf(int width, int height, int spanSrc, unsigned char far *bufSrc, int spanDst, unsigned char far *bufDst)
-{
-    while (height--)
-    {
-        memcpy(bufDst, bufSrc, width/2);
-        bufSrc += spanSrc;
-        bufDst += spanDst;
-    }
-}
 void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
 {
     int leftS, rightS, topT, bottomT;
