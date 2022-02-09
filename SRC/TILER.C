@@ -401,7 +401,7 @@ unsigned long viewRefresh(int scrolldir)
     struct sprite_t *sprite;
 
 #ifdef PROFILE
-    rasterBorder(borderProfile);
+    rasterBorder(GREEN);
 #endif
     if (scrolldir & SCROLL_LEFT2)
     {
@@ -588,7 +588,7 @@ unsigned long viewRefresh(int scrolldir)
      */
     setStartAddr(orgAddr >> 1);
 #ifdef PROFILE
-    rasterBorder(borderProfile);
+    rasterBorder(RED);
 #endif
     /*
      * Fill in edges
