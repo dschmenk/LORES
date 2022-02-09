@@ -259,19 +259,16 @@ void spriteIntersectRect(unsigned int leftS, unsigned int topT, int rectWidth, i
  */
 void cpyBuf2Buf(int width, int height, int spanSrc, unsigned char far *bufSrc, int spanDst, unsigned char far *bufDst)
 {
-    int w;
-
     while (height--)
     {
-        for (w = 0; w < width/2; w++)
-            bufDst[w] = bufSrc[w];
+        memcpy(bufDst, bufSrc, width/2);
         bufSrc += spanSrc;
         bufDst += spanDst;
     }
 }
 void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
 {
-    unsigned int leftS, rightS, topT, bottomT;
+    int leftS, rightS, topT, bottomT;
     int width, height, spanAbove, spanBelow;
     struct sprite_t *sprite;
     unsigned char far *bufAbove;
@@ -306,31 +303,31 @@ void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
             bufAbove  = spriteAbove->spritebuf;
             spanBelow = sprite->bufWidth >> 1;
             bufBelow  = sprite->spritebuf;
-            if (sprite->bufS < leftS)
+            if ((leftS - (int)sprite->bufS) > 0)
             {
-                bufBelow += (leftS - sprite->bufS) >> 1;
+                bufBelow += (leftS - (int)sprite->bufS) >> 1;
             }
-            else if (sprite->bufS > leftS)
+            else if (((int)sprite->bufS - leftS) > 0)
             {
-                width    -=  sprite->bufS - leftS;
-                bufAbove += (sprite->bufS - leftS) >> 1;
+                width    -=  (int)sprite->bufS - leftS;
+                bufAbove += ((int)sprite->bufS - leftS) >> 1;
             }
-            if (sprite->bufS + sprite->bufWidth < rightS)
+            if ((rightS - ((int)sprite->bufS + sprite->bufWidth)) > 0)
             {
-                width -= rightS - (sprite->bufS + sprite->bufWidth);
+                width -= rightS - ((int)sprite->bufS + sprite->bufWidth);
             }
-            if (sprite->bufT < topT)
+            if ((topT - (int)sprite->bufT) > 0)
             {
-                bufBelow += (topT - sprite->bufT) * spanBelow;
+                bufBelow += (topT - (int)sprite->bufT) * spanBelow;
             }
-            else if (sprite->bufT > topT)
+            else if (((int)sprite->bufT - topT) > 0)
             {
-                height   -=  sprite->bufT - topT;
-                bufAbove += (sprite->bufT - topT) * spanAbove;
+                height   -=  (int)sprite->bufT - topT;
+                bufAbove += ((int)sprite->bufT - topT) * spanAbove;
             }
-            if (sprite->bufT + sprite->bufHeight < bottomT)
+            if ((bottomT - ((int)sprite->bufT + sprite->bufHeight)) > 0)
             {
-                height -= bottomT - (sprite->bufT + sprite->bufHeight);
+                height -= bottomT - ((int)sprite->bufT + sprite->bufHeight);
             }
             cpyBuf2Buf(width, height, spanBelow, bufBelow, spanAbove, bufAbove);
         }
@@ -338,7 +335,7 @@ void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
 }
 void spriteIntersectEraseBuf(struct sprite_t *spriteAbove)
 {
-    unsigned int leftS, rightS, topT, bottomT;
+    int leftS, rightS, topT, bottomT;
     int width, height, spanAbove, spanBelow;
     struct sprite_t *sprite;
     unsigned char far *bufAbove;
@@ -365,31 +362,31 @@ void spriteIntersectEraseBuf(struct sprite_t *spriteAbove)
             bufAbove  = spriteAbove->erasebuf;
             spanBelow = sprite->bufWidth >> 1;
             bufBelow  = sprite->spritebuf;
-            if (sprite->bufS < leftS)
+            if ((leftS - (int)sprite->bufS) > 0)
             {
-                bufBelow += (leftS - sprite->bufS) >> 1;
+                bufBelow += (leftS - (int)sprite->bufS) >> 1;
             }
-            else if (sprite->bufS > leftS)
+            else if (((int)sprite->bufS - leftS) > 0)
             {
-                width    -=  sprite->bufS - leftS;
-                bufAbove += (sprite->bufS - leftS) >> 1;
+                width    -=  (int)sprite->bufS - leftS;
+                bufAbove += ((int)sprite->bufS - leftS) >> 1;
             }
-            if (sprite->bufS + sprite->bufWidth < rightS)
+            if ((rightS - ((int)sprite->bufS + sprite->bufWidth)) > 0)
             {
-                width -= rightS - (sprite->bufS + sprite->bufWidth);
+                width -= rightS - ((int)sprite->bufS + sprite->bufWidth);
             }
-            if (sprite->bufT < topT)
+            if ((topT - (int)sprite->bufT) > 0)
             {
-                bufBelow += (topT - sprite->bufT) * spanBelow;
+                bufBelow += (topT - (int)sprite->bufT) * spanBelow;
             }
-            else if (sprite->bufT > topT)
+            else if (((int)sprite->bufT - topT) > 0)
             {
-                height   -=  sprite->bufT - topT;
-                bufAbove += (sprite->bufT - topT) * spanAbove;
+                height   -=  (int)sprite->bufT - topT;
+                bufAbove += ((int)sprite->bufT - topT) * spanAbove;
             }
-            if (sprite->bufT + sprite->bufHeight < bottomT)
+            if ((bottomT - ((int)sprite->bufT + sprite->bufHeight)) > 0)
             {
-                height -= bottomT - (sprite->bufT + sprite->bufHeight);
+                height -= bottomT - ((int)sprite->bufT + sprite->bufHeight);
             }
             cpyBuf2Buf(width, height, spanBelow, bufBelow, spanAbove, bufAbove);
         }
