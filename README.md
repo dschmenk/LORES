@@ -43,7 +43,7 @@ In order to avoid visible anomalies during scrolling, all the updates have to ha
 
 ### Sprites
 
-To take advantage of the additional time available during inactive video, a pseudo sprite implementation was written to coordinate rendering bitmaps with transparency over the tile maps and scrolling view. The library tries to update the minimum number of pixels per frame and tries to avoid full erase and redraw if possible. Moving sprites by only a few pixels at a time allows for a background border to be included with a sprite update to remove the previous sprite image during a single pass rendering. All sprite images are pre-rendered into memory buffers before scrolling so they can be quickly updated. One rendering issue to be aware of is that overlapping sprites will not correctly render on top of each other. Each sprite only contends with its own image and tile background. You will need additional logic and rendering code to handle overlapping sprites.
+To take advantage of the additional time available during inactive video, a pseudo sprite implementation was written to coordinate rendering bitmaps with transparency over the tile maps and scrolling view. The library tries to update the minimum number of pixels per frame and tries to avoid full erase and redraw if possible. Moving sprites by only a few pixels at a time allows for a background border to be included with a sprite update to remove the previous sprite image during a single pass rendering. All sprite images are pre-rendered into memory buffers before scrolling so they can be quickly updated. Sprites can overlap, with higher indeces rendering above lower indeces.
 
 ### Performance
 
@@ -143,11 +143,7 @@ Enable/disable a sprite in the sprite table:
     void spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *sprite);
     void spriteDisable(int index);
 
-Update the sprite image (used before spritePosition()):
-
-    void spriteImage(int index, unsigned char far *imageNew);
-
-Update the sprite image (if not calling spritePosition):
+Update the sprite image:
 
     void spriteUpdate(int index, unsigned char far *imageNew);
 

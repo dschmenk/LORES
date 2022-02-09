@@ -48,10 +48,10 @@ unsigned char far *tileUpdatePtr[16];
  * Sprite state
  */
 #define STATE_INACTIVE      0x00
-#define STATE_ACTIVE        0x01
-#define STATE_MOVING        0x02
-#define STATE_POSITIONING   0x03
-#define STATE_DISABLING     0x04
+#define STATE_DISABLING     0x01
+#define STATE_ACTIVE        0x02
+#define STATE_MOVING        0x03
+#define STATE_POSITIONING   0x04
 #define ERASE_BORDER        4
 /*
  * Sprite table
@@ -141,8 +141,6 @@ void spriteEnable(int index, unsigned int s, unsigned int t, int width, int heig
     spriteTable[index].bufT      = t;
     spriteTable[index].bufWidth  = ((spriteTable[index].s + width + 1) & 0xFFFE) - spriteTable[index].bufS;
     spriteTable[index].bufHeight = height;
-    tileBuf(spriteTable[index].bufS, spriteTable[index].bufT, spriteTable[index].bufWidth, spriteTable[index].bufHeight, spriteTable[index].spritebuf);
-    spriteBuf(spriteTable[index].s - spriteTable[index].bufS, 0, width, height, spriteTable[index].spriteptr, spriteTable[index].bufWidth >> 1, spriteTable[index].spritebuf);
 }
 void spriteDisable(int index)
 {
@@ -152,24 +150,18 @@ void spriteDisable(int index)
     spriteTable[index].eraS     = spriteTable[index].s & 0xFFFE;
     spriteTable[index].eraWidth = ((spriteTable[index].s + spriteTable[index].width + 1) & 0xFFFE) - spriteTable[index].eraS;
     spriteTable[index].eraT     = spriteTable[index].t;
-    tileBuf(s, spriteTable[index].t, ((spriteTable[index].s + spriteTable[index].width + 1) & 0xFFFE) - s, spriteTable[index].height, spriteTable[index].erasebuf);
-}
-void spriteImage(int index, unsigned char far *imageNew)
-{
-    spriteTable[index].spriteptr = imageNew;
-    spriteTable[index].state     = STATE_MOVING;
 }
 void spriteUpdate(int index, unsigned char far *imageNew)
 {
-    struct sprite_t *sprite;
-    spriteTable[index].state     = STATE_MOVING;
     spriteTable[index].spriteptr = imageNew;
-    spriteTable[index].bufS      = spriteTable[index].s & 0xFFFE;
-    spriteTable[index].bufT      = spriteTable[index].t;
-    spriteTable[index].bufWidth  = ((spriteTable[index].s + spriteTable[index].width + 1) & 0xFFFE) - spriteTable[index].bufS;
-    spriteTable[index].bufHeight = spriteTable[index].height;
-    tileBuf(spriteTable[index].bufS, spriteTable[index].bufT, spriteTable[index].bufWidth, spriteTable[index].bufHeight, spriteTable[index].spritebuf);
-    spriteBuf(spriteTable[index].s - spriteTable[index].bufS, 0, spriteTable[index].width, spriteTable[index].height, spriteTable[index].spriteptr, spriteTable[index].bufWidth >> 1, spriteTable[index].spritebuf);
+    if (spriteTable[index].state == STATE_ACTIVE)
+    {
+        spriteTable[index].state     = STATE_MOVING;
+        spriteTable[index].bufS      = spriteTable[index].s & 0xFFFE;
+        spriteTable[index].bufT      = spriteTable[index].t;
+        spriteTable[index].bufWidth  = ((spriteTable[index].s + spriteTable[index].width + 1) & 0xFFFE) - spriteTable[index].bufS;
+        spriteTable[index].bufHeight = spriteTable[index].height;
+    }
 }
 unsigned long spritePosition(int index, unsigned int s, unsigned int t)
 {
@@ -190,6 +182,7 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t)
             /*
              * More efficient to use STATE_MOVING()
              */
+            sprite->state = STATE_MOVING;
             if (deltaS <= 0)
             {
                 /*
@@ -218,15 +211,13 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t)
                 sprite->bufHeight = (t + sprite->width) - sprite->bufT;
             sprite->s     = s;
             sprite->t     = t;
-            sprite->state = STATE_MOVING;
-            tileBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
-            spriteBuf(sprite->s - sprite->bufS, sprite->t - sprite->bufT, sprite->width, sprite->height, sprite->spriteptr, sprite->bufWidth >> 1, sprite->spritebuf);
         }
         else
         {
             /*
              * Erase at old position and draw at new position
              */
+            sprite->state     = STATE_POSITIONING;
             sprite->eraS      = sprite->s & 0xFFFE;
             sprite->eraWidth  = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->eraS;
             sprite->eraT      = sprite->t;
@@ -236,23 +227,18 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t)
             sprite->bufHeight = sprite->height;
             sprite->s         = s;
             sprite->t         = t;
-            sprite->state     = STATE_POSITIONING;
-            tileBuf(sprite->eraS, sprite->eraT, sprite->eraWidth, sprite->height,    sprite->erasebuf);
-            tileBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
-            spriteBuf(sprite->s - sprite->bufS, 0, sprite->width, sprite->height, sprite->spriteptr, sprite->bufWidth >> 1, sprite->spritebuf);
         }
     }
     return ((unsigned long)sprite->t << 16) | sprite->s;
 }
-void spriteIntersect(unsigned int leftS, unsigned int topT, int rectWidth, int rectHeight)
+void spriteIntersectRect(unsigned int leftS, unsigned int topT, int rectWidth, int rectHeight)
 {
-    unsigned int rightS, bottomT, i;
+    unsigned int rightS, bottomT;
     struct sprite_t *sprite;
 
     rightS  = leftS + rectWidth  - 1;
     bottomT = topT  + rectHeight - 1;
-    sprite  = &spriteTable[0];
-    for (i = 0; i < NUM_SPRITES; i++)
+    for (sprite = &spriteTable[0]; sprite < &spriteTable[NUM_SPRITES]; sprite++)
     {
         if ((sprite->state == STATE_ACTIVE)
          && (sprite->s < rightS)
@@ -265,10 +251,148 @@ void spriteIntersect(unsigned int leftS, unsigned int topT, int rectWidth, int r
             sprite->bufT      = sprite->t;
             sprite->bufWidth  = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
             sprite->bufHeight = sprite->height;
-            tileBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
-            spriteBuf(sprite->s - sprite->bufS, 0, sprite->width, sprite->height, sprite->spriteptr, sprite->bufWidth >> 1, sprite->spritebuf);
         }
-        sprite++;
+    }
+}
+/*
+ * Update update buffer with lower priority sprites that intersect
+ */
+void cpyBuf2Buf(int width, int height, int spanSrc, unsigned char far *bufSrc, int spanDst, unsigned char far *bufDst)
+{
+    int w;
+
+    while (height--)
+    {
+        for (w = 0; w < width/2; w++)
+            bufDst[w] = bufSrc[w];
+        bufSrc += spanSrc;
+        bufDst += spanDst;
+    }
+}
+void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
+{
+    unsigned int leftS, rightS, topT, bottomT;
+    int width, height, spanAbove, spanBelow;
+    struct sprite_t *sprite;
+    unsigned char far *bufAbove;
+    unsigned char far *bufBelow;
+
+    leftS   = spriteAbove->bufS;
+    rightS  = leftS + spriteAbove->bufWidth;
+    topT    = spriteAbove->bufT;
+    bottomT = topT  + spriteAbove->bufHeight;
+    for (sprite = &spriteTable[0]; sprite != spriteAbove; sprite++)
+    {
+        if ((sprite->state >= STATE_ACTIVE)
+         && (sprite->s < rightS)
+         && ((sprite->s + sprite->width) > leftS)
+         && (sprite->t < bottomT)
+         && ((sprite->t + sprite->height) > topT))
+        {
+            if (spriteAbove->state == STATE_ACTIVE)
+            {
+                /*
+                 * Moving sprite underneath non-moving sprite, so update state to moving
+                 */
+                spriteAbove->state = STATE_MOVING;
+                tileBuf(spriteAbove->bufS, spriteAbove->bufT, spriteAbove->bufWidth, spriteAbove->bufHeight, spriteAbove->spritebuf);
+            }
+            /*
+             * Clip sprite buffer to sprite buffer above
+             */
+            height    = spriteAbove->bufHeight;
+            width     = spriteAbove->bufWidth;
+            spanAbove = spriteAbove->bufWidth >> 1;
+            bufAbove  = spriteAbove->spritebuf;
+            spanBelow = sprite->bufWidth >> 1;
+            bufBelow  = sprite->spritebuf;
+            if (sprite->bufS < leftS)
+            {
+                bufBelow += (leftS - sprite->bufS) >> 1;
+            }
+            else if (sprite->bufS > leftS)
+            {
+                width    -=  sprite->bufS - leftS;
+                bufAbove += (sprite->bufS - leftS) >> 1;
+            }
+            if (sprite->bufS + sprite->bufWidth < rightS)
+            {
+                width -= rightS - (sprite->bufS + sprite->bufWidth);
+            }
+            if (sprite->bufT < topT)
+            {
+                bufBelow += (topT - sprite->bufT) * spanBelow;
+            }
+            else if (sprite->bufT > topT)
+            {
+                height   -=  sprite->bufT - topT;
+                bufAbove += (sprite->bufT - topT) * spanAbove;
+            }
+            if (sprite->bufT + sprite->bufHeight < bottomT)
+            {
+                height -= bottomT - (sprite->bufT + sprite->bufHeight);
+            }
+            cpyBuf2Buf(width, height, spanBelow, bufBelow, spanAbove, bufAbove);
+        }
+    }
+}
+void spriteIntersectEraseBuf(struct sprite_t *spriteAbove)
+{
+    unsigned int leftS, rightS, topT, bottomT;
+    int width, height, spanAbove, spanBelow;
+    struct sprite_t *sprite;
+    unsigned char far *bufAbove;
+    unsigned char far *bufBelow;
+
+    leftS   = spriteAbove->eraS;
+    rightS  = leftS + spriteAbove->eraWidth  - 1;
+    topT    = spriteAbove->eraT;
+    bottomT = topT  + spriteAbove->height - 1;
+    for (sprite = &spriteTable[0]; sprite != spriteAbove; sprite++)
+    {
+        if ((sprite->state >= STATE_ACTIVE)
+         && (sprite->s < rightS)
+         && ((sprite->s + sprite->width) > leftS)
+         && (sprite->t < bottomT)
+         && ((sprite->t + sprite->height) > topT))
+        {
+            /*
+             * Clip sprite buffer to erase buffer above
+             */
+            height    = spriteAbove->height;
+            width     = spriteAbove->eraWidth;
+            spanAbove = spriteAbove->eraWidth >> 1;
+            bufAbove  = spriteAbove->erasebuf;
+            spanBelow = sprite->bufWidth >> 1;
+            bufBelow  = sprite->spritebuf;
+            if (sprite->bufS < leftS)
+            {
+                bufBelow += (leftS - sprite->bufS) >> 1;
+            }
+            else if (sprite->bufS > leftS)
+            {
+                width    -=  sprite->bufS - leftS;
+                bufAbove += (sprite->bufS - leftS) >> 1;
+            }
+            if (sprite->bufS + sprite->bufWidth < rightS)
+            {
+                width -= rightS - (sprite->bufS + sprite->bufWidth);
+            }
+            if (sprite->bufT < topT)
+            {
+                bufBelow += (topT - sprite->bufT) * spanBelow;
+            }
+            else if (sprite->bufT > topT)
+            {
+                height   -=  sprite->bufT - topT;
+                bufAbove += (sprite->bufT - topT) * spanAbove;
+            }
+            if (sprite->bufT + sprite->bufHeight < bottomT)
+            {
+                height -= bottomT - (sprite->bufT + sprite->bufHeight);
+            }
+            cpyBuf2Buf(width, height, spanBelow, bufBelow, spanAbove, bufAbove);
+        }
     }
 }
 /*
@@ -279,6 +403,9 @@ unsigned long viewRefresh(int scrolldir)
     unsigned int hcount, haddr, vaddr, i;
     struct sprite_t *sprite;
 
+#ifdef PROFILE
+    rasterBorder(borderProfile);
+#endif
     if (scrolldir & SCROLL_LEFT2)
     {
         if (orgS < maxOrgS)
@@ -355,7 +482,7 @@ unsigned long viewRefresh(int scrolldir)
          */
         vaddr = orgAddr;
         tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
-        spriteIntersect(orgS, orgT, 2, 100);
+        spriteIntersectRect(orgS, orgT, 2, 100);
     }
     else if (scrolldir & SCROLL_LEFT2)
     {
@@ -364,7 +491,7 @@ unsigned long viewRefresh(int scrolldir)
          */
         vaddr = (orgAddr + 158) & 0x3FFF;
         tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + ((orgS + 158) >> 4));
-        spriteIntersect(orgS + 158, orgT, 2, 100);
+        spriteIntersectRect(orgS + 158, orgT, 2, 100);
     }
     if (scrolldir & SCROLL_DOWN2)
     {
@@ -374,7 +501,7 @@ unsigned long viewRefresh(int scrolldir)
         hcount = 2;
         haddr  = orgAddr;
         tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
-        spriteIntersect(orgS, orgT, 160, 2);
+        spriteIntersectRect(orgS, orgT, 160, 2);
     }
     else if (scrolldir & SCROLL_UP2)
     {
@@ -384,7 +511,7 @@ unsigned long viewRefresh(int scrolldir)
         hcount = 2;
         haddr  = (orgAddr + 98 * 160) & 0x3FFF;
         tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * widthMap + (orgS >> 4));
-        spriteIntersect(orgS, orgT + 98, 160, 2);
+        spriteIntersectRect(orgS, orgT + 98, 160, 2);
     }
     else if (scrolldir & SCROLL_DOWN)
     {
@@ -394,7 +521,7 @@ unsigned long viewRefresh(int scrolldir)
         haddr  = orgAddr;
         hcount = 1;
         tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
-        spriteIntersect(orgS, orgT, 160, 1);
+        spriteIntersectRect(orgS, orgT, 160, 1);
     }
     else if (scrolldir & SCROLL_UP)
     {
@@ -404,7 +531,7 @@ unsigned long viewRefresh(int scrolldir)
         haddr  = (orgAddr + 99 * 160) & 0x3FFF;
         hcount = 1;
         tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * widthMap + (orgS >> 4));
-        spriteIntersect(orgS, orgT + 99, 160, 1);
+        spriteIntersectRect(orgS, orgT + 99, 160, 1);
     }
     /*
      * Intersect tile updates with active sprites that may need redraw
@@ -413,8 +540,52 @@ unsigned long viewRefresh(int scrolldir)
     {
         if ((tileUpdateS[i] < extS) && (tileUpdateS[i] + 16 > orgS)
          && (tileUpdateT[i] < extT) && (tileUpdateT[i] + 16 > orgT))
-            spriteIntersect(tileUpdateS[i], tileUpdateT[i], 16, 16);
+            spriteIntersectRect(tileUpdateS[i], tileUpdateT[i], 16, 16);
     }
+    /*
+     * Update sprite buffers
+     */
+    for (sprite = &spriteTable[0]; sprite != &spriteTable[NUM_SPRITES]; sprite++)
+    {
+        if (sprite->state)
+        {
+            if (sprite->state == STATE_ACTIVE)
+            {
+                sprite->bufS      = sprite->s & 0xFFFE;
+                sprite->bufWidth  = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
+                sprite->bufT      = sprite->t;
+                sprite->bufHeight = sprite->height;
+                spriteIntersectSpriteBuf(sprite);
+                /*
+                 * State could get updated if other ananosprite moving underneath
+                 */
+                if (sprite->state == STATE_MOVING)
+                    spriteBuf(sprite->s - sprite->bufS, sprite->t - sprite->bufT, sprite->width, sprite->height, sprite->spriteptr, sprite->bufWidth >> 1, sprite->spritebuf);
+            }
+            else if (sprite->state == STATE_MOVING)
+            {
+                tileBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
+                spriteIntersectSpriteBuf(sprite);
+                spriteBuf(sprite->s - sprite->bufS, sprite->t - sprite->bufT, sprite->width, sprite->height, sprite->spriteptr, sprite->bufWidth >> 1, sprite->spritebuf);
+            }
+            else if (sprite->state == STATE_POSITIONING)
+            {
+                tileBuf(sprite->eraS, sprite->eraT, sprite->eraWidth, sprite->height, sprite->erasebuf);
+                spriteIntersectEraseBuf(sprite);
+                tileBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
+                spriteIntersectSpriteBuf(sprite);
+                spriteBuf(sprite->s - sprite->bufS, 0, sprite->width, sprite->height, sprite->spriteptr, sprite->bufWidth >> 1, sprite->spritebuf);
+            }
+            else if (sprite->state == STATE_DISABLING)
+            {
+                tileBuf(sprite->eraS, sprite->eraT, sprite->eraWidth, sprite->height, sprite->erasebuf);
+                spriteIntersectEraseBuf(sprite);
+            }
+        }
+    }
+#ifdef PROFILE
+    rasterBorder(borderColor);
+#endif
     /*
      * The following happens after last active scanline
      */
@@ -469,17 +640,16 @@ unsigned long viewRefresh(int scrolldir)
     /*
      * Update sprites
      */
-    sprite = &spriteTable[0];
-    for (i = 0; i < NUM_SPRITES; i++)
+    for (sprite = &spriteTable[0]; sprite < &spriteTable[NUM_SPRITES]; sprite++)
     {
         if (sprite->state)
         {
             if (sprite->state == STATE_MOVING)
             {
                 cpyBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
+                sprite->state = STATE_ACTIVE;
                 sprite->bufS  = sprite->s & 0xFFFE;
                 sprite->bufT  = sprite->t;
-                sprite->state = STATE_ACTIVE;
             }
             else if (sprite->state == STATE_POSITIONING)
             {
@@ -492,13 +662,12 @@ unsigned long viewRefresh(int scrolldir)
                 cpyBuf(sprite->eraS, sprite->eraT, sprite->eraWidth, sprite->height, sprite->erasebuf);
                 free(sprite->spritebuf);
                 free(sprite->erasebuf);
+                sprite->state     = STATE_INACTIVE;
                 sprite->spriteptr = 0L;
                 sprite->spritebuf = 0L;
                 sprite->erasebuf  = 0L;
-                sprite->state     = STATE_INACTIVE;
             }
         }
-        sprite++;
     }
 #ifdef PROFILE
     rasterBorder(borderColor);

@@ -267,7 +267,7 @@ int main(int argc, char **argv)
      */
     incS    = 2;
     incT    = 2;
-    faceS   = 0x40;
+    faceS   = 0x80;
     faceT   = 0xA0;
     viewS   = 0x84 - 80;
     viewT   = 0x84 - 50;
@@ -276,7 +276,7 @@ int main(int argc, char **argv)
      */
     viewInit(viewS, viewT, 16, 16, (unsigned char far * far *)tilemap);
     spriteEnable(0, faceS, faceT, FACE_WIDTH, FACE_HEIGHT, face);
-    spriteEnable(1,0x94, 0x74, FACE_WIDTH, FACE_HEIGHT, angry);
+    spriteEnable(1, 0x94, 0x74, FACE_WIDTH, FACE_HEIGHT, angry);
     viewRefresh(0);
     cycle = 0;
     while (!kbhit())
@@ -320,7 +320,7 @@ int main(int argc, char **argv)
 #ifdef PROFILE
             rasterBorder(BROWN);
 #endif
-            //if (getch() == 'Q') {txt80(); tileExit(); return 0;}
+            if (getch() == 'Q') {txt80(); viewExit(); return 0;}
         }
     }
     getch();
