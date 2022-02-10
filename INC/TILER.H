@@ -11,7 +11,7 @@ void tileScrn(unsigned int s, unsigned int t);
 /*
  * Sprite defines and routines
  */
-#define NUM_SPRITES 4
+#define NUM_SPRITES 8 
 void spriteBuf(int x, int y, int width, int height, unsigned char far *sprite, int span, unsigned char far *buf);
 void spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *sprite);
 void spriteDisable(int index);

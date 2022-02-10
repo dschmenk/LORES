@@ -693,9 +693,6 @@ void viewInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
      */
     for (i = 0; i < NUM_SPRITES; i++)
         spriteTable[i].state = STATE_INACTIVE;
-#ifdef PROFILE
-    borderProfile = borderColor == BLACK ? WHITE : BLACK;
-#endif
 }
 void viewExit(void)
 {
