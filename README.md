@@ -35,7 +35,7 @@ Creating fast graphics routines using this low resolution (lores) mode presents 
 
 In order to get fast, interactive graphics on such a low end system will require clever coding tricks to update the bare minimum of pixels per screen. The main idea of this library is to use a feature of the 6845 CRTC chip that adjusts its scan out start address to any character in CGA memory. The standard CGA card contains 16K of RAM used for background, foreground and character information (in text mode). Interestingly, the CGA responds to a full 32K of address space in the 8088's memory map. The CRTC also wraps its video scan out at 16K. The lores graphics mode uses almost all of this 16K to display a single screen: 80 * 50 = 8000 characters. Two bytes per character (color and character code) takes up 16000 bytes of the 16384 bytes of CGA memory. This leaves just 384 bytes (= 384 pixels) left over. Combined, the CPU and CRTC can access data off the end of the 16K memory that wraps around to the beginning of CGA memory.
 
-### Scrolling and tile maps
+### Scrolling and Tile Maps
 
 With perfectly timed updates to the CRTC start address and updates to the border pixels, a virtual image can be scrolled around with only a little bit of overhead. This library is built around the concept of a map of 16x16 tiles. The coordinates are 12.4 fixed point values referred to as S and T, or (S,T) as a coordinate pair. The 4 bit fractional point allows for sub-tile coordinates. The on-screen view initially sets the (S,T) origin, then passes in a scroll direction during updates. There are limitations on how far scrolling happens during the update. Horizontally, the S coordinate will be forced to an even number. The CRTC chip can only set the start address to a character boundary. As lores mode uses a single character to represent two pixels, this limits the origin to even horizontal pixels. There is no such limitation on vertical pixels. Horizontally, scrolling occurs two pixels at a time. Vertically, scrolling can happen one pixel at a time, or to be consistent with the horizontal limitation, two pixels can optionally be vertically scrolled at a time.
 
@@ -166,6 +166,10 @@ Clean everything up (must call to unhook PIT interrupt):
 Big daddy of them all. Coordinates tile, sprite and scrolling updates. Return (s,t) coordinate of screen origin:
 
     unsigned long viewRefresh(int scrolldir);
+    
+Global variable that increments every frame:
+
+    extern unsigned int frameCount;
 
 ## Building
 
