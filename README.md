@@ -124,7 +124,7 @@ Fill screen with current tile map view:
 
     void tileScrn(unsigned int s, unsigned int t);
 
-### Tile map
+### Tile Map
 
 Update a tile in the map (changed or animated tiles):
 
