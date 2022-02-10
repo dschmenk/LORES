@@ -69,11 +69,11 @@ This library takes a tiered approach to provide low level access to the CGA up t
 
 The simplest functions set the mode and provide low level access to the graphics operations. Tiling and sprites need not even be enabled for these routines.
 
-Set 160x100 16 color mode:
+Set 80x25 text mode:
 
     void txt80(void);
 
-Set 80x25 text mode:
+Set 160x100 16 color mode:
 
     void gr160(unsigned char fill, unsigned char border);
 
