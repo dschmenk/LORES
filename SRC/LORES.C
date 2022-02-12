@@ -2,7 +2,17 @@
 #include <conio.h>
 #include <stdlib.h>
 #include "lores.h"
-
+/*
+ * CGA/EGA/VGA Registers
+ */
+#define REG_MISC        0x03C2
+#define REG_SEQ         0x03C4
+#define REG_GC          0x03CE
+#define REG_CRTC        0x03D4
+#define REG_STATUS      0x03DA
+/*
+ * CGA CRTC Registers
+ */
 char gr160regs[] = {113, 80, 89, 15, 127, 6, 100, 112, 2, 1, 32, 0, 0, 0};
 unsigned int scanline[100]; // Precalculated scanline offsets
 unsigned char borderColor;
@@ -11,22 +21,76 @@ void txt80(void)
 {
     union REGS regs;
 
-    regs.x.ax = 2;
+    regs.x.ax = 3;
     int86(0x10, &regs, &regs);
 }
-void gr160(unsigned char fill, unsigned char border)
+/*
+ * Mode set code for EGA and VGA from https://github.com/drwonky/cgax16demo
+ */
+int gr160(unsigned char fill, unsigned char border)
 {
-    int i, wfill;
+    int i, wfill, switches, adapter;
     int far *wvidmem = (int far *)0xB8000000L;
-    /* Set CRTC registers */
-    outp(0x3D8, 0x00); /* Turn off video */
-    for (i = 0; i < 14; i++)
-    {
-        outp(0x3D4, i); outp(0x3D5, gr160regs[i]);
+    union REGS regs;
+
+    /* Start off in text mode 3 */
+    regs.x.ax = 3;
+    int86(0x10, &regs, &regs);
+    /* Get EGA switch settings */
+    regs.x.ax = 0x1200;
+    regs.x.bx = 0x0010;
+    int86(0x10, &regs, &regs);
+    switches = regs.h.cl;
+    /* Check for VGA */
+    outpw(0x03CE, 0xAA08); // Set pixmask
+    if (inp(0x03CF) == 0xAA)
+    { /* VGA */
+        /* Read the input status register to reset the VGA attribute controller index/data state */
+		inp(0x3DA);
+		/* VGA attribute controller index register, mode register select */
+		outp(0x3C0, 0x10);	/* select the attribute control register */
+        i = inp(0x3C1);
+        outp(0x3C0, 0x10);	/* select the attribute control register */
+		outp(0x3C1, i & 0xF7);	/* attribute control turn off bit 3, blink */
+		/* VGA has an 8x16 character cell and 4 lines makes a square
+			since VGA has a 1:1 pixel aspect ratio */
+        outpw(0x3D4, 0x0309);
+        adapter = VGA;
     }
-    outp(0x3D8, 0x09);      // Turn off blink attribute
-    borderColor = border & 0x0F;
-    rasterBorder(borderColor);    // Set border
+    else if (switches == 0x6 ||	/* CGA w/CGA 40x25 */
+             switches == 0x7 ||	/* CGA w/CGA 80x25 */
+             switches == 0x8 ||	/* EGA w/CGA 80x25 */
+             switches == 0x9 ||	/* EGA w/ECD 80x25 */
+             switches == 0xB) 	/* EGA w/MONO */
+    { /* EGA */
+        regs.x.ax = 0x1003;
+        regs.x.bx = 0x0000;
+        int86(0x10, &regs, &regs); /* turn off blink via EGA BIOS */
+        /*
+         * EGA hires mode is 640x350 with a 9x14 character cell.  The pixel aspect
+         * ratio is 1:1.37, so if we make the blocks 3 scans tall you get a square
+         * pixel at 160x100, but some of the scan lines are not used (50)
+         */
+        if (switches == 0x09 ||     /* EGA Hires monitor attached, 9x14 */
+            switches == 0xB)        /* EGA with Monochrome monitor, 9x14 */
+            outpw(0x3D4, 0x0209);
+        else
+            outpw(0x3D4, 0x0109);    /* Must be CGA 8x8 on EGA card */
+        adapter = EGA;
+    }
+    else
+    { /* CGA */
+        /* Set CRTC registers */
+        outp(0x3D8, 0x00); /* Turn off video */
+        for (i = 0; i < 14; i++)
+        {
+            outp(0x3D4, i); outp(0x3D5, gr160regs[i]);
+        }
+        outp(0x3D8, 0x09);      // Turn off blink attribute
+        borderColor = border & 0x0F;
+        rasterBorder(borderColor);    // Set border
+        adapter = CGA;
+    }
     fill = (fill << 4) | fill;
     wfill = 221 | (fill << 8);
     for (i = 0; i < 8192; i++)
@@ -36,6 +100,7 @@ void gr160(unsigned char fill, unsigned char border)
      */
     for (i = 0; i < 100; i++)
         scanline[i] = i * 160;
+    return adapter;
 }
 void rect(unsigned int x, unsigned int y, int width, int height, unsigned char color)
 {
