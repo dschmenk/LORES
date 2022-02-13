@@ -610,7 +610,7 @@ sprtevennxt:
         jnz     sprtevenx
         jmp    sprtexit
 sprtdstodd:
-        dec     WORD PTR [bp+12]        ; span
+;        dec     WORD PTR [bp+12]        ; span
 sprtoddfirst:
         xor     ax, ax
         lodsb
@@ -683,7 +683,7 @@ sprtoddlast:
 @@:     inc     di
         inc     di
         mov     cx, WORD PTR [bp+8]     ; width
-        add     di, 160
+        add     di, 160-2
         sub     di, cx
         sub     di, cx
         add     si, WORD PTR [bp+12]    ; span
