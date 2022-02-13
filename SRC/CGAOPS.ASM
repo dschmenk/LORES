@@ -10,6 +10,7 @@ DGROUP	GROUP	CONST, _BSS, _DATA
         ASSUME  CS: _TEXT, DS: DGROUP, SS: DGROUP
 
 EXTRN   _scanline:      WORD
+EXTRN   _scrnMask:      WORD
 EXTRN   _orgS:          WORD
 EXTRN   _orgT:          WORD
 EXTRN   _extS:          WORD
@@ -129,14 +130,14 @@ __cpyBuf         PROC NEAR
         jae     @B
         mov     cx, WORD PTR [bp+8]     ; width
         add     ax, cx
-        cmp     ax, _orgS
+        cmp     ax, DGROUP:_orgS
         jbe     @B
         mov     dx, WORD PTR [bp+6]     ; t
-        cmp     dx, _extT               ; t >= extT
+        cmp     dx, DGROUP:_extT        ; t >= extT
         jae      @B
         mov     ax, WORD PTR [bp+10]    ; height
         add     ax, WORD PTR [bp+6]     ; t
-        cmp     ax, _orgT
+        cmp     ax, DGROUP:_orgT
         jbe     @B
 ; span = width >> 1;
         shr     cx, 1
@@ -160,15 +161,15 @@ __cpyBuf         PROC NEAR
 ; if (s + width > extS)
 @@:     mov     ax, WORD PTR [bp+8]     ; width
         add     ax, WORD PTR [bp+4]     ; s
-        cmp     ax, _extS               ; extS
+        cmp     ax, DGROUP:_extS        ; extS
         jbe     cbclipt
 ; width = extS - s;
-        mov     ax, _extS               ; extS
+        mov     ax, DGROUP:_extS        ; extS
         sub     ax, WORD PTR [bp+4]     ; s
         mov     WORD PTR [bp+8], ax     ; width
 ; if (t < orgT)
 cbclipt:
-        mov     ax, _orgT
+        mov     ax, DGROUP:_orgT
         cmp     WORD PTR [bp+6], ax     ; t
         jae     @F
 ; height -= orgT - t;
@@ -183,7 +184,7 @@ cbclipt:
 ; if (t + height > extT)
 @@:     mov     ax, WORD PTR [bp+10]    ; height
         add     ax, WORD PTR [bp+6]     ; t
-        cmp     ax, _extT               ; extT
+        cmp     ax, DGROUP:_extT        ; extT
         jbe     cpybuf
 ; height = extT - t;
         mov     ax, _extT               ; extT
@@ -195,13 +196,13 @@ cpybuf:
         mov     ax, 0B800H
         mov     es, ax
         mov     bx, WORD PTR [bp+6]     ; t
-        sub     bx, _orgT
+        sub     bx, DGROUP:_orgT
         shl     bx, 1
-        mov     di, WORD PTR _scanline[bx]
+        mov     di, DGROUP:_scanline[bx]
         add     di, WORD PTR [bp+4]     ; s
-        sub     di, _orgS
-        add     di, _orgAddr
-        and     di, 03FFFh              ; pixaddr = (scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF
+        sub     di, DGROUP:_orgS
+        add     di, DGROUP:_orgAddr     ; pixaddr = (scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF
+        and     di, DGROUP:_scrnMask
         mov     cx, WORD PTR [bp+8]     ; width
         mov     bx, cx
         shr     cx, 1                   ; width/2
@@ -305,18 +306,18 @@ __cpyBufSnow     PROC NEAR
 ; span          = bp-2
 ; if ((s >= extS) || (s + width  <= orgS) || (t >= extT) || (t + height <= orgT))
         mov     ax, WORD PTR [bp+4]     ; s
-        cmp     ax, _extS               ; s >= extS
+        cmp     ax, DGROUP:_extS        ; s >= extS
         jae     @B
         mov     cx, WORD PTR [bp+8]     ; width
         add     ax, cx
-        cmp     ax, _orgS
+        cmp     ax, DGROUP:_orgS
         jbe     @B
         mov     dx, WORD PTR [bp+6]     ; t
-        cmp     dx, _extT               ; t >= extT
+        cmp     dx, DGROUP:_extT        ; t >= extT
         jae     @B
         mov     ax, WORD PTR [bp+10]    ; height
         add     ax, WORD PTR [bp+6]     ; t
-        cmp     ax, _orgT
+        cmp     ax, DGROUP:_orgT
         jbe     @B
 ; span = width >> 1;
         shr     cx, 1
@@ -325,7 +326,7 @@ __cpyBufSnow     PROC NEAR
 ; Clip to screen edges
 ;
 ; if (s < orgS)
-        mov     ax, _orgS
+        mov     ax, DGROUP:_orgS
         cmp     WORD PTR [bp+4], ax     ; s
         jae     @F
 ; width -= orgS - s;
@@ -340,15 +341,15 @@ __cpyBufSnow     PROC NEAR
 ; if (s + width > extS)
 @@:     mov     ax, WORD PTR [bp+8]     ; width
         add     ax, WORD PTR [bp+4]     ; s
-        cmp     ax, _extS               ; extS
+        cmp     ax, DGROUP:_extS        ; extS
         jbe     cbsclipt
 ; width = extS - s;
-        mov     ax, _extS               ; extS
+        mov     ax, DGROUP:_extS        ; extS
         sub     ax, WORD PTR [bp+4]     ; s
         mov     WORD PTR [bp+8], ax     ; width
 ; if (t < orgT)
 cbsclipt:
-        mov     ax, _orgT
+        mov     ax, DGROUP:_orgT
         cmp     WORD PTR [bp+6], ax     ; t
         jae     @F
 ; height -= orgT - t;
@@ -363,10 +364,10 @@ cbsclipt:
 ; if (t + height > extT)
 @@:     mov     ax, WORD PTR [bp+10]    ; height
         add     ax, WORD PTR [bp+6]     ; t
-        cmp     ax, _extT               ; extT
+        cmp     ax, DGROUP:_extT        ; extT
         jbe     cpybufsnow
 ; height = extT - t;
-        mov     ax, _extT               ; extT
+        mov     ax, DGROUP:_extT        ; extT
         sub     ax, WORD PTR [bp+6]     ; t
         mov     WORD PTR [bp+10], ax    ; height
 ; CPYBUF((scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
@@ -375,13 +376,13 @@ cpybufsnow:
         mov     ax, 0B800H
         mov     es, ax
         mov     bx, WORD PTR [bp+6]     ; t
-        sub     bx, _orgT
+        sub     bx, DGROUP:_orgT
         shl     bx, 1
-        mov     di, WORD PTR _scanline[bx]
+        mov     di, DGROUP:_scanline[bx]
         add     di, WORD PTR [bp+4]     ; s
-        sub     di, _orgS
-        add     di, _orgAddr
-        and     di, 03FFFh              ; pixaddr = (scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF
+        sub     di, DGROUP:_orgS
+        add     di, DGROUP:_orgAddr     ; pixaddr = (scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF
+        and     di, DGROUP:_scrnMask
         lds     si, DWORD PTR [bp+12]   ; buf
         ASSUME  DS: NOTHING
         mov     bx, WORD PTR [bp+8]     ; width
@@ -533,6 +534,172 @@ tilesnxt:
         ret
 __tileSnow      ENDP
 
+        PUBLIC  _spriteScrn
+;void spriteScrn(int x, int y, int width, int height, int span, unsigned char far *spriteImg)
+_spriteScrn     PROC NEAR
+        push    bp
+        mov     bp, sp
+        push    di
+        push    si
+        push    ds
+        ASSUME  DS: NOTHING
+; x             = bp+4
+; y             = bp+6
+; width         = bp+8
+; height        = bp+10
+; span          = bp+12
+; spriteptr     = bp+14, bp+16
+        mov     ax, 0B800H
+        mov     es, ax
+        mov     bx, WORD PTR [bp+6]     ; y
+        shl     bx, 1
+        mov     di, DGROUP:_scanline[bx]
+        mov     cx, WORD PTR [bp+4]     ; x
+        and     cl, 0FEh
+        add     di, cx
+        add     di, DGROUP:_orgAddr
+        and     di, DGROUP:_scrnMask
+        shr     WORD PTR [bp+8], 1      ; width
+        mov     cx, WORD PTR [bp+8]     ; width
+        sub     WORD PTR [bp+12], cx    ; span
+        mov     dx, WORD PTR [bp+10]    ; height
+        lds     si, DWORD PTR [bp+14]   ; sprite
+        test    BYTE PTR [bp+4], 1      ; x
+        jnz     sprtdstodd
+sprtevenx:
+        lodsb
+        cmp     al, 088h                ; Both nybbles transparent?
+        je      sprtevennxt
+        mov     bl, al
+        mov     bh, al
+        and     bx, 0F00Fh
+        cmp     bl, 08h                 ; Low nybble transparent?
+        je      sprtexparlo
+        cmp     bh, 080h                ; High nybble transparent?
+        je      sprtexparhi
+        stosb
+        inc     di
+        loop    sprtevenx
+        jmp     SHORT @F
+sprtexparlo:
+        mov     al, es:[di]
+        and     al, 0Fh
+        or      al, bh
+        stosb
+        inc     di
+        loop    sprtevenx
+        jmp     SHORT @F
+sprtexparhi:
+        mov     al, es:[di]
+        and     al, 0F0h
+        or      al, bl
+        stosb
+        inc     di
+        loop    sprtevenx
+        jmp     SHORT @F
+sprtevennxt:
+        inc     di
+        inc     di
+        loop    sprtevenx
+@@:     mov     cx, WORD PTR [bp+8]     ; width
+        add     di, 160
+        sub     di, cx
+        sub     di, cx
+        add     si, WORD PTR [bp+12]    ; span
+        dec     dx                      ; height
+        jnz     sprtevenx
+        jmp    sprtexit
+sprtdstodd:
+        dec     WORD PTR [bp+12]        ; span
+sprtoddfirst:
+        xor     ax, ax
+        lodsb
+        ror     ax, 1
+        ror     ax, 1
+        ror     ax, 1
+        ror     ax, 1
+        cmp     ah, 80h;                ; High nybble transparent?
+        je      @F
+        mov     bh, es:[di]
+        and     bh, 0Fh
+        or      ah, bh
+        mov     es:[di], ah
+@@:     inc     di
+        inc     di
+        mov     bh, al
+        loop    sprtoddx
+        jmp     SHORT sprtoddlast
+sprtoddx:
+        xor     ax, ax
+        lodsb
+        ror     ax, 1
+        ror     ax, 1
+        ror     ax, 1
+        ror     ax, 1
+        mov     bl, bh
+        or      bl, ah
+        cmp     bl, 088h                ; Both nybbles transparent?
+        je      sprtoddnxt
+        cmp     bh, 08h                 ; Low nybble transparent?
+        je      sprtoxparlo
+        cmp     ah, 080h                ; High nybble transparent?
+        je      sprtoxparhi
+        mov     bh, al
+        mov     al, bl
+        stosb
+        inc     di
+        loop    sprtoddx
+        jmp     SHORT sprtoddlast
+sprtoxparlo:
+        mov     bh, al
+        mov     al, es:[di]
+        and     al, 0Fh
+        or      al, ah
+        stosb
+        inc     di
+        loop    sprtoddx
+        jmp     SHORT sprtoddlast
+sprtoxparhi:
+        xchg    bh, al
+        mov     bl, es:[di]
+        and     bl, 0F0h
+        or      al, bl
+        stosb
+        inc     di
+        loop    sprtoddx
+        jmp     SHORT sprtoddlast
+sprtoddnxt:
+        mov     bh, al
+        inc     di
+        inc     di
+        loop    sprtoddx
+sprtoddlast:
+        cmp     bh, 08h;                ; Low nybble transparent?
+        je      @F
+        mov     ah, es:[di]
+        and     ah, 0F0h
+        or      ah, bh
+        mov     es:[di], ah
+@@:     inc     di
+        inc     di
+        mov     cx, WORD PTR [bp+8]     ; width
+        add     di, 160
+        sub     di, cx
+        sub     di, cx
+        add     si, WORD PTR [bp+12]    ; span
+        dec     dx                      ; height
+        jz      sprtexit
+        jmp     sprtoddfirst
+sprtexit:
+        pop     ds
+        ASSUME  DS: DGROUP
+        pop     si
+        pop     di
+        mov     sp, bp
+        pop     bp
+        ret
+_spriteScrn     ENDP
+
         PUBLIC  __plot
 ; void _plot(unsigned int x, unsigned int y, unsigned char color)
 __plot          PROC NEAR
@@ -548,9 +715,11 @@ __plot          PROC NEAR
         shl     bx, 1
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x
-        add     di, dx
-        and     di, 03FFEh
+        mov     cx, dx
+        and     cl, 0FEh
+        add     di, cx
         add     di, _orgAddr
+        and     di, DGROUP:_scrnMask
         mov     ah, BYTE PTR [bp+8]     ; color
         mov     al, es:[di]
         shr     dx, 1
@@ -586,10 +755,12 @@ __plotSnow    PROC NEAR
         mov     bx, WORD PTR [bp+6]     ; y
         shl     bx, 1
         mov     di, WORD PTR _scanline[bx]
-        mov     cx, WORD PTR [bp+4]     ; x
+        mov     dx, WORD PTR [bp+4]     ; x
+        mov     cx, dx
+        and     dl, 0FEh
         add     di, cx
-        and     di, 03FFEh
         add     di, _orgAddr
+        and     di, DGROUP:_scrnMask
         mov     ah, BYTE PTR [bp+8]     ; color
         mov     dx, 03DAh
 @@:     in      al, dx
@@ -633,9 +804,11 @@ __hlin          PROC NEAR
         shl     bx, 1
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x1
-        add     di, dx
-        and     di, 03FFEh
+        mov     cx, dx
+        and     cl, 0FEh
+        add     di, cx
         add     di, _orgAddr
+        and     di, DGROUP:_scrnMask
         mov     ah, BYTE PTR [bp+10]     ; color
         mov     al, ah
         shl     ah, 1
@@ -700,9 +873,11 @@ __hlinSnow      PROC NEAR
         shl     bx, 1
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x1
-        add     di, dx
-        and     di, 03FFEh
+        mov     cx, dx
+        and     cl, 0FEh
+        add     di, cx
         add     di, _orgAddr
+        and     di, DGROUP:_scrnMask
         mov     ah, BYTE PTR [bp+10]     ; color
         mov     al, ah
         shl     ah, 1
@@ -796,9 +971,11 @@ __vlin          PROC NEAR
         shl     bx, 1
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x
-        add     di, dx
-        and     di, 03FFEh
+        mov     cx, dx
+        and     cl, 0FEh
+        add     di, cx
         add     di, _orgAddr
+        and     di, DGROUP:_scrnMask
         shr     bx, 1
         mov     cx, WORD PTR [bp+8]     ; y2
         sub     cx, bx
@@ -840,9 +1017,11 @@ __vlinSnow      PROC NEAR
         shl     bx, 1
         mov     di, WORD PTR _scanline[bx]
         mov     dx, WORD PTR [bp+4]     ; x
-        add     di, dx
-        and     di, 03FFEh
+        mov     cx, dx
+        and     cl, 0FEh
+        add     di, cx
         add     di, _orgAddr
+        and     di, DGROUP:_scrnMask
         shr     bx, 1
         mov     cx, WORD PTR [bp+8]     ; y2
         sub     cx, bx

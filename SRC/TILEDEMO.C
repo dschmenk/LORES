@@ -234,7 +234,6 @@ int main(int argc, char **argv)
     unsigned char *scrnbuf;
 
     buildmap();
-    gr160(BLACK, BROWN);
     facebuf = (unsigned char *)malloc(FACEBUF_HEIGHT*FACEBUF_WIDTH/2);
     /*
      * Set initial coordinates and scroll direction.
@@ -248,7 +247,7 @@ int main(int argc, char **argv)
     /*
      * Use software scrolling
      */
-    viewInit(0, 0, 16, 16, (unsigned char far * far *)tilemap);
+    viewInit(gr160(BLACK, BLACK), 0, 0, 16, 16, (unsigned char far * far *)tilemap);
 #if 0
     while (!kbhit())
     {
@@ -315,7 +314,7 @@ int main(int argc, char **argv)
     /*
      * Use hardware scrolling
      */
-    viewInit(s, t, 16, 16, (unsigned char far * far *)tilemap);
+    viewInit(gr160(BLACK, BLACK), s, t, 16, 16, (unsigned char far * far *)tilemap);
 #if 1
     cycle = 0;
     while (!kbhit())

@@ -135,7 +135,7 @@ timerISR        PROC FAR
         pop     ds
         ASSUME  DS: NOTHING
         dec     BYTE PTR cs:chainCount
-        jz      SHORT @F
+        jz      @F
         mov     al, 020h
         out     020h, al                ; Send EOI to 8259
         pop     ax

@@ -258,7 +258,6 @@ int main(int argc, char **argv)
     unsigned char *scrnbuf;
 
     buildmap();
-    gr160(BLACK, BROWN);
     facebuf = (unsigned char *)malloc(FACEBUF_HEIGHT*FACEBUF_WIDTH/2);
     /*
      * Set initial coordinates and scroll direction.
@@ -272,9 +271,9 @@ int main(int argc, char **argv)
     viewS   = 0x84 - 80;
     viewT   = 0x84 - 50;
     /*
-     * Use hardware scrolling
+     * Use hardware scrolling on CGA
      */
-    viewInit(viewS, viewT, 16, 16, (unsigned char far * far *)tilemap);
+    viewInit(gr160(BLACK, BROWN), viewS, viewT, 16, 16, (unsigned char far * far *)tilemap);
     spriteEnable(0, faceS, faceT, FACE_WIDTH, FACE_HEIGHT, face);
     spriteEnable(1, 0x94, 0x74, FACE_WIDTH, FACE_HEIGHT, angry);
     viewRefresh(0);
@@ -324,7 +323,7 @@ int main(int argc, char **argv)
         }
     }
     getch();
-    txt80();
     viewExit();
+    txt80();
     return 0;
 }

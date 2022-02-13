@@ -531,7 +531,7 @@ _tileEdgeV    ENDP
 
 PUBLIC    _spriteBuf
 
-;void spriteBuf(int x, int y, int width, int height, unsigned char far *sprite, int span, unsigned char far *buf)
+;void spriteBuf(int x, int y, int width, int height, unsigned char far *spriteImg, int span, unsigned char far *buf)
 _spriteBuf      PROC NEAR
         push    bp
         mov     bp, sp

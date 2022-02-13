@@ -4,6 +4,7 @@
 #include "tiler.h"
 
 extern unsigned int scanline[100]; // Precalculated scanline offsets
+extern unsigned int scrnMask;
 #ifdef PROFILE
 extern unsigned char borderColor;
 #endif
@@ -12,12 +13,7 @@ extern unsigned char borderColor;
  */
 void cpyEdgeH(int addr, int count);
 void cpyEdgeV(int addr);
-#ifdef CGA_SNOW
-#define TILE    _tileSnow
-#else
-#define TILE    _tile
-#endif
-#define tile(x,y,s,t,w,h,p) TILE((scanline[y]+(x)+orgAddr)&0x3FFF,(w)>>1,h,(p)+(t)*8+((s)>>1))
+#define tile(x,y,s,t,w,h,p) _tile((scanline[y]+(x)+orgAddr)&scrnMask,(w)>>1,h,(p)+(t)*8+((s)>>1))
 /*
  * Fast memory routines
  */
@@ -126,10 +122,10 @@ void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew)
 /*
  * Sprite routines
  */
-void spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *sprite)
+void spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *spriteImg)
 {
     spriteTable[index].state     = STATE_MOVING;
-    spriteTable[index].spriteptr = sprite;
+    spriteTable[index].spriteptr = spriteImg;
     spriteTable[index].spritebuf = (unsigned char *)malloc((width+ERASE_BORDER+1)/2*(height+ERASE_BORDER)); // Leave room for erase border
     spriteTable[index].erasebuf  = (unsigned char *)malloc((width+1/2)*height);
     spriteTable[index].width     = width;
@@ -150,9 +146,9 @@ void spriteDisable(int index)
     spriteTable[index].eraWidth = ((spriteTable[index].s + spriteTable[index].width + 1) & 0xFFFE) - spriteTable[index].eraS;
     spriteTable[index].eraT     = spriteTable[index].t;
 }
-void spriteUpdate(int index, unsigned char far *imageNew)
+void spriteUpdate(int index, unsigned char far *spriteImg)
 {
-    spriteTable[index].spriteptr = imageNew;
+    spriteTable[index].spriteptr = spriteImg;
     if (spriteTable[index].state == STATE_ACTIVE)
     {
         spriteTable[index].state     = STATE_MOVING;
@@ -385,7 +381,7 @@ void spriteIntersectEraseBuf(struct sprite_t *spriteAbove)
 /*
  * Refresh tile and sprite view
  */
-unsigned long viewRefresh(int scrolldir)
+unsigned long viewScroll(int scrolldir)
 {
     unsigned int hcount, haddr, vaddr, i;
     struct sprite_t *sprite;
@@ -664,7 +660,135 @@ unsigned long viewRefresh(int scrolldir)
      */
     return ((unsigned long)orgT << 16) | orgS;
 }
-void viewInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
+/*
+ * Use hardware double buffering and redraw entire frame
+ */
+unsigned long viewRedraw(int scrolldir)
+{
+    struct sprite_t *sprite;
+    unsigned char far *spriteImg;
+    int spriteX, spriteY, spriteWidth, spriteHeight;
+
+    if (scrolldir & SCROLL_LEFT2)
+    {
+        if (orgS < maxOrgS)
+        {
+            orgS += 2;
+            extS  = orgS + 160;
+        }
+        else
+            scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
+    }
+    else if (scrolldir & SCROLL_RIGHT2)
+    {
+        if (orgS > 0)
+        {
+            orgS = (orgS - 2) & 0x0FFFE;
+            extS = orgS + 160;
+        }
+        else
+        scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
+    }
+    if (scrolldir & SCROLL_UP2)
+    {
+        if (orgT < maxOrgT)
+        {
+            orgT = (orgT + 2) & 0x0FFFE;
+            extT = orgT + 100;
+        }
+        else
+            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+    }
+    else if (scrolldir & SCROLL_DOWN2)
+    {
+        if (orgT > 0)
+        {
+            orgT = (orgT - 2) & 0x0FFFE;
+            extT = orgT + 100;
+        }
+        else
+            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+    }
+    else if (scrolldir & SCROLL_UP)
+    {
+        if (orgT < maxOrgT + 1)
+        {
+            orgT++;
+            extT = orgT + 100;
+        }
+        else
+            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+    }
+    else if (scrolldir & SCROLL_DOWN)
+    {
+        if (orgT > 0)
+        {
+            orgT--;
+            extT = orgT + 100;
+        }
+        else
+            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+    }
+    /*
+     * Draw tiles
+     */
+    tileScrn(orgS, orgT);
+    /*
+     * Draw sprites
+     */
+    for (sprite = &spriteTable[0]; sprite < &spriteTable[NUM_SPRITES]; sprite++)
+    {
+        if ((sprite->state >= STATE_ACTIVE)
+         && (sprite->s < extS)
+         && ((sprite->s + sprite->width) > orgS)
+         && (sprite->t < extT)
+         && ((sprite->t + sprite->height) > orgT))
+        {
+            spriteX      = sprite->s - orgS;
+            spriteY      = sprite->t - orgT;
+            spriteWidth  = sprite->width;
+            spriteHeight = sprite->height;
+            spriteImg    = sprite->spriteptr;
+            if (spriteX < 0)
+            {
+                spriteImg   += spriteX >> 1;
+                spriteWidth += spriteX;
+                spriteX      = 0;
+            }
+            if (spriteX + spriteWidth > 160)
+            {
+                spriteWidth = 160 - spriteX;
+            }
+            if (spriteY < 0)
+            {
+                spriteImg    += (-spriteY * sprite->width) >> 1;
+                spriteHeight += spriteY;
+                spriteY       = 0;
+            }
+            if (spriteY + spriteHeight > 100)
+            {
+                spriteHeight = 100 - spriteY;
+            }
+            spriteScrn(spriteX, spriteY, spriteWidth, spriteHeight, sprite->width >> 1, spriteImg);
+        }
+    }
+    /*
+     * Wait until VBlank and update CRTC start address to swap buffers
+     */
+    while (inp(0x3DA) & 0x08); // Wait until the end of VBlank
+    outpw(0x3D4, ((orgAddr >> 1) & 0xFF00) + 12);
+    while (!(inp(0x3DA) & 0x08)); // Wait until beginning of VBlank
+    /*
+     * Point orgAddr to back buffer
+     */
+    orgAddr ^= 0x4000;
+    frameCount++;
+    /*
+     * Return updated origin as 32 bit value
+     */
+    return ((unsigned long)orgT << 16) | orgS;
+}
+void viewInit(int mode, unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
 {
     int i;
     /*
@@ -682,12 +806,24 @@ void viewInit(unsigned int s, unsigned int t, unsigned int width, unsigned int h
     orgT      = t;
     extS      = orgS + 160;
     extT      = orgT + 100;
-    orgAddr   = (orgT * 160 + orgS | 1) & 0x3FFF;
-    rasterDisable(); /* Turn off video */
-    tileScrn(orgS, orgT);
-    rasterEnable();  /* Turn on video */
-    enableRasterTimer(199);
-    setStartAddr(orgAddr >> 1);
+    if (mode == REFRESH_SCROLL)
+    {
+        orgAddr = (orgT * 160 + orgS | 1) & 0x3FFF;
+        viewRefresh = viewScroll;
+        rasterDisable(); /* Turn off video */
+        tileScrn(orgS, orgT);
+        rasterEnable();  /* Turn on video */
+        enableRasterTimer(199);
+        setStartAddr(orgAddr >> 1);
+    }
+    else
+    {
+        orgAddr = 0x0001; // Draw to front buffer
+        viewRefresh = viewRedraw;
+        tileScrn(orgS, orgT);
+        outpw(0x3D4, 0x0000 + 12);
+        orgAddr = 0x4001; // Draw to back buffer
+    }
     /*
      * Init sprite table
      */
