@@ -9,10 +9,10 @@ _BSS    ENDS
 DGROUP  GROUP    CONST, _BSS, _DATA
         ASSUME  CS: _TEXT, DS: DGROUP, SS: DGROUP
 
-EXTRN   _edgeH:BYTE
-EXTRN   _edgeV:BYTE
-EXTRN   _tileMap:BYTE
-EXTRN   _spanMap:WORD
+EXTRN   _edgeH:         BYTE
+EXTRN   _edgeV:         BYTE
+EXTRN   _tileMap:       BYTE
+EXTRN   _spanMap:       WORD
 
 _TEXT   SEGMENT
 

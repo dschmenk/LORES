@@ -13,7 +13,6 @@ extern unsigned char borderColor;
  */
 void cpyEdgeH(int addr, int count);
 void cpyEdgeV(int addr);
-#define tile(x,y,s,t,w,h,p) _tile((scanline[y]+(x)+orgAddr)&scrnMask,(w)>>1,h,(p)+(t)*8+((s)>>1))
 /*
  * Fast memory routines
  */
@@ -62,38 +61,6 @@ struct sprite_t
     int                height, bufHeight;
     unsigned char      state;
 } spriteTable[NUM_SPRITES];
-
-void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr)
-{
-    int x;
-
-    x = 16 - s;
-    tile(0, y, s, t, x, height, *tileptr++);
-    do {
-        tile(x, y, 0, t, 16, height, *tileptr++);
-        x += 16;
-    } while (x < 160 - 16);
-    tile(x, y, 0, t, 160 - x, height, *tileptr);
-}
-void tileScrn(unsigned int s, unsigned int t)
-{
-    int y;
-    unsigned char far * far *tileptr;
-
-    tileptr = tileMap + (t >> 4) * widthMap + (s >> 4);
-    s &= 0x0F;
-    t &= 0x0F;
-    y  = 16 - t;
-    tileRow(0, s, t, y, tileptr);
-    tileptr += widthMap;
-    do
-    {
-        tileRow(y, s, 0, 16, tileptr);
-        tileptr += widthMap;
-        y       += 16;
-    } while (y < 100 - 16);
-    tileRow(y, s, 0, 100 - y, tileptr);
-}
 /*
  * Update tile in map
  */
@@ -588,37 +555,8 @@ unsigned long viewScroll(int scrolldir)
      */
     while (tileUpdateCount)
     {
-        int s, t, width, height;
         tileUpdateCount--;
-        /*
-         * Clip to screen edges
-         */
-        s      = tileUpdateS[tileUpdateCount];
-        t      = tileUpdateT[tileUpdateCount];
-        width  =
-        height = 16;
-        if (s < orgS)
-        {
-            width = 16 - (orgS - s);
-            s     = orgS;
-        }
-        else if (s + 16 > extS)
-            width = extS - s;
-        if (t < orgT)
-        {
-            height = 16 - (orgT - t);
-            t      = orgT;
-        }
-        else if (t + 16 > extT)
-            height = extT - t;
-        /*
-         * Check for on-screen values
-         */
-        if (width > 0 && width <= 16 && height > 0 && height <= 16)
-            /*
-             * BLT to video memory
-             */
-            tile(s - orgS, t - orgT, s & 0x0F, t & 0x0F, width, height, tileUpdatePtr[tileUpdateCount]);
+        cpyBuf(tileUpdateS[tileUpdateCount], tileUpdateT[tileUpdateCount], 16, 16, tileUpdatePtr[tileUpdateCount]);
     }
     /*
      * Update sprites
