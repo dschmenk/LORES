@@ -556,7 +556,7 @@ unsigned long viewScroll(int scrolldir)
     while (tileUpdateCount)
     {
         tileUpdateCount--;
-        cpyBuf(tileUpdateS[tileUpdateCount], tileUpdateT[tileUpdateCount], 16, 16, tileUpdatePtr[tileUpdateCount]);
+        _cpyBuf(tileUpdateS[tileUpdateCount], tileUpdateT[tileUpdateCount], 16, 16, tileUpdatePtr[tileUpdateCount]);
     }
     /*
      * Update sprites
@@ -567,20 +567,20 @@ unsigned long viewScroll(int scrolldir)
         {
             if (sprite->state == STATE_MOVING)
             {
-                cpyBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
+                _cpyBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
                 sprite->state = STATE_ACTIVE;
                 sprite->bufS  = sprite->s & 0xFFFE;
                 sprite->bufT  = sprite->t;
             }
             else if (sprite->state == STATE_POSITIONING)
             {
-                cpyBuf(sprite->eraS, sprite->eraT, sprite->eraWidth, sprite->height,    sprite->erasebuf);
-                cpyBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
+                _cpyBuf(sprite->eraS, sprite->eraT, sprite->eraWidth, sprite->height,    sprite->erasebuf);
+                _cpyBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
                 sprite->state = STATE_ACTIVE;
             }
             else if (sprite->state == STATE_DISABLING)
             {
-                cpyBuf(sprite->eraS, sprite->eraT, sprite->eraWidth, sprite->height, sprite->erasebuf);
+                _cpyBuf(sprite->eraS, sprite->eraT, sprite->eraWidth, sprite->height, sprite->erasebuf);
                 free(sprite->spritebuf);
                 free(sprite->erasebuf);
                 sprite->state     = STATE_INACTIVE;
