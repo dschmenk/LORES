@@ -319,7 +319,7 @@ int main(int argc, char **argv)
 #ifdef PROFILE
             rasterBorder(BROWN);
 #endif
-            //if (getch() == 'Q') {txt80(); viewExit(); return 0;}
+            //if (getch() == 'Q') {viewExit(); txt80(); return 0;}
         }
     }
     getch();

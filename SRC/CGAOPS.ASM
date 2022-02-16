@@ -11,7 +11,7 @@ DGROUP	GROUP	CONST, _BSS, _DATA
 
 EXTRN   _scanline:      WORD
 EXTRN   _scrnMask:      WORD
-EXTRN   _tileMap:       BYTE
+EXTRN   _tileMap:       DWORD
 EXTRN   _widthMap:      WORD
 EXTRN   _spanMap:       WORD
 EXTRN   _orgS:          WORD
@@ -149,7 +149,7 @@ __cpyBuf         PROC NEAR
 ; Clip to screen edges
 ;
 ; if (s < orgS)
-        mov     ax, _orgS
+        mov     ax, DGROUP:_orgS
         cmp     WORD PTR [bp+4], ax     ; s
         jae     @F
 ; width -= orgS - s;
@@ -432,6 +432,71 @@ __cpyBufSnow     ENDP
 
         ASSUME  DS:NOTHING
 
+; void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr)
+tileRow         PROC NEAR
+; s             = bp+4
+; t             = bp+6
+; x             = bp-2
+; y             = bp-4
+; ss            = bp-6
+; tilerow       = bp-10, bp-8
+; tile          = bp-14, bp-12
+; pixaddr       = bp-16
+; width/2       = bp-18
+; height        = bp-20
+; x = 16 - s;
+        mov     ax, WORD PTR [bp+4]     ; s
+        shr     ax, 1
+        mov     WORD PTR [bp-6], ax     ; ss = s/2
+        shl     ax, 1
+; x = 16 - s; // x is the width of the first tile and start of the second tile column
+        sub     ax, 16
+        neg     ax
+        mov     WORD PTR [bp-2], ax     ; x
+; tile(0, y, s, t, x, height, *tilerow++);
+        shr     ax, 1
+        mov     WORD PTR [bp-18], ax    ; width/2 = x/2
+        call    tile
+        add     WORD PTR [bp-10], 4     ; tilerow++
+        mov     BYTE PTR [bp-6], 0      ; ss = 0
+        mov     BYTE PTR [bp-18], 8     ; width/2 = 8
+; pixaddr += x;
+        mov     ax, WORD PTR [bp-2]     ; x
+        add     WORD PTR [bp-16], ax    ; pixaddr
+tilemidrow:
+; tile(x, y, 0, t, 16, height, *tilerow++);
+        mov     di, WORD PTR [bp-16]    ; pixaddr
+        lds     si, DWORD PTR [bp-10]   ; tilerow
+        lds     si, [si]                ; tile
+        add     si, WORD PTR [bp+6]     ; t * 8
+        mov     dx, WORD PTR [bp-20]    ; height
+tilemidtile:
+        REPT    8
+        movsb
+        inc     di
+        ENDM
+        add     di, 160-16
+        dec     dx                      ; height
+        jnz     tilemidtile
+; tilerow++;
+        add     WORD PTR [bp-10], 4     ; OFFSET tilerow
+; x += 16;
+        add     WORD PTR [bp-16], 16    ; pixaddr
+        mov     ax, WORD PTR [bp-2]     ; x
+        add     ax, 16
+        mov     WORD PTR [bp-2], ax     ; x
+; while (x < 160 - 16);
+@@:     cmp     ax, 144
+        jl      tilemidrow
+; tile(x, y, 0, t, 160 - x, height, *tilerow);
+        sub     ax, 160                 ; x - 160
+        neg     ax                      ; -(x - 160)
+        shr     ax, 1
+        mov     WORD PTR [bp-18], ax    ; width/2 = (160 - x)/2
+        mov     WORD PTR [bp-12], ax    ; SEG tile
+;       jmp     tile                    ; Fall through
+tileRow         ENDP
+
 ; void tile(int pixaddr, int width, int height, unsigned char far *buf)
 tile            PROC NEAR
 ; s             = bp+4
@@ -450,15 +515,10 @@ tile            PROC NEAR
 ; dx => height
         mov     di, WORD PTR [bp-16]    ; pixaddr
 ; tile   += t * 8 + (s >> 1);
-        mov     si, WORD PTR [bp+6]     ; t
-        shl     si, 1
-        shl     si, 1
-        shl     si, 1
-        mov     cx, WORD PTR [bp-6]     ;ss
-        shr     cx, 1
-        add     si, cx
-        add     si, WORD PTR [bp-14]    ; OFFSET tile
-        mov     ds, WORD PTR [bp-12]    ; SEG tile
+        lds     si, DWORD PTR [bp-10]   ; tilerow
+        lds     si, [si]                ; tile
+        add     si, WORD PTR [bp+6]     ; t * 8
+        add     si, WORD PTR [bp-6]     ; ss = s/2
         mov     bx, WORD PTR [bp-18]    ; width/2
         mov     dx, WORD PTR [bp-20]    ; height
 tilev:
@@ -485,77 +545,6 @@ tilenxt:
         ret
 tile            ENDP
 
-
-; void tileRow(int y, unsigned int s, unsigned int t, int height, unsigned char far * far *tileptr)
-tileRow         PROC NEAR
-; s             = bp+4
-; t             = bp+6
-; x             = bp-2
-; y             = bp-4
-; ss            = bp-6
-; tilerow       = bp-10, bp-8
-; tile          = bp-14, bp-12
-; pixaddr       = bp-16
-; width/2       = bp-18
-; height        = bp-20
-; x = 16 - s;
-        mov     ax, WORD PTR [bp+4]     ; s
-        mov     WORD PTR [bp-6], ax     ; ss
-; x = 16 - s; // x is the width of the first tile and start of the second tile column
-        sub     ax, 16
-        neg     ax
-        mov     WORD PTR [bp-2], ax     ; x
-; tile(0, y, s, t, x, height, *tileptr++);
-;#define tile(x,y,s,t,w,h,p) _tile((scanline[y]+(x)+orgAddr)&scrnMask,(w)>>1,h,(p)+(t)*8+((s)>>1))
-        shr     ax, 1
-        mov     WORD PTR [bp-18], ax    ; width/2 = x/2
-        lds     si, DWORD PTR [bp-10]   ; tilerow
-        lodsw
-        mov     WORD PTR [bp-14], ax    ; OFFSET tile
-        lodsw
-        mov     WORD PTR [bp-12], ax    ; SEG tile
-        call    tile
-        add     WORD PTR [bp-10], 4     ; tilerow++
-        mov     BYTE PTR [bp-6], 0      ; ss = 0
-        mov     WORD PTR [bp-18], 8    ; width/2 = 8
-; pixaddr += x;
-        mov     ax, WORD PTR [bp-2]     ; x
-        add     WORD PTR [bp-16], ax    ; pixaddr
-        jmp     SHORT @F
-
-tilemidrow:
-        mov     WORD PTR [bp-2], ax     ; x
-; tile(x, y, 0, t, 16, height, *tileptr++);
-;#define tile(x,y,s,t,w,h,p) _tile((scanline[y]+(x)+orgAddr)&scrnMask,(w)>>1,h,(p)+(t)*8+((s)>>1))
-        lds     si, DWORD PTR [bp-10]   ; tilerow
-        lodsw
-        mov     WORD PTR [bp-14], ax    ; OFFSET tile
-        lodsw
-        mov     WORD PTR [bp-12], ax    ; SEG tile
-        call    tile
-; tile++;
-        add     WORD PTR [bp-10], 4     ; OFFSET tilerow
-; x += 16;
-        add     WORD PTR [bp-16], 16    ; pixaddr
-        mov     ax, WORD PTR [bp-2]     ; x
-        add     ax, 16
-; while (x < 160 - 16);
-@@:     cmp     ax, 144
-        jl      tilemidrow
-; tile(x, y, 0, t, 160 - x, height, *tileptr);
-;#define tile(x,y,s,t,w,h,p) _tile((scanline[y]+(x)+orgAddr)&scrnMask,(w)>>1,h,(p)+(t)*8+((s)>>1))
-        sub     ax, 160                 ; x - 160
-        neg     ax                      ; -(x - 160)
-        shr     ax, 1
-        mov     WORD PTR [bp-18], ax    ; width/2 = (160 - x)/2
-        lds     si, DWORD PTR [bp-10]   ; tilerow
-        lodsw
-        mov     WORD PTR [bp-14], ax    ; OFFSET tile
-        lodsw
-        mov     WORD PTR [bp-12], ax    ; SEG tile
-        jmp     tile
-tileRow         ENDP
-
         ASSUME  DS: DGROUP
 
         PUBLIC  _tileScrn
@@ -576,10 +565,10 @@ _tileScrn       PROC NEAR
 ; pixaddr       = bp-16
 ; width/2       = bp-18
 ; height        = bp-20
-
+;
         mov     ax, 0B800H
         mov     es, ax
-; tilerow = tileMap + (t >> 4) * widthMap + (s >> 4);
+; tilerow = tileMap + ((t >> 4) * widthMap + (s >> 4)) * 4;
         mov     ax, WORD PTR [bp+6]     ; t
         and     al, 0F0h
         shr     ax, 1
@@ -597,10 +586,15 @@ _tileScrn       PROC NEAR
 ; s &= 0x0F;
         and     WORD PTR [bp+4], 0Fh    ; s
 ; t &= 0x0F;
-        and     WORD PTR [bp+6], 0Fh    ; t
+        mov     bx, WORD PTR [bp+6]     ; t
+        and     bx, 000Fh
 ; y  = 16 - t; // y is the height of the first tile and start of second tile row
         mov     ax, 16
-        sub     ax, WORD PTR [bp+6]     ; t
+        sub     ax, bx
+        shl     bx, 1
+        shl     bx, 1
+        shl     bx, 1
+        mov     WORD PTR [bp+6], bx     ; t
         mov     WORD PTR [bp-4], ax     ; y
 ; tileRow(0, s, t, y, tileptr);
         mov     WORD PTR [bp-20], ax    ; height = y
@@ -614,11 +608,9 @@ _tileScrn       PROC NEAR
         pop     ax
         add     ax, DGROUP:_spanMap
         mov     WORD PTR [bp-10], ax    ; OFFSET tilerow
-        mov     bx, WORD PTR [bp-4]     ; y
         mov     BYTE PTR [bp+6], 0      ; t = 0
         mov     WORD PTR [bp-20], 16    ; height = 16
-        mov     ax, 16
-        jmp     SHORT @F
+        mov     bx, WORD PTR [bp-4]     ; y
 tilemidrows:
         shl     bx, 1
         mov     ax, DGROUP:_scanline[bx]
@@ -632,14 +624,14 @@ tilemidrows:
         pop     ds
 ; tilerow += spanMap;
         pop     ax
-        add     ax, _spanMap
+        add     ax, DGROUP:_spanMap
         mov     WORD PTR [bp-10], ax    ; OFFSET tilerow
 ; y += 16;
         mov     bx, WORD PTR [bp-4]     ; y
         add     bx, 16
         mov     WORD PTR [bp-4], bx     ; y
 ; while (y < 100 - 16);
-@@:     cmp     bx, 84
+        cmp     bx, 84
         jl      tilemidrows
 ; tileRow(y, s, 0, 100 - y, tileptr);
         mov     ax, 100
@@ -650,8 +642,9 @@ tilemidrows:
         add     ax, DGROUP:_orgAddr
         and     ax, DGROUP:_scrnMask
         mov     WORD PTR [bp-16], ax    ; pixaddr = (scanline[y] + orgAddr) & scrnMask
+        push    ds
         call    tileRow
-        add     sp, 12
+        pop     ds
         pop     si
         pop     di
         mov     sp, bp
