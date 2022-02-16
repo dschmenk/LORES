@@ -39,12 +39,10 @@ void txt80(void)
 /*
  * Mode set for 160x100 16 color mode
  */
-int gr160(unsigned char fill, unsigned char border)
+unsigned int gr160(unsigned char fill, unsigned char border)
 {
     int i, wfill, chrows, adapter;
     int far *wvidmem = (int far *)0xB8000000L;
-    unsigned char far *switches = (unsigned char far *)0x00000410L;
-    unsigned char save_switches;
     union REGS regs;
 
     /* Start off in text mode 3, 200 scanlines */
@@ -58,8 +56,10 @@ int gr160(unsigned char fill, unsigned char border)
     chrows = regs.h.cl;
     if (chrows)
     {
+        scrnMask = 0x7FFF;
         if (chrows != 16)
-        { /* EGA */
+        {   /* EGA */
+            adapter = EGA;
             outp(0x3C4, 0); outp(0x3C5, 0x00); /* Sequencer reset */
             outp(0x3C2, ega160misc); /* reprogram into 200 scanline mode */
             for (i = 1; i < sizeof(ega160seq); i++)
@@ -79,7 +79,8 @@ int gr160(unsigned char fill, unsigned char border)
             outp(0x3C4, 0); outp(0x3C5, 0x03); /* Sequencer reset */
         }
         else
-        { /* VGA */
+        {   /* VGA */
+            adapter = VGA;
             regs.x.ax = 0x1110; /* Load user character set */
             regs.x.bx = (chrows / 4) << 8;
             regs.x.cx = 1;
@@ -89,11 +90,11 @@ int gr160(unsigned char fill, unsigned char border)
             regs.x.bx = 0x0000;
             int86(0x10, &regs, &regs); /* turn off blink via BIOS */
         }
-        scrnMask = 0x7FFF;
-        adapter = NOT_CGA;
     }
     else
-    { /* CGA */
+    {   /* CGA */
+        adapter = CGA;
+        scrnMask = 0x3FFF;
         /* Set CRTC registers */
         outp(0x3D8, 0x00); /* Turn off video */
         for (i = 0; i < sizeof(cga160crtc); i++)
@@ -103,8 +104,6 @@ int gr160(unsigned char fill, unsigned char border)
         outp(0x3D8, 0x09);      // Turn off blink attribute
         borderColor = border & 0x0F;
         rasterBorder(borderColor);    // Set border
-        scrnMask = 0x3FFF;
-        adapter = CGA;
     }
     fill = (fill << 4) | fill;
     wfill = 221 | (fill << 8);

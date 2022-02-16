@@ -21,14 +21,12 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t);
 /*
  * Tiler and sprite updater
  */
-#define REFRESH_SCROLL  0
-#define REFRESH_REDRAW  1
 #define SCROLL_LEFT2    0x01
 #define SCROLL_RIGHT2   0x02
 #define SCROLL_UP2      0x04
 #define SCROLL_DOWN2    0x08
 #define SCROLL_UP       0x40
 #define SCROLL_DOWN     0x80
-void viewInit(int mode, unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map);
+void viewInit(int adapter, unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map);
 void viewExit(void);
 unsigned long (*viewRefresh)(int scrolldir);

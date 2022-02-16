@@ -1,5 +1,6 @@
-#define CGA             0
-#define NOT_CGA         (!CGA)
+#define CGA             200
+#define EGA             (0x8000|200)
+#define VGA             (0x8000|400)
 #define BLACK           0x00
 #define DARKBLUE        0x01
 #define DARKGREEN       0x02
@@ -21,7 +22,7 @@
 #define rasterEnable()  outp(0x3D8, 0x09)
 void txt40(void);
 void txt80(void);
-int gr160(unsigned char fill, unsigned char border);
+unsigned int gr160(unsigned char fill, unsigned char border);
 void line(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned char color);
 void rect(unsigned int x, unsigned int y, int width, int height, unsigned char color);
 void text(unsigned int x, unsigned int y, unsigned char color, char *string);

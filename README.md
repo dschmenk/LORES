@@ -10,6 +10,7 @@ Contents:
   - [Sprites](#sprites)
   - [Performance](#performance)
   - [Alternate Usage](#alternate-usage)
+  - [EGA/VGA Compatibility](#ega-and-vga-compatibility)
 - [Profiling](#profiling)
 - [Dealing with CGA snow](#dealing-with-cga-snow)
 - [The API](#the-api)
@@ -52,6 +53,10 @@ The library is implemented in a combination of C and 8086 assembly. Any routine 
 ### Alternate Usage
 
 Although the library focusses on the ability to use the CRTC to assist in scrolling a virtual tile map, that isn't the only way to use the routines. It is quite easy to use the memory buffer routines to create an off-screen image and copy only those sections that change per frame. This could be useful when a large part of the screen image changes and a high frame rate isn't required.
+
+### EGA and VGA compatibility
+
+This library is focussed on the CGA. However, most computers are equipped with an EGA (rarely) or a VGA (most popular). The techniques used to scroll the screen and minimize the number of pixels needing updating won't work on the EGA/VGA for technical reasons. By implementing a compatible version of the API to completely redraw each frame in a back buffer, a visually identical result can be achieved. The caveat is that the amount of pixels needing to be updated per frame is much higher, so a fairly beefy CPU (as compared to the 8088) is required to get an equivalent frame rate.
 
 ## Profiling
 
@@ -166,7 +171,7 @@ Clean everything up (must call to unhook PIT interrupt):
 Big daddy of them all. Coordinates tile, sprite and scrolling updates. Return (s,t) coordinate of screen origin:
 
     unsigned long viewRefresh(int scrolldir);
-    
+
 Global variable that increments every frame:
 
     extern unsigned int frameCount;

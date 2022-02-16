@@ -720,13 +720,12 @@ unsigned long viewRedraw(int scrolldir)
      * Point orgAddr to back buffer
      */
     orgAddr ^= 0x4000;
-    frameCount++;
     /*
      * Return updated origin as 32 bit value
      */
     return ((unsigned long)orgT << 16) | orgS;
 }
-void viewInit(int mode, unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
+void viewInit(int adapter, unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map)
 {
     int i;
     /*
@@ -744,23 +743,23 @@ void viewInit(int mode, unsigned int s, unsigned int t, unsigned int width, unsi
     orgT      = t;
     extS      = orgS + 160;
     extT      = orgT + 100;
-    if (mode == REFRESH_SCROLL)
-    {
-        orgAddr = (orgT * 160 + orgS | 1) & 0x3FFF;
-        viewRefresh = viewScroll;
-        rasterDisable(); /* Turn off video */
-        tileScrn(orgS, orgT);
-        rasterEnable();  /* Turn on video */
-        enableRasterTimer(199);
-        setStartAddr(orgAddr >> 1);
-    }
-    else
-    {
+    enableRasterTimer((adapter & 0x7FFF) - 1);
+    if (adapter & 0x8000)
+    {   // EGA/VGA
         orgAddr = 0x0001; // Draw to front buffer
         viewRefresh = viewRedraw;
         tileScrn(orgS, orgT);
         outpw(0x3D4, 0x0000 + 12);
         orgAddr = 0x4001; // Draw to back buffer
+    }
+    else
+    {   // CGA
+        orgAddr = (orgT * 160 + orgS | 1) & 0x3FFF;
+        viewRefresh = viewScroll;
+        setStartAddr(orgAddr >> 1);
+        rasterDisable(); /* Turn off video */
+        tileScrn(orgS, orgT);
+        rasterEnable();  /* Turn on video */
     }
     /*
      * Init sprite table
