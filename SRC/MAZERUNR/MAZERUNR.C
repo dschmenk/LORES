@@ -642,13 +642,13 @@ int main(int argc, char **argv)
     unsigned int faceS, viewS, moveToS, faceT, moveToT, viewT;
     int incS, incT;
     unsigned long st;
-    int mode, scrolldir;
+    unsigned int adapter, scrolldir;
     unsigned char cycleExit, quit;
     struct dostime_t time;
 
     _dos_gettime(&time);
     srand((time.hsecond << 8) | time.second);
-    mode = gr160(BLACK, BLACK);
+    adapter = gr160(BLACK, BLACK);
     while (!buildmaze())
     {
         if (kbhit() && (getch() == 'q'))
@@ -675,7 +675,7 @@ int main(int argc, char **argv)
     /*
      * Render initial view
      */
-    viewInit(mode, viewS, viewT, BORDER_RIGHT, BORDER_BOTTOM, (unsigned char far * far *)tilemap);
+    viewInit(adapter, viewS, viewT, BORDER_RIGHT, BORDER_BOTTOM, (unsigned char far * far *)tilemap);
     spriteEnable(0, faceS, faceT, FACE_WIDTH, FACE_HEIGHT, face);
     viewRefresh(0);
     cycleExit = 0;

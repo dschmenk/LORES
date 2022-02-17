@@ -78,9 +78,9 @@ Set 80x25 text mode:
 
     void txt80(void);
 
-Set 160x100 16 color mode:
+Set 160x100 16 color mode. Returns a value passed to viewInit() to set the graphics adapter:
 
-    void gr160(unsigned char fill, unsigned char border);
+    unsigned int gr160(unsigned char fill, unsigned char border);
 
 Plot a pixel:
 
@@ -162,7 +162,7 @@ Views are the highest level API call and do a lot behind the scenes. They manage
 
 Initialize the tile map and render the initial view:
 
-    void viewInit(unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map);
+    void viewInit(unsigned int adapter, unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map);
 
 Clean everything up (must call to unhook PIT interrupt):
 
