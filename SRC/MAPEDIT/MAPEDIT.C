@@ -1,0 +1,300 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <dos.h>
+#include <conio.h>
+
+unsigned char far *vidmem = (char far *)0xB8000000L;
+unsigned char *tilemap[16][16];
+unsigned char grass[] = {  0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x2A, 0x22, 0x22, 0x22, 0x22, 0x32, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x32, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0xA2, 0x22, 0x22, 0xA2,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x32, 0x22, 0x22, 0x22, 0x2A, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x2A, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x2A, 0x22, 0x22, 0x23, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
+unsigned char tree[] = {   0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
+                           0x22, 0x22, 0xA2, 0xAA, 0x2A, 0x2A, 0x22, 0x22,
+                           0x22, 0xA2, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0x22,
+                           0x22, 0xA2, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0x22,
+                           0x22, 0x22, 0x2A, 0xA2, 0x2A, 0xA2, 0x2A, 0x22,
+                           0x22, 0xAA, 0x2A, 0xAA, 0xAA, 0xA2, 0xAA, 0x22,
+                           0x22, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0xAA, 0x22,
+                           0x22, 0xA2, 0xAA, 0xAA, 0xA2, 0x2A, 0xAA, 0x22,
+                           0x22, 0xAA, 0xAA, 0xAA, 0xA2, 0x2A, 0x2A, 0x22,
+                           0x22, 0xA2, 0x2A, 0x22, 0xAA, 0xA2, 0xAA, 0x22,
+                           0x22, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0xAA, 0x22,
+                           0x22, 0x22, 0xAA, 0xAA, 0xAA, 0x22, 0xAA, 0x22,
+                           0x22, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0x22,
+                           0x22, 0xA2, 0xA2, 0xAA, 0xAA, 0xAA, 0x2A, 0x22,
+                           0x22, 0x22, 0xA2, 0xAA, 0x22, 0xAA, 0x22, 0x22,
+                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
+unsigned char dirt[] = {   0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x76,
+                           0x66, 0x60, 0x66, 0x66, 0x66, 0x60, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x67, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x06, 0x66, 0x76, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x06, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x06, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
+                           0x66, 0x66, 0x66, 0x66, 0x66, 0x76, 0x66, 0x66};
+unsigned char water[] = {  0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                           0x11, 0x99, 0x11, 0x99, 0x11, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x99, 0x11, 0x99, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x11, 0x99, 0x11, 0x99,
+                           0x99, 0x11, 0x11, 0x11, 0x11, 0x11, 0x99, 0x11,
+                           0x11, 0x11, 0x77, 0x11, 0x77, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x77, 0x11, 0x77, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x99, 0x11, 0x99, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x99, 0x11, 0x99, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11};
+/*
+ * Build map from text representation
+ *  . = grass
+ *  * = tree
+ *  # = dirt
+ *  ~ = water
+ */
+unsigned char *map[] = {"................",
+                        "..***...###.....",
+                        ".****..##.###...",
+                        "***~**.#....###.",
+                        "**~~~*.#...~~~#~",
+                        "~~~?~~~#~~~~..#.",
+                        "*~~~**.#....###.",
+                        ".****..#..###...",
+                        ".****..####.....",
+                        "..**..##........",
+                        ".*...##..****...",
+                        ".#####..*....*..",
+                        "##.*...*.#..#.*.",
+                        "#......*......*.",
+                        "##.*....*.##.*..",
+                        ".###.....****..."};
+void buildmap(void)
+{
+    int row, col;
+    unsigned char *tileptr;
+
+    for (row = 0; row < 16; row++)
+    {
+        for (col = 0; col < 16; col++)
+        {
+            switch (map[row][col])
+            {
+                case '.':
+                    tileptr = grass;
+                    break;
+                case '*':
+                    tileptr = tree;
+                    break;
+                case '#':
+                    tileptr = dirt;
+                    break;
+                case '~':
+                    tileptr = water;
+                    break;
+                default:
+                    tileptr = NULL;
+                    break;
+            }
+            tilemap[row][col] = tileptr;
+        }
+    }
+}
+
+void txt40(void)
+{
+    union REGS regs;
+
+    regs.x.ax = 1;
+    int86(0x10, &regs, &regs);
+    outp(0x3D8, 0x09);      // Turn off blink attribute on CGA
+    regs.x.ax = 0x1003;
+    regs.x.bx = 0x0000;
+    int86(0x10, &regs, &regs); /* turn off blink via EGA/VGA BIOS */
+    regs.x.ax = 0x0200;
+    regs.x.bx = 0x0000;
+    regs.x.dx = (25 << 8);
+    int86(0x10, &regs, &regs); /* move cursor off-screen */
+}
+void txt80(void)
+{
+    union REGS regs;
+
+    regs.x.ax = 3;
+    int86(0x10, &regs, &regs);
+}
+void plot(unsigned int x, unsigned int y, unsigned char color)
+{
+    unsigned int pixaddr = (y * 80) + (x | 1);
+    vidmem[pixaddr] = (vidmem[pixaddr] & 0x0F) | color;
+}
+int tile(int x, int y, int s, int t, int width, int height)
+{
+    unsigned char tileChar, borderColor, *tile;
+    int ss, w;
+    int pixaddr;
+
+    pixaddr = y * 80 + (x << 1);
+    if ((x < 20) && ((x + width)  >= 20)
+     && (y < 14) && ((y + height) >= 14))
+        borderColor = 0x0F;
+    else
+        borderColor = 0x0;
+    if (s >= 0 && t >= 0 && (s >> 4) < 16 && (t >> 4) < 16)
+        tile = tilemap[t >> 4][s >> 4];
+    else
+        tile = NULL;
+    if (tile)
+    {
+        s &= 0x0F;
+        t &= 0x0F;
+        tile   += t * 8 + (s >> 1);
+        width >>= 1;
+        while (height--)
+        {
+            ss = s;
+            for (w = 0; w < width; w++)
+            {
+                tileChar = 0x20; // space
+                if (t == 0 || t == 15)
+                    tileChar = 0xC4;
+                if (ss == 0)
+                {
+                    tileChar = 0xB3;
+                    if (t == 0)
+                        tileChar = 0xDA;
+                    else if (t == 15)
+                        tileChar = 0xC0;
+                }
+                vidmem[pixaddr + (w << 2)]     = tileChar;
+                vidmem[pixaddr + (w << 2) + 1] = (tile[w] & 0xF0) | borderColor;
+                ss++;
+                tileChar = 0x20; // space
+                if (t == 0 || t == 15)
+                    tileChar = 0xC4;
+                if (ss == 15)
+                {
+                    tileChar = 0xB3;
+                    if (t == 0)
+                        tileChar = 0xBF;
+                    else if (t == 15)
+                        tileChar = 0xD9;
+                }
+                vidmem[pixaddr + (w << 2) + 2] = tileChar;
+                vidmem[pixaddr + (w << 2) + 3] = (tile[w] << 4) | borderColor;
+                ss++;
+            }
+            t++;
+            pixaddr = pixaddr + 80;
+            tile   += 8;
+        }
+    }
+    else
+    {   // Emptry tile
+        borderColor |= 0x80;
+        while (height--)
+        {
+            for (w = 0; w < width; w++)
+            {
+                vidmem[pixaddr + (w << 1)]     = 0xB1;
+                vidmem[pixaddr + (w << 1) + 1] = borderColor;
+            }
+            pixaddr = pixaddr + 80;
+        }
+
+    }
+}
+void tileRow(int y, int s, int t, int height)
+{
+    int x;
+
+    x = 16 - (s & 0x0F);
+    tile(0, y, s, t, x, height);
+    s = (s + 16) & 0xFFF0;
+    for (; 40 - x > 16; x += 16)
+    {
+        tile(x, y, s, t, 16, height);
+        s += 16;
+    }
+    tile(x, y, s, t, 40 - x, height);
+}
+void tileScrn(int s, int t)
+{
+    int y;
+
+    y = 16 - (t & 0x0F);
+    tileRow(0, s, t, y);
+    t = (t + 16) & 0xFFF0;
+    for (; 25 - y > 16; y += 16)
+    {
+        tileRow(y, s, t, 16);
+        t += 16;
+    }
+    tileRow(y, s, t, 25 - y);
+}
+/*
+ * Tile map editor
+ */
+int main(int argc, char **argv)
+{
+    int orgS, orgT;
+    char quit;
+
+    orgS = 0;
+    orgT = 0;
+    quit = 0;
+    buildmap();
+    txt40();
+    do
+    {
+        tileScrn(orgS, orgT);
+        switch(getch())
+        {
+            case 'i':
+            case 'I':
+                orgT--;
+                break;
+            case 'm':
+            case 'M':
+                orgT++;
+                break;
+            case 'j':
+            case 'J':
+                orgS -= 2;
+                break;
+            case 'k':
+            case 'K':
+                orgS += 2;
+                break;
+            case 'q':
+            case 'Q':
+                quit = 1;
+                break;
+        }
+    } while (!quit);
+    txt80();
+    return 0;
+}
