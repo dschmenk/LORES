@@ -18,8 +18,6 @@ cl /Ox /I..\inc /o..\bin\tilesnow.exe /DCGA_SNOW tiledemo.c ..\lib\lrsnow.lib
 cl /Ox /I..\inc /o..\bin\tileprof.exe /DPROFILE tiledemo.c ..\lib\lrprof.lib
 cl /Ox /I..\inc /o..\bin\tilepsno.exe /DCGA_SNOW /DPROFILE tiledemo.c ..\lib\lrprosno.lib
 cl /Ox /I..\inc /o..\bin\sprtdemo.exe sprtdemo.c ..\lib\lores.lib
-cl /Ox /I..\inc /o..\bin\sprtsnow.exe /DCGA_SNOW sprtdemo.c ..\lib\lrsnow.lib
 cl /Ox /I..\inc /o..\bin\sprtprof.exe /DPROFILE sprtdemo.c ..\lib\lrprof.lib
-cl /Ox /I..\inc /o..\bin\sprtpsno.exe /DCGA_SNOW /DPROFILE sprtdemo.c ..\lib\lrprosno.lib
 del *.obj
 del ..\lib\*.bak

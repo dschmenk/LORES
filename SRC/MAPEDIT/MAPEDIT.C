@@ -170,9 +170,9 @@ void txt40(void)
 {
     union REGS regs;
 
-    regs.x.ax = 1;
+    regs.x.ax = 0x0001;     /* 40x25 color alphanumerics mode */
     int86(0x10, &regs, &regs);
-    outp(0x3D8, 0x09);      // Turn off blink attribute on CGA
+    outp(0x3D8, 0x09);      /* turn off blink attribute on CGA */
     regs.x.ax = 0x1003;
     regs.x.bx = 0x0000;
     int86(0x10, &regs, &regs); /* turn off blink via EGA/VGA BIOS */
@@ -185,7 +185,8 @@ void txt80(void)
 {
     union REGS regs;
 
-    regs.x.ax = 3;
+    regs.x.ax = 0x0003; /* 80x25 alphanumerics mode */
+    regs.x.bx = 0x0000;
     int86(0x10, &regs, &regs);
 }
 void plot(unsigned int x, unsigned int y, unsigned char color)

@@ -9,14 +9,12 @@ It generates a random maze and start the player on the left border. A randomly
 placed exit will be on the right border. Find your way across the maze using
 the folowing keys:
 
-- I = move up
-- M = move down
-- J = move left
-- K = move right
+- up arrow   = move up
+- down arrow = move down
+- left arrow = move left
+- right      = move right
 
-You can exit the game with the 'Q' key. Four version of the EXE are build:
+You can exit the game with the ESCAPE key. Four version of the EXE are build:
 
 - MAZERUNR.EXE = fast, no profiling
 - MAZEPROF.EXE = fast with border color profiling
-- MAZESNOW.EXE = CGA snow checking, no profiling
-- MAZEPRSN.EXE = CGA snow checking with border color profiling

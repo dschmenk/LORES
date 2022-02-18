@@ -4,6 +4,11 @@
 #include <conio.h>
 #include "lores.h"
 #include "tiler.h"
+#define ESCAPE          0x001B
+#define LEFT_ARROW      0x4B00
+#define RIGHT_ARROW     0x4D00
+#define UP_ARROW        0x4800
+#define DOWN_ARROW      0x5000
 extern volatile unsigned int frameCount;
 #define WALL_TOP        0x01
 #define WALL_BOTTOM     0x02
@@ -634,6 +639,19 @@ void buildmap(void)
     tilemap[Exit][BORDER_RIGHT-1] = tileExitAnimate[0];
 }
 /*
+ * Extended keyboard input
+ */
+unsigned short extgetch(void)
+{
+    unsigned short extch;
+
+    extch = getch();
+    if (!extch)
+        extch = getch() << 8;
+    return extch;
+}
+
+/*
  * Demo tiling and scrolling screen
  */
 int main(int argc, char **argv)
@@ -697,9 +715,9 @@ int main(int argc, char **argv)
         {
             if (kbhit())
             {
-                switch (getch())
+                switch (extgetch())
                 {
-                    case 'i':
+                    case UP_ARROW:
                         /*
                          * Move up
                          */
@@ -710,7 +728,7 @@ int main(int argc, char **argv)
                             incT     = -2;
                         }
                         break;
-                    case 'm':
+                    case DOWN_ARROW:
                         /*
                          * Move down
                          */
@@ -721,7 +739,7 @@ int main(int argc, char **argv)
                             incT     = 2;
                         }
                         break;
-                    case 'j':
+                    case LEFT_ARROW:
                         /*
                          * Move left
                          */
@@ -732,7 +750,7 @@ int main(int argc, char **argv)
                             incS     = -2;
                         }
                         break;
-                    case 'k':
+                    case RIGHT_ARROW:
                         /*
                          * Move right
                          */
@@ -745,6 +763,7 @@ int main(int argc, char **argv)
                         break;
                     case 'q':
                     case 'Q':
+                    case ESCAPE:
                         quit = TRUE;
                         break;
                 }

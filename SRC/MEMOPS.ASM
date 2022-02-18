@@ -115,23 +115,35 @@ tileMem         PROC NEAR
         add     si, WORD PTR [bp+6]     ; t * 8
         add     si, WORD PTR [bp-6]     ; ss = s >> 1
         mov     dx, WORD PTR [bp-20]    ; height
-        mov     cx, WORD PTR [bp+8]     ; widthBuf
-        shr     cx, 1
         mov     bx, WORD PTR [bp-18]    ; width/2
-        sub     cx, bx
         push    bp
-        mov     bp, cx                  ; span
-tilemem:
+        mov     bp, WORD PTR [bp+8]     ; widthBuf
+        shr     bp, 1
+        sub     bp, bx                  ; span
         mov     cx, bx
         shr     cx, 1
+        jc      @F
+tile_e:
     rep movsw
-        adc     cx, cx                  ; cx = one or zero
-    rep movsb
+        add     di, bp                  ; span
+        add     si, 8                   ; tile
+        sub     si, bx
+        mov     cx, bx
+        shr     cx, 1
+        dec     dx                      ; height
+        jnz     tile_e
+        pop     bp
+        ret
+tile_o:
+        mov     cx, bx
+        shr     cx, 1
+@@: rep movsw
+        movsb
         add     di, bp                  ; span
         add     si, 8                   ; tile
         sub     si, bx
         dec     dx                      ; height
-        jnz     tilemem
+        jnz     tile_o
         pop     bp
         ret
 tileMem         ENDP
@@ -501,7 +513,7 @@ tileedgev:
         mov     ds, dx
         lds     si, [bx]                ; *tile
         mov     cx, OFFSET DGROUP:_edgeV + 100
-        sub     cx, di                      ; 100 - y
+        sub     cx, di                  ; 100 - y
         add     si, WORD PTR [bp+4]     ; s
 @@:     movsb
         add     si, 7

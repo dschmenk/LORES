@@ -129,7 +129,7 @@ __cpyBuf         PROC NEAR
 ;
 ; if ((s >= extS) || (s + width  <= orgS) || (t >= extT) || (t + height <= orgT))
         mov     ax, WORD PTR [bp+4]     ; s
-        cmp     ax, _extS               ; s >= extS
+        cmp     ax, DGROUP:_extS        ; s >= extS
         jae     @B
         mov     cx, WORD PTR [bp+8]     ; width
         add     ax, cx
@@ -190,7 +190,7 @@ cbclipt:
         cmp     ax, DGROUP:_extT        ; extT
         jbe     cpybuf
 ; height = extT - t;
-        mov     ax, _extT               ; extT
+        mov     ax, DGROUP:_extT        ; extT
         sub     ax, WORD PTR [bp+6]     ; t
         mov     WORD PTR [bp+10], ax    ; height
 ; CPYBUF((scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF, width >> 1, height, span, buf);
@@ -211,7 +211,7 @@ cpybuf:
         shr     cx, 1                   ; width/2
         mov     dl, cl                  ; width/2 must be less than 80
         mov     dh, BYTE PTR [bp+10]    ; height must be 100 or less
-        and     bx, 01Eh
+        and     bx, 001Eh
         mov     bx, cpybufsel[bx]
         lds     si, DWORD PTR [bp+12]   ; buf
         ASSUME  DS: NOTHING
