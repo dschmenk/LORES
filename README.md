@@ -64,11 +64,11 @@ Graphics in games is always time critical, even more so with this library. In or
 
 ## Dealing with CGA Snow
 
-It is quite possible that all rendering tasks won't complete during inactive video, leading to snow if care isn't taken. The low level routines in the library come in two version, one that goes as fast as it can, the other checking for active video to avoid snow when writing to video memory. To completely avoid snow would make the low level routines unusably slow, so the code makes a "best effort" attempt to avoid snow. This is an area of continuing development.
+It is quite possible that all rendering tasks won't complete during inactive video, leading to snow if care isn't taken. The library will use routines that go as fast as possible during the view update, forgoing snow checks. Code will have to be written to complete rendering during inactive video generation. Code that renders to the video memory can be compiled to use versions of the routines that check for snow, or not, depending on a `#define CGA_SNOW`.
 
 ## The API
 
-This library takes a tiered approach to provide low level access to the CGA up to a fully managed tile map and sprite environment. There isn't a requirement to use all the features of the API, but some API calls are necessary provide baseline functionality.
+This library takes a tiered approach to provide low level access to the CGA up to a fully managed tile map and sprite environment. There isn't a requirement to use all the features of the API, but some API calls are necessary to provide baseline functionality.
 
 ### Basic LoRes Routines
 
@@ -117,17 +117,17 @@ Enable/disable video out (also #define of outp()):
 
 ### Low level tile map routines (rarely need to call directly)
 
-Copy memory buffer over tile map with on-screen clipping:
-
-    void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);
-
-Copy portion of tile map to memory buffer:
+Fill memory buffer with portion of tile map:
 
     void tileBuf(unsigned int s, unsigned int t, int widthBuf, int heightBuf, unsigned char far *buf);
 
 Fill screen with current tile map view:
 
     void tileScrn(unsigned int s, unsigned int t);
+
+Copy memory buffer on top of tile map with on-screen clipping:
+
+    void cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);
 
 ### Tile Map
 
@@ -178,16 +178,18 @@ Global variable that increments every frame:
 
 ## Building
 
-In order to build, MSC 5.1 and MASM 5.1 are used to create a real-mode DOS program.
-The build setup has been greatly expanded to create four versions of every binary/library. It is very sophisticated - a DOS BATCH file: BUILD.BAT  ;-)
+In order to build, MSC 5.1 and MASM 5.1 are used to create a real-mode DOS program. Borland C libraries and binaries can be built using Borland C++ 2.0 (3.1 has been tried, too) and MASM 5.1.
+The build setup has been greatly expanded to create two versions of the libraries and four versions of TILEDEMO. It is very sophisticated - a DOS BATCH file: BUILD.BAT for MSC 5.1 and BUILDBC.BAT for Borland C++ 2.0 ;-)
 
+MSC5.1 built libraries are:
 
-Built libraries are:
+- LORES.LIB: No profiling
+- LRPROF.LIB: Border color profiling (on CGA)
 
-- LORES.LIB: fast, no snow checking or profiling
-- LRPROF.LIB: fast with border color profiling
-- LRSNOW.LIB: snow checking
-- LRPROSNO.LIB: snow checking with border color profiling
+Borland C++ 2.0 built libraries are:
+
+- LORESBC.LIB: No profiling
+- LRPROFBC.LIB: Border color profiling (on CGA)
 
 Libraries are located in the LIB directory. Header files are in the INC directory.
 
@@ -195,15 +197,15 @@ When building your own code, set the define for use with the correct library:
 
 For border color profiling:
 
-    /DPROFILE : LRPROF.LIB
+    /DPROFILE : LRPROF.LIB or LRPROFBC.LIB
 
 For CGA snow checking:
 
-    /DCGA_SNOW  : LRSNOW.LIB
+    /DCGA_SNOW  : LORES.LIB or LORESBC.LIB
 
 For both:
 
-    /DPROFILE /DCGA_SNOW  : LRPROSNO.LIB
+    /DPROFILE /DCGA_SNOW  : LRPROF.LIB or LRPROFBC.LIB
 
 ## Samples and Demos
 
@@ -216,6 +218,8 @@ for the software implementation.
     cl /Ox /I..\inc tiledemo.c ..\lib\lores.lib
 
 for the hardware implementation. This is a testbed program, so it isn't very pretty. There are some #define options to change how each of the software and hardware versions will run.
+
+There is a sample project file, SPRTDEMO.PRJ for building the SPRTDEMO.EXE sample with the Borland IDE.
 
 A playable demo, [Maze Runner](SRC/MAZERUNR/README.md), is available in the SRC\\MAZERUNR directory. It is also builds four versions of the EXE for each option combination using the BUILD.BAT in the Maze Runner directory.
 
