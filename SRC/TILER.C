@@ -31,6 +31,7 @@ unsigned int orgT = 0;
 unsigned int maxOrgS, maxOrgT, extS, extT;
 unsigned int widthMapS, widthMapT, widthMap, spanMap, heightMap;
 unsigned char far * far *tileMap;
+unsigned long (*viewRefresh)(int scrolldir);
 /*
  * On-the-fly tile updates
  */
@@ -91,38 +92,45 @@ void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew)
  */
 void spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *spriteImg)
 {
-    spriteTable[index].state     = STATE_MOVING;
-    spriteTable[index].spriteptr = spriteImg;
-    spriteTable[index].spritebuf = (unsigned char *)malloc((width+ERASE_BORDER+1)/2*(height+ERASE_BORDER)); // Leave room for erase border
-    spriteTable[index].erasebuf  = (unsigned char *)malloc((width+1/2)*height);
-    spriteTable[index].width     = width;
-    spriteTable[index].height    = height;
-    spriteTable[index].s         = s;
-    spriteTable[index].bufS      = s & 0xFFFE;
-    spriteTable[index].t         = t;
-    spriteTable[index].bufT      = t;
-    spriteTable[index].bufWidth  = ((spriteTable[index].s + width + 1) & 0xFFFE) - spriteTable[index].bufS;
-    spriteTable[index].bufHeight = height;
+    struct sprite_t *sprite;
+
+    sprite = &spriteTable[index];
+    sprite->state     = STATE_MOVING;
+    sprite->spriteptr = spriteImg;
+    sprite->spritebuf = (unsigned char *)malloc((width+ERASE_BORDER+1)/2*(height+ERASE_BORDER)); // Leave room for erase border
+    sprite->erasebuf  = (unsigned char *)malloc(((width+1)/2)*height);
+    sprite->width     = width;
+    sprite->height    = height;
+    sprite->s         = s;
+    sprite->bufS      = s & 0xFFFE;
+    sprite->t         = t;
+    sprite->bufT      = t;
+    sprite->bufWidth  = ((sprite->s + width + 1) & 0xFFFE) - sprite->bufS;
+    sprite->bufHeight = height;
 }
 void spriteDisable(int index)
 {
-    unsigned int s;
+    struct sprite_t *sprite;
 
-    spriteTable[index].state    = STATE_DISABLING;
-    spriteTable[index].eraS     = spriteTable[index].s & 0xFFFE;
-    spriteTable[index].eraWidth = ((spriteTable[index].s + spriteTable[index].width + 1) & 0xFFFE) - spriteTable[index].eraS;
-    spriteTable[index].eraT     = spriteTable[index].t;
+    sprite = &spriteTable[index];
+    sprite->state    = STATE_DISABLING;
+    sprite->eraS     = sprite->s & 0xFFFE;
+    sprite->eraWidth = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->eraS;
+    sprite->eraT     = sprite->t;
 }
 void spriteUpdate(int index, unsigned char far *spriteImg)
 {
-    spriteTable[index].spriteptr = spriteImg;
-    if (spriteTable[index].state == STATE_ACTIVE)
+    struct sprite_t *sprite;
+
+    sprite = &spriteTable[index];
+    sprite->spriteptr = spriteImg;
+    if (sprite->state == STATE_ACTIVE)
     {
-        spriteTable[index].state     = STATE_MOVING;
-        spriteTable[index].bufS      = spriteTable[index].s & 0xFFFE;
-        spriteTable[index].bufT      = spriteTable[index].t;
-        spriteTable[index].bufWidth  = ((spriteTable[index].s + spriteTable[index].width + 1) & 0xFFFE) - spriteTable[index].bufS;
-        spriteTable[index].bufHeight = spriteTable[index].height;
+        sprite->state     = STATE_MOVING;
+        sprite->bufS      = sprite->s & 0xFFFE;
+        sprite->bufT      = sprite->t;
+        sprite->bufWidth  = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
+        sprite->bufHeight = sprite->height;
     }
 }
 unsigned long spritePosition(int index, unsigned int s, unsigned int t)

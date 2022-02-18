@@ -248,7 +248,7 @@ void text(unsigned int x, unsigned int y, unsigned char color, char *string)
         glyphptr = (unsigned char far *)0xFFA6000EL + (unsigned char)*string++ * 8;
         for (iy = y; iy < (y + 8); iy++)
         {
-            if (glyphbits = *glyphptr++)
+            if ((glyphbits = *glyphptr++))
             {
                 scanbit = 0x80;
                 for (ix = x; scanbit; ix++)

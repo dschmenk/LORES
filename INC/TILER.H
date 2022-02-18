@@ -29,4 +29,4 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t);
 #define SCROLL_DOWN     0x80
 void viewInit(int adapter, unsigned int s, unsigned int t, unsigned int width, unsigned int height, unsigned char far * far *map);
 void viewExit(void);
-unsigned long (*viewRefresh)(int scrolldir);
+extern unsigned long (*viewRefresh)(int scrolldir);

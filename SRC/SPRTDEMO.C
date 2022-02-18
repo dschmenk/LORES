@@ -254,11 +254,8 @@ int main(int argc, char **argv)
     unsigned long st;
     int movedir, scrolldir;
     unsigned char cycle;
-    unsigned char *facebuf;
-    unsigned char *scrnbuf;
 
     buildmap();
-    facebuf = (unsigned char *)malloc(FACEBUF_HEIGHT*FACEBUF_WIDTH/2);
     /*
      * Set initial coordinates and scroll direction.
      * Horizontal scroll increment must be two,
