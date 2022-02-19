@@ -680,7 +680,7 @@ int main(int argc, char **argv)
     srand(seed);
     adapter = gr160(BLACK, BLACK);
     _dos_gettime(&time);
-    seconds = (time.second + 5) & 60;
+    seconds = (time.second + 4) % 60;
     while (time.second != seconds)
     {
         text(40, 46, rand() & 0x0F, "Maze Runner");
@@ -841,6 +841,7 @@ int main(int argc, char **argv)
                         minutes -= 60;
                     }
                     quit = TRUE;
+                    drawfront(); //  Needed for EGA/VGA only, NOP for CGA
                     frameCount = 0;
                     while (frameCount < 180)
                     {

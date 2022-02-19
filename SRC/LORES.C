@@ -13,14 +13,17 @@
 /*
  * CGA CRTC Registers
  */
-unsigned char cga160crtc[] = {113, 80, 89, 15, 127, 6, 100, 112, 2, 1, 32, 0, 0, 0};
-unsigned char ega160misc   =  0x23;
-unsigned char ega160seq[]  = {0x03, 0x01, 0x03, 0x00, 0x03};
-unsigned char ega160crtc[] = {0x70, 0x4F, 0x5C, 0x2F, 0x5F, 0x07, 0x04, 0x11, 0x00, 0x01, 0x06, 0x07,
-             /* Start Addr */ 0x00, 0x00, 0x00, 0x00, 0xE1, 0x24, 0xC7, 0x28, 0x08, 0xE0, 0xF0, 0xA3, 0xFF};
+static unsigned char cga160crtc[] = {113, 80, 89, 15, 127, 6, 100, 112, 2, 1, 32, 0, 0, 0};
+static unsigned char ega160misc   =  0x23;
+static unsigned char ega160seq[]  = {0x03, 0x01, 0x03, 0x00, 0x03};
+static unsigned char ega160crtc[] = {0x70, 0x4F, 0x5C, 0x2F, 0x5F, 0x07, 0x04, 0x11, 0x00, 0x01, 0x06, 0x07,
+                    /* Start Addr */ 0x00, 0x00, 0x00, 0x00, 0xE1, 0x24, 0xC7, 0x28, 0x08, 0xE0, 0xF0, 0xA3, 0xFF};
+static unsigned int adapter;
+static unsigned int prevAddr = 1;
+unsigned int orgAddr = 1;
+unsigned int scrnMask;
 unsigned int scanline[100]; // Precalculated scanline offsets
 unsigned char borderColor;
-unsigned int scrnMask;
 
 void txt40(void)
 {
@@ -41,7 +44,7 @@ void txt80(void)
  */
 unsigned int gr160(unsigned char fill, unsigned char border)
 {
-    int i, wfill, chrows, adapter;
+    int i, wfill, chrows;
     int far *wvidmem = (int far *)0xB8000000L;
     union REGS regs;
 
@@ -115,6 +118,25 @@ unsigned int gr160(unsigned char fill, unsigned char border)
     for (i = 0; i < 100; i++)
         scanline[i] = i * 160;
     return adapter;
+}
+void _swap(void)
+{
+    /*
+     * Wait until VBlank and update CRTC start address to swap buffers
+     */
+    while (inp(0x3DA) & 0x08); // Wait until the end of VBlank
+    outpw(0x3D4, ((orgAddr >> 1) & 0xFF00) + 12);
+    while (!(inp(0x3DA) & 0x08)); // Wait until beginning of VBlank
+    /*
+     * Point orgAddr to back buffer
+     */
+    prevAddr = orgAddr;
+    orgAddr ^= 0x4000;
+}
+void drawfront(void)
+{
+    if (adapter != CGA)
+        orgAddr = prevAddr;
 }
 void _rect(unsigned int x, unsigned int y, int width, int height, unsigned char color)
 {

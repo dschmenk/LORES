@@ -2,8 +2,9 @@
 #include <conio.h>
 #include "lores.h"
 #include "tiler.h"
-
+void _swap(void); // Only used for EGA/VGA
 extern unsigned int scanline[100]; // Precalculated scanline offsets
+extern unsigned int orgAddr;
 extern unsigned int scrnMask;
 #ifdef PROFILE
 extern unsigned char borderColor;
@@ -25,7 +26,6 @@ void cpyBuf2Buf(int width, int height, int spanSrc, unsigned char far *bufSrc, i
  * Graphics routines for 160x100x16 color mode
  */
 unsigned char edgeH[2][80], edgeV[100];
-unsigned int orgAddr = 1;
 unsigned int orgS = 0;
 unsigned int orgT = 0;
 unsigned int maxOrgS, maxOrgT, extS, extT;
@@ -718,16 +718,7 @@ unsigned long viewRedraw(int scrolldir)
             spriteScrn(spriteX, spriteY, spriteWidth, spriteHeight, sprite->width >> 1, spriteImg);
         }
     }
-    /*
-     * Wait until VBlank and update CRTC start address to swap buffers
-     */
-    while (inp(0x3DA) & 0x08); // Wait until the end of VBlank
-    outpw(0x3D4, ((orgAddr >> 1) & 0xFF00) + 12);
-    while (!(inp(0x3DA) & 0x08)); // Wait until beginning of VBlank
-    /*
-     * Point orgAddr to back buffer
-     */
-    orgAddr ^= 0x4000;
+    _swap();
     /*
      * Return updated origin as 32 bit value
      */

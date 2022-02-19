@@ -23,6 +23,7 @@
 void txt40(void);
 void txt80(void);
 unsigned int gr160(unsigned char fill, unsigned char border);
+void drawfront(void);
 void _line(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned char color);
 void _rect(unsigned int x, unsigned int y, int width, int height, unsigned char color);
 void _text(unsigned int x, unsigned int y, unsigned char color, char *string);
