@@ -13,10 +13,8 @@
 #define WALL_BOTTOM     0x02
 #define WALL_LEFT       0x04
 #define WALL_RIGHT      0x08
-#define BORDER_TOP      0
-#define BORDER_BOTTOM   (100/3)
-#define BORDER_LEFT     0
-#define BORDER_RIGHT    (160/3)
+#define MAX_HEIGHT      (100/3)
+#define MAX_WIDTH       (160/3)
 #define FALSE           0
 #define TRUE            (!FALSE)
 #define DIR_ANY         0x00
@@ -26,7 +24,8 @@
 #define DIR_RIGHT       0x08
 #define CELL_SOLVED     0x80
 #define CELL_TRACED     0x40
-unsigned char maze[BORDER_BOTTOM][BORDER_RIGHT];
+unsigned int mapWidth, mapHeight;
+unsigned char maze[MAX_HEIGHT][MAX_WIDTH];
 unsigned char Enter, Exit, xDeadEnd, yDeadEnd;
 /*
  * Map and tile data
@@ -359,7 +358,7 @@ unsigned char tileF[] = {  0x78, 0x88, 0x88, 0x78, 0x87, 0x88, 0x88, 0x87,
 unsigned char far *maze2map[16] = {
                             tile0, tile1, tile2, tile3, tile4, tile5, tile6, tile7,
                             tile8, tile9, tileA, tileB, tileC, tileD, tileE, tileF};
-unsigned char far *tilemap[BORDER_BOTTOM][BORDER_RIGHT];
+unsigned char far *tilemap[MAX_HEIGHT * MAX_WIDTH];
 /*
  * 10X10 Sprite
  */
@@ -468,8 +467,8 @@ void cleartrace(void)
 {
     int i, j;
 
-    for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
-        for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
+    for (i = 0; i < mapWidth; i++)
+        for (j = 0; j < mapHeight; j++)
             maze[j][i] &= ~CELL_TRACED;
 }
 int buildmaze(void)
@@ -477,33 +476,33 @@ int buildmaze(void)
     int i, j;
     unsigned char wall, solved, solveCount;
 
-    for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
-        hlin(0, BORDER_RIGHT*3, j*3, 15);
-    for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
-        vlin(i*3, 0, BORDER_BOTTOM*3, 15);
-    for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
-        for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
+    for (j = 0; j <= mapHeight; j++)
+        hlin(0, mapWidth*3, j*3, WHITE);
+    for (i = 0; i <= mapWidth; i++)
+        vlin(i*3, 0, mapHeight*3, WHITE);
+    for (i = 0; i < mapWidth; i++)
+        for (j = 0; j < mapHeight; j++)
             maze[j][i] = WALL_TOP | WALL_BOTTOM | WALL_LEFT | WALL_RIGHT;
     /*
      * Pick entrance at left border and exit at right border
      */
-    Enter = (rand() % (BORDER_BOTTOM - 2)) + 1;
-    Exit  = (rand() % (BORDER_BOTTOM - 2)) + 1;
+    Enter = (rand() % (mapHeight - 2)) + 1;
+    Exit  = (rand() % (mapHeight - 2)) + 1;
     /*
      * Set exit as solved
      */
-    maze[Exit][BORDER_RIGHT-1] |= CELL_SOLVED;
+    maze[Exit][mapWidth-1] |= CELL_SOLVED;
     /*
      * Add edges and entry/exit to view
      */
-    vlin(BORDER_LEFT*3,  Enter * 3 + 1, Enter * 3 + 2, 0);
-    vlin(BORDER_RIGHT*3, Exit  * 3 + 1, Exit  * 3 + 2, 0);
+    vlin(0*3,  Enter * 3 + 1, Enter * 3 + 2, BLACK);
+    vlin(mapWidth*3, Exit  * 3 + 1, Exit  * 3 + 2, BLACK);
     /*
      * Make initial pass erasing boxed-in cells
      */
-    for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
+    for (i = 0; i < mapWidth; i++)
     {
-        for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
+        for (j = 0; j < mapHeight; j++)
         {
             while (maze[j][i] == (WALL_TOP | WALL_BOTTOM | WALL_LEFT | WALL_RIGHT))
             {
@@ -511,10 +510,10 @@ int buildmaze(void)
                  * Open up a random wall
                  */
                 wall = 1 << (rand() & 3);
-                if ((i == BORDER_LEFT     && wall == WALL_LEFT)
-                 || (i == BORDER_RIGHT-1  && wall == WALL_RIGHT)
-                 || (j == BORDER_TOP      && wall == WALL_TOP)
-                 || (j == BORDER_BOTTOM-1 && wall == WALL_BOTTOM))
+                if ((i == 0     && wall == WALL_LEFT)
+                 || (i == mapWidth-1  && wall == WALL_RIGHT)
+                 || (j == 0      && wall == WALL_TOP)
+                 || (j == mapHeight-1 && wall == WALL_BOTTOM))
                     /*
                      * Check border walls
                      */
@@ -525,22 +524,22 @@ int buildmaze(void)
                 if (wall == WALL_TOP)
                 {
                     maze[j - 1][i] ^= WALL_BOTTOM;
-                    hlin(i * 3 + 1, i * 3 + 2, j * 3, 0);
+                    hlin(i * 3 + 1, i * 3 + 2, j * 3, BLACK);
                 }
                 else if (wall == WALL_BOTTOM)
                 {
                     maze[j + 1][i] ^= WALL_TOP;
-                    hlin(i * 3 + 1, i * 3 + 2, (j + 1) * 3, 0);
+                    hlin(i * 3 + 1, i * 3 + 2, (j + 1) * 3, BLACK);
                 }
                 else if (wall == WALL_LEFT)
                 {
                     maze[j][i - 1] ^= WALL_RIGHT;
-                    vlin(i * 3, j * 3 + 1, j * 3 + 2, 0);
+                    vlin(i * 3, j * 3 + 1, j * 3 + 2, BLACK);
                 }
                 else if (wall == WALL_RIGHT)
                 {
                     maze[j][i + 1] ^= WALL_LEFT;
-                    vlin((i + 1) * 3, j * 3 + 1, j * 3 + 2, 0);
+                    vlin((i + 1) * 3, j * 3 + 1, j * 3 + 2, BLACK);
                 }
                 maze[j][i] ^= wall;
             }
@@ -559,12 +558,12 @@ int buildmaze(void)
             return FALSE;
         solved = TRUE;
 #ifdef EASY
-        for (i = BORDER_RIGHT-1; i >= BORDER_LEFT; i--)
+        for (i = mapWidth-1; i >= 0; i--)
 #else
-        for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
+        for (i = 0; i < mapWidth; i++)
 #endif
         {
-            for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
+            for (j = 0; j < mapHeight; j++)
             {
                 cleartrace();
                 if (solve(i, j, DIR_ANY))
@@ -577,10 +576,10 @@ int buildmaze(void)
                     solved = FALSE;
                     for (wall = 0x08; wall; wall >>= 1)
                     {
-                        if ((xDeadEnd == BORDER_LEFT     && wall == WALL_LEFT)
-                         || (xDeadEnd == BORDER_RIGHT-1  && wall == WALL_RIGHT)
-                         || (yDeadEnd == BORDER_TOP      && wall == WALL_TOP)
-                         || (yDeadEnd == BORDER_BOTTOM-1 && wall == WALL_BOTTOM))
+                        if ((xDeadEnd == 0           && wall == WALL_LEFT)
+                         || (xDeadEnd == mapWidth-1  && wall == WALL_RIGHT)
+                         || (yDeadEnd == 0           && wall == WALL_TOP)
+                         || (yDeadEnd == mapHeight-1 && wall == WALL_BOTTOM))
                             /*
                              * Check border walls
                              */
@@ -595,28 +594,28 @@ int buildmaze(void)
                                 if (maze[yDeadEnd - 1][xDeadEnd] & CELL_TRACED)
                                     continue;
                                 maze[yDeadEnd - 1][xDeadEnd] ^= WALL_BOTTOM;
-                                hlin(xDeadEnd * 3 + 1, xDeadEnd * 3 + 2, yDeadEnd * 3, 0);
+                                hlin(xDeadEnd * 3 + 1, xDeadEnd * 3 + 2, yDeadEnd * 3, BLACK);
                             }
                             else if (wall == WALL_BOTTOM)
                             {
                                 if (maze[yDeadEnd + 1][xDeadEnd] & CELL_TRACED)
                                     continue;
                                 maze[yDeadEnd + 1][xDeadEnd] ^= WALL_TOP;
-                                hlin(xDeadEnd * 3 + 1, xDeadEnd * 3 + 2, (yDeadEnd + 1) * 3, 0);
+                                hlin(xDeadEnd * 3 + 1, xDeadEnd * 3 + 2, (yDeadEnd + 1) * 3, BLACK);
                             }
                             else if (wall == WALL_LEFT)
                             {
                                 if (maze[yDeadEnd][xDeadEnd - 1] & CELL_TRACED)
                                     continue;
                                 maze[yDeadEnd][xDeadEnd - 1] ^= WALL_RIGHT;
-                                vlin(xDeadEnd * 3, yDeadEnd * 3 + 1, yDeadEnd * 3 + 2, 0);
+                                vlin(xDeadEnd * 3, yDeadEnd * 3 + 1, yDeadEnd * 3 + 2, BLACK);
                             }
                             else if (wall == WALL_RIGHT)
                             {
                                 if (maze[yDeadEnd][xDeadEnd + 1] & CELL_TRACED)
                                     continue;
                                 maze[yDeadEnd][xDeadEnd + 1] ^= WALL_LEFT;
-                                vlin((xDeadEnd + 1) * 3, yDeadEnd * 3 + 1, yDeadEnd * 3 + 2, 0);
+                                vlin((xDeadEnd + 1) * 3, yDeadEnd * 3 + 1, yDeadEnd * 3 + 2, BLACK);
                             }
                             maze[yDeadEnd][xDeadEnd] ^= wall;
                             break;
@@ -636,10 +635,10 @@ void buildmap(void)
     int row, col;
     unsigned char far *tileptr;
 
-    for (row = BORDER_TOP; row < BORDER_BOTTOM; row++)
-        for (col = BORDER_LEFT; col < BORDER_RIGHT; col++)
-            tilemap[row][col] = maze2map[maze[row][col] & 0x0F];
-    tilemap[Exit][BORDER_RIGHT-1] = tileExitAnimate[0];
+    for (row = 0; row < mapHeight; row++)
+        for (col = 0; col < mapWidth; col++)
+            tilemap[row * mapWidth + col] = maze2map[maze[row][col] & 0x0F];
+    tilemap[Exit * mapWidth + mapWidth-1] = tileExitAnimate[0];
 }
 /*
  * Extended keyboard input
@@ -667,15 +666,37 @@ int main(int argc, char **argv)
     unsigned char cycleExit, quit;
     struct dostime_t time;
     int hours, minutes, seconds, hseconds;
+    char *level;
 
-    if (argc > 1)
+    mapWidth  = MAX_WIDTH/2;
+    mapHeight = MAX_HEIGHT/2;
+    level = "Medium";
+    _dos_gettime(&time);
+    seed = (time.hsecond << 8) | time.second;
+    /*
+     * Check for easy option
+     */
+    while (argc > 1)
     {
-        seed = atoi(argv[1]);
-    }
-    else
-    {
-        _dos_gettime(&time);
-        seed = (time.hsecond << 8) | time.second;
+        argc--;
+        argv++;
+        switch (*argv[0])
+        {
+            case 'e': // Easy option
+            case 'E':
+                mapWidth  = MAX_WIDTH/3;
+                mapHeight = MAX_HEIGHT/3;
+                level = "Easy";
+                break;
+            case 'h': // Hard option
+            case 'H':
+                mapWidth  = MAX_WIDTH;
+                mapHeight = MAX_HEIGHT;
+                level = "Hard";
+                break;
+            default: // Seed parameter?
+                seed = atoi(*argv);
+        }
     }
     srand(seed);
     adapter = gr160(BLACK, BLACK);
@@ -706,7 +727,7 @@ int main(int argc, char **argv)
     /*
      * Set initial coordinates
      */
-    mazeX   = BORDER_LEFT;
+    mazeX   = 0;
     mazeY   = Enter;
     faceS   = (mazeX << 4) + 3;
     faceT   = (mazeY << 4) + 3;
@@ -715,11 +736,11 @@ int main(int argc, char **argv)
     incS    = 0;
     incT    = 0;
     viewS   = 0;
-    viewT   = (BORDER_BOTTOM/4) << 4;
+    viewT   = (mapHeight/4) << 4;
     /*
      * Render initial view
      */
-    viewInit(adapter, viewS, viewT, BORDER_RIGHT, BORDER_BOTTOM, (unsigned char far * far *)tilemap);
+    viewInit(adapter, viewS, viewT, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
     spriteEnable(0, faceS, faceT, FACE_WIDTH, FACE_HEIGHT, face);
     viewRefresh(0);
     cycleExit = 0;
@@ -746,7 +767,7 @@ int main(int argc, char **argv)
          * Update a Exit tile on-the-fly
          */
         if (!(frameCount & 0x0F))
-            tileUpdate(BORDER_RIGHT-1, Exit, tileExitAnimate[cycleExit++ & 0x03]);
+            tileUpdate(mapWidth-1, Exit, tileExitAnimate[cycleExit++ & 0x03]);
         /*
          * Check keyboard input
          */
@@ -826,7 +847,7 @@ int main(int argc, char **argv)
                  * Stop moving and check for exit
                  */
                 incS = incT = 0;
-                if (mazeX == BORDER_RIGHT-1 && mazeY == Exit)
+                if (mazeX == mapWidth-1 && mazeY == Exit)
                 {
                     hseconds = ((frameCount % 60) * 100) / 60;
                     seconds  = frameCount / 60;
@@ -876,6 +897,7 @@ int main(int argc, char **argv)
     }
     viewExit();
     txt80();
+    printf("Level: %s\n", level);
     printf("Seed: %u\n", seed);
     printf("Elapsed time: %02d:%02d:%02d.%02d\n", hours, minutes, seconds, hseconds);
     return 0;
