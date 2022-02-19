@@ -679,6 +679,20 @@ int main(int argc, char **argv)
     }
     srand(seed);
     adapter = gr160(BLACK, BLACK);
+    _dos_gettime(&time);
+    seconds = (time.second + 5) & 60;
+    while (time.second != seconds)
+    {
+        text(40, 46, rand() & 0x0F, "Maze Runner");
+        text(48, 54, rand() & 0x0F, "by Resman");
+        if (kbhit())
+        {
+            getch();
+            break;
+        }
+        _dos_gettime(&time);
+    }
+    rect(40, 46, 88, 16, BLACK);
     while (!buildmaze())
     {
         if (kbhit() && (getch() == 'q'))
@@ -827,6 +841,16 @@ int main(int argc, char **argv)
                         minutes -= 60;
                     }
                     quit = TRUE;
+                    frameCount = 0;
+                    while (frameCount < 180)
+                    {
+                        text(32, 46, rand() & 0x0F, "You made it!");
+                        if (kbhit())
+                        {
+                            getch();
+                            frameCount = 1000;
+                        }
+                    }
                 }
             }
         }

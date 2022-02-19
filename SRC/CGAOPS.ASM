@@ -876,7 +876,7 @@ __plotSnow    PROC NEAR
         mov     dx, WORD PTR [bp+4]     ; x
         mov     cx, dx
         and     dl, 0FEh
-        add     di, cx
+        add     di, dx
         add     di, _orgAddr
         and     di, DGROUP:_scrnMask
         mov     ah, BYTE PTR [bp+8]     ; color
