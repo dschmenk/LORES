@@ -9,15 +9,14 @@
 #define RIGHT_ARROW     0x4D00
 #define UP_ARROW        0x4800
 #define DOWN_ARROW      0x5000
-extern volatile unsigned int frameCount;
 #define WALL_TOP        0x01
 #define WALL_BOTTOM     0x02
 #define WALL_LEFT       0x04
 #define WALL_RIGHT      0x08
 #define BORDER_TOP      0
-#define BORDER_BOTTOM   20 // (100/3)
+#define BORDER_BOTTOM   (100/3)
 #define BORDER_LEFT     0
-#define BORDER_RIGHT    20 // (160/3)
+#define BORDER_RIGHT    (160/3)
 #define FALSE           0
 #define TRUE            (!FALSE)
 #define DIR_ANY         0x00
@@ -559,7 +558,11 @@ int buildmaze(void)
         if (solveCount++ > 1)
             return FALSE;
         solved = TRUE;
+#ifdef EASY
         for (i = BORDER_RIGHT-1; i >= BORDER_LEFT; i--)
+#else
+        for (i = BORDER_LEFT; i < BORDER_RIGHT; i++)
+#endif
         {
             for (j = BORDER_TOP; j < BORDER_BOTTOM; j++)
             {
@@ -660,12 +663,21 @@ int main(int argc, char **argv)
     unsigned int faceS, viewS, moveToS, faceT, moveToT, viewT;
     int incS, incT;
     unsigned long st;
-    unsigned int adapter, scrolldir;
+    unsigned int adapter, scrolldir, seed;
     unsigned char cycleExit, quit;
     struct dostime_t time;
+    int hours, minutes, seconds, hseconds;
 
-    _dos_gettime(&time);
-    srand((time.hsecond << 8) | time.second);
+    if (argc > 1)
+    {
+        seed = atoi(argv[1]);
+    }
+    else
+    {
+        _dos_gettime(&time);
+        seed = (time.hsecond << 8) | time.second;
+    }
+    srand(seed);
     adapter = gr160(BLACK, BLACK);
     while (!buildmaze())
     {
@@ -698,11 +710,24 @@ int main(int argc, char **argv)
     viewRefresh(0);
     cycleExit = 0;
     quit      = FALSE;
+    hours      =
+    minutes    =
+    seconds    =
+    hseconds   =
+    frameCount = 0;
     while (!quit)
     {
 #ifdef PROFILE
         rasterBorder(GREY); // Show game logic as grey border
 #endif
+        if (frameCount >= 3600)
+        {
+            /*
+             * Capture every minute and zero frame count
+             */
+            minutes++;
+            frameCount -= 3600;
+        }
         /*
          * Update a Exit tile on-the-fly
          */
@@ -764,6 +789,10 @@ int main(int argc, char **argv)
                     case 'q':
                     case 'Q':
                     case ESCAPE:
+                        hours    =
+                        minutes  =
+                        seconds  =
+                        hseconds = 0;
                         quit = TRUE;
                         break;
                 }
@@ -784,7 +813,21 @@ int main(int argc, char **argv)
                  */
                 incS = incT = 0;
                 if (mazeX == BORDER_RIGHT-1 && mazeY == Exit)
+                {
+                    hseconds = ((frameCount % 60) * 100) / 60;
+                    seconds  = frameCount / 60;
+                    if (seconds > 59)
+                    {
+                        minutes++;
+                        seconds -= 60;
+                    }
+                    while (minutes > 59)
+                    {
+                        hours++;
+                        minutes -= 60;
+                    }
                     quit = TRUE;
+                }
             }
         }
         /*
@@ -808,5 +851,7 @@ int main(int argc, char **argv)
     }
     viewExit();
     txt80();
+    printf("Seed: %u\n", seed);
+    printf("Elapsed time: %02d:%02d:%02d.%02d\n", hours, minutes, seconds, hseconds);
     return 0;
 }
