@@ -18,6 +18,7 @@ Contents:
   - [Tile Map](#tile-map)
   - [Sprites](#sprites-1)
   - [View](#view)
+  - [Misc](#misc)
 - [Building](#building)
 - [Samples and Demos](#samples-and-demos)
   - [Video](https://youtu.be/rIbONSlyQeU)
@@ -175,6 +176,12 @@ Big daddy of them all. Coordinates tile, sprite and scrolling updates. Return (s
 Global variable that increments every frame:
 
     extern unsigned int frameCount;
+
+## Misc
+
+Draw to visible buffer - EGA/VGA only, No-op on CGA
+
+    void drawfront(void);
 
 ## Building
 
