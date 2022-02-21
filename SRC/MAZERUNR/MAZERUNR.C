@@ -862,7 +862,6 @@ int main(int argc, char **argv)
                         minutes -= 60;
                     }
                     quit = TRUE;
-                    drawfront(); //  Needed for EGA/VGA only, NOP for CGA
                     frameCount = 0;
                     while (frameCount < 180)
                     {

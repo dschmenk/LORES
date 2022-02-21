@@ -2,7 +2,6 @@
 #include <conio.h>
 #include "lores.h"
 #include "tiler.h"
-void _swap(void); // Only used for EGA/VGA
 extern unsigned int scanline[100]; // Precalculated scanline offsets
 extern unsigned int orgAddr;
 extern unsigned int scrnMask;
@@ -676,6 +675,10 @@ unsigned long viewRedraw(int scrolldir)
             scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
     }
     /*
+     * Point orgAddr to back buffer
+     */
+    orgAddr ^= 0x4000;
+    /*
      * Draw tiles
      */
     tileScrn(orgS, orgT);
@@ -718,7 +721,12 @@ unsigned long viewRedraw(int scrolldir)
             spriteScrn(spriteX, spriteY, spriteWidth, spriteHeight, sprite->width >> 1, spriteImg);
         }
     }
-    _swap();
+    /*
+     * Wait until VBlank and update CRTC start address to swap buffers
+     */
+    while (inp(0x3DA) & 0x08); // Wait until the end of VBlank
+    outpw(0x3D4, ((orgAddr >> 1) & 0xFF00) + 12);
+    while (!(inp(0x3DA) & 0x08)); // Wait until beginning of VBlank
     /*
      * Return updated origin as 32 bit value
      */
