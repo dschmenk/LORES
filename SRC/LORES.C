@@ -257,12 +257,12 @@ void _lineSnow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y
     div_t result;
 
     sx = sy = 1;
-    if ((dx2 = (x2 - x1) * 2) < 0)
+    if ((dx2 = (x2 - x1) << 1) < 0)
     {
         sx  = -1;
         dx2 = -dx2;
     }
-    if ((dy2 = (y2 - y1) * 2) < 0)
+    if ((dy2 = (y2 - y1) << 1) < 0)
     {
         sy  = -1;
         dy2 = -dy2;
@@ -281,12 +281,12 @@ void _lineSnow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y
             return;
         }
         ps  = x1;
-        result  =  div(dx2 / 2, dy2); // Find first half-span length and error
+        result  =  div(dx2 >> 1, dy2); // Find first half-span length and error
         halflen = result.quot;
         err     = dy2 - result.rem;
         x1     += halflen;
-        longlen = (x1 - ps + 1) * 2; // Long-span length = half-span length * 2
-        longerr = err * 2;
+        longlen = (x1 - ps + 1) << 1; // Long-span length = half-span length * 2
+        longerr = err << 1;
         if (longerr >= dy2)
         {
             longerr -= dy2;
@@ -327,12 +327,12 @@ void _lineSnow(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y
             return;
         }
         ps  = y1;
-        result  = div(dy2 / 2, dx2);
+        result  = div(dy2 >> 1, dx2);
         halflen = result.quot;
         err     = dx2 - result.rem;
         y1     += halflen;
-        longlen = (y1 - ps + 1) * 2;
-        longerr = err * 2;
+        longlen = (y1 - ps + 1) << 1;
+        longerr = err << 1;
         if (longerr >= dx2)
         {
             longerr -= dx2;
