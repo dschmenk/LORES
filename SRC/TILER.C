@@ -16,7 +16,6 @@ void cpyEdgeV(int addr);
 /*
  * Fast memory routines
  */
-void tileMem(unsigned int s, unsigned int t, int width, int height, unsigned char far *tile, int span, unsigned char far *buf);
 void tileEdgeH(unsigned int s, unsigned int t, unsigned char far * far*tileptr);
 void tileEdgeH2(unsigned int s, unsigned int t, unsigned char far * far*tileptr);
 void tileEdgeV(unsigned int s, unsigned int t, unsigned char far * far *tileptr);
