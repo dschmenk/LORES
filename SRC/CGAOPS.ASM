@@ -30,6 +30,9 @@ cpybufsel       DW  cpybufh16, cpybufh1,  cpybufh2,  cpybufh3
                 DW  cpybufh8,  cpybufh9,  cpybufh10, cpybufh11
                 DW  cpybufh12, cpybufh13, cpybufh14, cpybufh15
 
+saveDI          DW  ?
+saveSI          DW  ?
+
 _DATA   ENDS
 
 _TEXT   SEGMENT
@@ -1176,9 +1179,9 @@ __vlinSnow      ENDP
 __line          PROC NEAR
         push	bp
         mov	    bp, sp
-        sub	    sp, 22
-        push	di
-        push	si
+        sub	    sp, 34
+        mov     WORD PTR (bp-24), di    ; saveDI
+        mov 	word PTR (bp-26), si    ; saveSI
 ; x1            = bp+4
 ; y1            = bp+6
 ; x2            = bp+8
@@ -1195,6 +1198,14 @@ __line          PROC NEAR
 ; shorterr      = bp-6
 ; shortlen      = bp-20
 ; longerr       = bp-4
+; saveDI        = bp-24
+; saveSI        = bp-26
+; param4        = bp-28
+; param3        = bp-30
+; param2        = bp-32
+; param1        = bp-34
+        mov	    ax, WORD PTR [bp+12]	; color
+        mov     WORD PTR [bp-28], ax    ; param4=color
         mov     dx, 1
         mov     cx, dx
         mov	    ax, WORD PTR [bp+8]     ; x2
@@ -1229,12 +1240,18 @@ ln_x_major:
         mov	    WORD PTR [bp+10], si	; y2
         neg	    cx                      ; sy
 ln_leftright:
+        mov     di, WORD PTR [bp+6]     ; y1
+        mov     WORD PTR [bp-30], di    ; param3=y
         or      bx, bx                  ; dy2
         jnz	    ln_hsetup
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+6]	        ; y1
-        push    WORD PTR [bp+8]	        ; x2
-        push	WORD PTR [bp+4]	        ; x1
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+6]	        ; y1
+;        push    WORD PTR [bp+8]	    ; x2
+;        push	WORD PTR [bp+4]	        ; x1
+        mov     ax, WORD PTR [bp+8]     ; x2
+        mov     WORD PTR [bp-32], ax    ; param2=x2
+        mov     ax, WORD PTR [bp+4]     ; x1
+        mov     WORD PTR [bp-34], ax    ; param1=x1
         call	__hlin
         jmp	    ln_exit
 ln_hsetup:
@@ -1269,14 +1286,17 @@ ln_nohround:
         cmp	    si, WORD PTR [bp+8]	    ; x1<x2?
         jge	    ln_hlast
 ln_hloop:
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+6]	        ; y1
-        push	si                      ; x1
-        push	ax      	            ; ps
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+6]	        ; y1
+;        push	si                      ; x1
+;        push	ax      	            ; ps
+        mov     WORD PTR [bp-32], si    ; param2=x
+        mov     WORD PTR [bp-34], ax    ; param1=ps
         call	__hlin
-        add	    sp, 8
+;        add	    sp, 8
         mov	    ax, WORD PTR [bp-14]	; sy
-        add	    WORD PTR [bp+6], ax	    ; y1
+;        add	    WORD PTR [bp+6], ax	 ; y1
+        add	    WORD PTR [bp-30], ax	; param3=y
         lea	    ax, WORD PTR [si+1]     ; ps
         or	    di, di                  ; err
         jl	    ln_hlong
@@ -1292,10 +1312,13 @@ ln_hlong:
         cmp	    si, WORD PTR [bp+8]	    ; x2
         jl	    ln_hloop
 ln_hlast:
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+10]	    ; y2
-        push	WORD PTR [bp+8]	        ; x2
-        push	ax      	            ; ps
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+10]	    ; y2
+;        push	WORD PTR [bp+8]	        ; x2
+;        push	ax      	            ; ps
+        mov	    si, WORD PTR [bp+8]	    ; x2
+        mov     WORD PTR [bp-32], si    ; param2=x2
+        mov     WORD PTR [bp-34], ax    ; param1=ps
         call	__hlin
         jmp	    ln_exit
 ln_y_major:
@@ -1311,12 +1334,18 @@ ln_y_major:
         mov	    WORD PTR [bp+10], si	; y2
         neg	    dx                      ; sx
 ln_topbottom:
+        mov     di, WORD PTR [bp+4]     ; x1
+        mov     WORD PTR [bp-34], di    ; param1=x
         or      ax, ax                  ; dx2
-        jne	    ln_vsetup
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+10]	    ; y2
-        push	WORD PTR [bp+6]	        ; y1
-        push	WORD PTR [bp+4]	        ; x1
+        jnz	    ln_vsetup
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+10]	    ; y2
+;        push	WORD PTR [bp+6]	        ; y1
+;        push	WORD PTR [bp+4]	        ; x1
+        mov	    ax, WORD PTR [bp+10]	; y2
+        mov     WORD PTR [bp-30], ax    ; param3=y2
+        mov     ax,	WORD PTR [bp+6]	    ; y1
+        mov     WORD PTR [bp-32], ax    ; param2=y1
         jmp	    ln_vexit
 ln_vsetup:
         mov	    WORD PTR [bp-12], dx	; sx
@@ -1352,14 +1381,17 @@ ln_novround:
         cmp	    si, WORD PTR [bp+10]	; y1<y2?
         jge	    ln_vlast
 ln_vloop:
-        push	WORD PTR [bp+12]	    ; color
-        push	si                      ; y1
-        push	ax	                    ; ps
-        push	WORD PTR [bp+4]	        ; x1
+;        push	WORD PTR [bp+12]	    ; color
+;        push	si                      ; y1
+;        push	ax	                    ; ps
+;        push	WORD PTR [bp+4]	        ; x1
+        mov     WORD PTR [bp-30], si    ; param3=y
+        mov     WORD PTR [bp-32], ax    ; param2=ps
         call	__vlin
-        add	    sp, 8
+;        add	    sp, 8
         mov	    ax, WORD PTR [bp-12]	; sx
-        add	    WORD PTR [bp+4], ax	    ; x1
+;        add	WORD PTR [bp+4], ax	     ; x1
+        add	    WORD PTR [bp-34], ax	; param1=x
         lea	    ax, WORD PTR [si+1]     ; ps
         or	    di, di                  ; err
         jl	    ln_vlong
@@ -1375,29 +1407,31 @@ ln_vlong:
         cmp	    si, WORD PTR [bp+10]	; y2
         jl	    ln_vloop
 ln_vlast:
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+10]	    ; y2
-        push	ax      	            ; ps
-        push	WORD PTR [bp+8]	        ; x2
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+10]	    ; y2
+;        push	ax      	            ; ps
+;        push	WORD PTR [bp+8]	        ; x2
+        mov	    si, WORD PTR [bp+10]	; y2
+        mov     WORD PTR [bp-30], si    ; param3=y2
+        mov     WORD PTR [bp-32], ax    ; param2=ps
 ln_vexit:
         call	__vlin
 ln_exit:
-        add	    sp, 8
-        pop	    si
-        pop	    di
+;        add	    sp, 8
+        mov 	si, WORD PTR (bp-26)    ; saveSI
+        mov     di, WORD PTR (bp-24)    ; saveDI
         mov	    sp, bp
         pop	    bp
         ret
 __line	         ENDP
 
-        ;
         PUBLIC	__lineSnow
 __lineSnow      PROC NEAR
         push	bp
         mov	    bp, sp
-        sub	    sp, 22
-        push	di
-        push	si
+        sub	    sp, 34
+        mov     WORD PTR (bp-24), di    ; saveDI
+        mov 	word PTR (bp-26), si    ; saveSI
 ; x1            = bp+4
 ; y1            = bp+6
 ; x2            = bp+8
@@ -1414,6 +1448,14 @@ __lineSnow      PROC NEAR
 ; shorterr      = bp-6
 ; shortlen      = bp-20
 ; longerr       = bp-4
+; saveDI        = bp-24
+; saveSI        = bp-26
+; param4        = bp-28
+; param3        = bp-30
+; param2        = bp-32
+; param1        = bp-34
+        mov	    ax, WORD PTR [bp+12]	; color
+        mov     WORD PTR [bp-28], ax    ; param4=color
         mov     dx, 1
         mov     cx, dx
         mov	    ax, WORD PTR [bp+8]     ; x2
@@ -1450,10 +1492,14 @@ ls_x_major:
 ls_leftright:
         or      bx, bx                  ; dy2
         jnz	    ls_hsetup
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+6]	        ; y1
-        push    WORD PTR [bp+8]	        ; x2
-        push	WORD PTR [bp+4]	        ; x1
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+6]	        ; y1
+;        push    WORD PTR [bp+8]	        ; x2
+;        push	WORD PTR [bp+4]	        ; x1
+        mov     ax, WORD PTR [bp+8]     ; x2
+        mov     WORD PTR [bp-32], ax    ; param2=x2
+        mov     ax, WORD PTR [bp+4]     ; x1
+        mov     WORD PTR [bp-34], ax    ; param1=x1
         call	__hlin
         jmp	    ls_exit
 ls_hsetup:
@@ -1488,14 +1534,17 @@ ls_nohround:
         cmp	    si, WORD PTR [bp+8]	    ; x1<x2?
         jge	    ls_hlast
 ls_hloop:
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+6]	        ; y1
-        push	si                      ; x1
-        push	ax      	            ; ps
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+6]	        ; y1
+;        push	si                      ; x1
+;        push	ax      	            ; ps
+        mov     WORD PTR [bp-32], si    ; param2=x
+        mov     WORD PTR [bp-34], ax    ; param1=ps
         call	__hlin
-        add	    sp, 8
+;        add	    sp, 8
         mov	    ax, WORD PTR [bp-14]	; sy
-        add	    WORD PTR [bp+6], ax	    ; y1
+;        add	    WORD PTR [bp+6], ax	    ; y1
+        add	    WORD PTR [bp-30], ax	; param3=y
         lea	    ax, WORD PTR [si+1]     ; ps
         or	    di, di                  ; err
         jl	    ls_hlong
@@ -1511,10 +1560,13 @@ ls_hlong:
         cmp	    si, WORD PTR [bp+8]	    ; x2
         jl	    ls_hloop
 ls_hlast:
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+10]	    ; y2
-        push	WORD PTR [bp+8]	        ; x2
-        push	ax      	            ; ps
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+10]	    ; y2
+;        push	WORD PTR [bp+8]	        ; x2
+;        push	ax      	            ; ps
+        mov	    si, WORD PTR [bp+8]	    ; x2
+        mov     WORD PTR [bp-32], si    ; param2=x2
+        mov     WORD PTR [bp-34], ax    ; param1=ps
         call	__hlin
         jmp	    ls_exit
 ls_y_major:
@@ -1532,10 +1584,14 @@ ls_y_major:
 ls_topbottom:
         or      ax, ax                  ; dx2
         jne	    ls_vsetup
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+10]	    ; y2
-        push	WORD PTR [bp+6]	        ; y1
-        push	WORD PTR [bp+4]	        ; x1
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+10]	    ; y2
+;        push	WORD PTR [bp+6]	        ; y1
+;        push	WORD PTR [bp+4]	        ; x1
+        mov	    ax, WORD PTR [bp+10]	; y2
+        mov     WORD PTR [bp-30], ax    ; param3=y2
+        mov     ax,	WORD PTR [bp+6]	    ; y1
+        mov     WORD PTR [bp-32], ax    ; param2=y1
         jmp	    ls_vexit
 ls_vsetup:
         mov	    WORD PTR [bp-12], dx	; sx
@@ -1571,14 +1627,17 @@ ls_novround:
         cmp	    si, WORD PTR [bp+10]	; y1<y2?
         jge	    ls_vlast
 ls_vloop:
-        push	WORD PTR [bp+12]	    ; color
-        push	si                      ; y1
-        push	ax	                    ; ps
-        push	WORD PTR [bp+4]	        ; x1
+;        push	WORD PTR [bp+12]	    ; color
+;        push	si                      ; y1
+;        push	ax	                    ; ps
+;        push	WORD PTR [bp+4]	        ; x1
+        mov     WORD PTR [bp-30], si    ; param3=y
+        mov     WORD PTR [bp-32], ax    ; param2=ps
         call	__vlin
-        add	    sp, 8
+;        add	    sp, 8
         mov	    ax, WORD PTR [bp-12]	; sx
-        add	    WORD PTR [bp+4], ax	    ; x1
+;        add	    WORD PTR [bp+4], ax	    ; x1
+        add	    WORD PTR [bp-34], ax	; param1=x
         lea	    ax, WORD PTR [si+1]     ; ps
         or	    di, di                  ; err
         jl	    ls_vlong
@@ -1594,16 +1653,19 @@ ls_vlong:
         cmp	    si, WORD PTR [bp+10]	; y2
         jl	    ls_vloop
 ls_vlast:
-        push	WORD PTR [bp+12]	    ; color
-        push	WORD PTR [bp+10]	    ; y2
-        push	ax      	            ; ps
-        push	WORD PTR [bp+8]	        ; x2
+;        push	WORD PTR [bp+12]	    ; color
+;        push	WORD PTR [bp+10]	    ; y2
+;        push	ax      	            ; ps
+;        push	WORD PTR [bp+8]	        ; x2
+        mov	    si, WORD PTR [bp+10]	; y2
+        mov     WORD PTR [bp-30], si    ; param3=y2
+        mov     WORD PTR [bp-32], ax    ; param2=ps
 ls_vexit:
         call	__vlin
 ls_exit:
-        add	    sp, 8
-        pop	    si
-        pop	    di
+;        add	    sp, 8
+        mov 	si, WORD PTR (bp-26)    ; saveSI
+        mov     di, WORD PTR (bp-24)    ; saveDI
         mov	    sp, bp
         pop	    bp
         ret
