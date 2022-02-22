@@ -1490,6 +1490,8 @@ ls_x_major:
         mov	    WORD PTR [bp+10], si	; y2
         neg	    cx                      ; sy
 ls_leftright:
+        mov     di, WORD PTR [bp+6]     ; y1
+        mov     WORD PTR [bp-30], di    ; param3=y
         or      bx, bx                  ; dy2
         jnz	    ls_hsetup
 ;        push	WORD PTR [bp+12]	    ; color
@@ -1500,7 +1502,7 @@ ls_leftright:
         mov     WORD PTR [bp-32], ax    ; param2=x2
         mov     ax, WORD PTR [bp+4]     ; x1
         mov     WORD PTR [bp-34], ax    ; param1=x1
-        call	__hlin
+        call	__hlinSnow
         jmp	    ls_exit
 ls_hsetup:
         mov	    WORD PTR [bp-14], cx	; sy
@@ -1540,7 +1542,7 @@ ls_hloop:
 ;        push	ax      	            ; ps
         mov     WORD PTR [bp-32], si    ; param2=x
         mov     WORD PTR [bp-34], ax    ; param1=ps
-        call	__hlin
+        call	__hlinSnow
 ;        add	    sp, 8
         mov	    ax, WORD PTR [bp-14]	; sy
 ;        add	    WORD PTR [bp+6], ax	    ; y1
@@ -1567,7 +1569,7 @@ ls_hlast:
         mov	    si, WORD PTR [bp+8]	    ; x2
         mov     WORD PTR [bp-32], si    ; param2=x2
         mov     WORD PTR [bp-34], ax    ; param1=ps
-        call	__hlin
+        call	__hlinSnow
         jmp	    ls_exit
 ls_y_major:
         or	    cx, cx	                ; sy
@@ -1582,6 +1584,8 @@ ls_y_major:
         mov	    WORD PTR [bp+10], si	; y2
         neg	    dx                      ; sx
 ls_topbottom:
+        mov     di, WORD PTR [bp+4]     ; x1
+        mov     WORD PTR [bp-34], di    ; param1=x
         or      ax, ax                  ; dx2
         jne	    ls_vsetup
 ;        push	WORD PTR [bp+12]	    ; color
@@ -1633,7 +1637,7 @@ ls_vloop:
 ;        push	WORD PTR [bp+4]	        ; x1
         mov     WORD PTR [bp-30], si    ; param3=y
         mov     WORD PTR [bp-32], ax    ; param2=ps
-        call	__vlin
+        call	__vlinSnow
 ;        add	    sp, 8
         mov	    ax, WORD PTR [bp-12]	; sx
 ;        add	    WORD PTR [bp+4], ax	    ; x1
@@ -1661,7 +1665,7 @@ ls_vlast:
         mov     WORD PTR [bp-30], si    ; param3=y2
         mov     WORD PTR [bp-32], ax    ; param2=ps
 ls_vexit:
-        call	__vlin
+        call	__vlinSnow
 ls_exit:
 ;        add	    sp, 8
         mov 	si, WORD PTR (bp-26)    ; saveSI

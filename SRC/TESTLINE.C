@@ -31,7 +31,7 @@ void simpleline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int 
         }
         if (dy2 == 0)
         {
-            _hlin(x1, x2, y1, color);
+            hlin(x1, x2, y1, color);
             return;
         }
         ps  = x1;
@@ -40,7 +40,7 @@ void simpleline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int 
         {
             if (err >= 0)
             {
-                _hlin(ps, x1, y1, color);
+                hlin(ps, x1, y1, color);
                 ps   = x1;
                 err -= dx2;
                 y1  += sy;
@@ -48,7 +48,7 @@ void simpleline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int 
             err += dy2;
             x1++;
         } while (x1 < x2);
-        _hlin(ps, x2, y2, color);
+        hlin(ps, x2, y2, color);
     }
     else
     {
@@ -60,7 +60,7 @@ void simpleline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int 
         }
         if (dx2 == 0)
         {
-            _vlin(x1, y1, y2, color);
+            vlin(x1, y1, y2, color);
             return;
         }
         ps  = y1;
@@ -69,7 +69,7 @@ void simpleline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int 
         {
             if (err >= 0)
             {
-                _vlin(x1, ps, y1, color);
+                vlin(x1, ps, y1, color);
                 ps   = y1;
                 err -= dy2;
                 x1  += sx;
@@ -77,7 +77,7 @@ void simpleline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int 
             err += dx2;
             y1++;
         } while (y1 < y2);
-        _vlin(x2, ps, y2, color);
+        vlin(x2, ps, y2, color);
     }
 }
 void fastline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned char color)
@@ -108,7 +108,7 @@ void fastline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2
         }
         if (dy2 == 0)
         {
-            _hlin(x1, x2, y1, color);
+            hlin(x1, x2, y1, color);
             return;
         }
         ps  = x1;
@@ -128,7 +128,7 @@ void fastline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2
         err     += shorterr; // Do a short-span step
         do
         {
-            _hlin(ps, x1, y1, color);
+            hlin(ps, x1, y1, color);
             y1 += sy;     // Move to next span
             ps  = x1 + 1; // Start of next span = end of previous span + 1
             if (err >= 0) // Short span
@@ -142,7 +142,7 @@ void fastline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2
                 x1  += longlen;
             }
         } while (x1 < x2);
-        _hlin(ps, x2, y2, color); // Final span
+        hlin(ps, x2, y2, color); // Final span
     }
     else
     {
@@ -154,7 +154,7 @@ void fastline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2
         }
         if (dx2 == 0)
         {
-            _vlin(x1, y1, y2, color);
+            vlin(x1, y1, y2, color);
             return;
         }
         ps  = y1;
@@ -174,7 +174,7 @@ void fastline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2
         err     += shorterr;
         do
         {
-            _vlin(x1, ps, y1, color);
+            vlin(x1, ps, y1, color);
             x1 += sx;
             ps  = y1 + 1;
             if (err >= 0) // Short span
@@ -188,17 +188,10 @@ void fastline(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2
                 y1  += longlen;
             }
         } while (y1 < y2);
-        _vlin(x2, ps, y2, color); // Final span
+        vlin(x2, ps, y2, color); // Final span
     }
 }
-void testHLin(unsigned int x1,unsigned int x2, unsigned int y, unsigned char color)
-{
-    printf("HLin(%d, %d, %d, %d)\n", x1, x2, y, color);
-}
-void testVLin(unsigned int x,unsigned int y1, unsigned int y2, unsigned char color)
-{
-    printf("VLin(%d, %d, %d, %d)\n", x, y1, y2, color);
-}
+
 int main(int argc, char **argv)
 {
     unsigned int fastFrames, simpleFrames, asmFrames;
