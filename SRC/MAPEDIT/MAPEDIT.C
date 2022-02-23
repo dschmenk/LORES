@@ -172,7 +172,7 @@ void txt40(void)
 
     regs.x.ax = 0x0001;     /* 40x25 color alphanumerics mode */
     int86(0x10, &regs, &regs);
-    outp(0x3D8, 0x09);      /* turn off blink attribute on CGA */
+    outp(0x3D8, 0x08);      /* turn off blink attribute on CGA */
     regs.x.ax = 0x1003;
     regs.x.bx = 0x0000;
     int86(0x10, &regs, &regs); /* turn off blink via EGA/VGA BIOS */
