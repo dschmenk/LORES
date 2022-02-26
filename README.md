@@ -18,7 +18,6 @@ Contents:
   - [Tile Map](#tile-map)
   - [Sprites](#sprites-1)
   - [View](#view)
-  - [Misc](#misc)
 - [Building](#building)
 - [Samples and Demos](#samples-and-demos)
   - [Video](https://youtu.be/rIbONSlyQeU)
@@ -177,12 +176,6 @@ Global variable that increments every frame:
 
     extern unsigned int frameCount;
 
-## Misc
-
-Draw to visible buffer - EGA/VGA only, No-op on CGA
-
-    void drawfront(void);
-
 ## Building
 
 In order to build, MSC 5.1 and MASM 5.1 are used to create a real-mode DOS program. Borland C libraries and binaries can be built using Borland C++ 2.0 (3.1 has been tried, too) and MASM 5.1.
@@ -230,4 +223,4 @@ There is a sample project file, SPRTDEMO.PRJ for building the SPRTDEMO.EXE sampl
 
 A playable demo, [Maze Runner](SRC/MAZERUNR/README.md), is available in the SRC\\MAZERUNR directory. It is also builds four versions of the EXE for each option combination using the BUILD.BAT in the Maze Runner directory.
 
-To run on modern hardware, a DOS emulator such as DOSBox-X can be used. Note that DOSBox in it's current form has CGA emulation bugs (DOSBox-X works fine).
+To run on modern hardware, a DOS emulator such as DOSBox-X can be used. Note that DOSBox in it's current relase has CGA emulation bugs (DOSBox-X works fine), however, using the Tandy machine options does seem to work.
