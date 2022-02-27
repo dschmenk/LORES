@@ -88,7 +88,7 @@ void plot(unsigned int x, unsigned int y, unsigned char color)
     unsigned int pixaddr = (y * 80) + (x | 1);
     vidmem[pixaddr] = (vidmem[pixaddr] & 0x0F) | color;
 }
-int tile(int x, int y, int s, int t, int width, int height)
+void tile(int x, int y, int s, int t, int width, int height)
 {
     unsigned char tileChar, borderColor, far *tileptr;
     int ss, w;

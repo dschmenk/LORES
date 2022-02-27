@@ -6,6 +6,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <malloc.h>
+#include "mapio.h"
 
 int tilesetLoad(char *filename, unsigned char far * *tileset, int sizeoftile)
 {

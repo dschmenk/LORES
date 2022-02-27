@@ -11,4 +11,5 @@ bcc -O -Z -I..\inc tiledemo.c ..\lib\loresbc.lib
 bcc -O -Z -I..\inc sprtdemo.c ..\lib\loresbc.lib
 bcc -O -Z -I..\inc -DPROFILE -etileprbc.exe tiledemo.c ..\lib\loresbc.lib
 bcc -O -Z -I..\inc -DPROFILE -esprtprbc.exe sprtdemo.c ..\lib\loresbc.lib
+del *.obj
 del ..\lib\*.bak
