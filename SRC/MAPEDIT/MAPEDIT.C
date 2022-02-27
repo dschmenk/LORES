@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <dos.h>
 #include <conio.h>
+#include "mapio.h"
 #define ESCAPE          0x001B
 #define LEFT_ARROW      0x4B00
 #define RIGHT_ARROW     0x4D00
@@ -14,148 +15,41 @@
 #define CENTER_Y        (SCREEN_HEIGHT/2)
 #define TILE_WIDTH      16
 #define TILE_HEIGHT     16
-#define MAP_WIDTH       16
-#define MAP_HEIGHT      16
-int mapWidth  = MAP_WIDTH;
-int mapHeight = MAP_HEIGHT;
+struct tile_t
+{
+    unsigned char tile[TILE_WIDTH * TILE_HEIGHT / 2];
+    unsigned char tileExp[TILE_WIDTH * TILE_HEIGHT];
+};
 unsigned char far *vidmem = (char far *)0xB8000000L;
-unsigned char *tileMap[MAP_HEIGHT * MAP_WIDTH];
-unsigned char grass[] = {  0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x2A, 0x22, 0x22, 0x22, 0x22, 0x32, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x32, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0xA2, 0x22, 0x22, 0xA2,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x32, 0x22, 0x22, 0x22, 0x2A, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x2A, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x2A, 0x22, 0x22, 0x23, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
-unsigned char tree[] = {   0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
-                           0x22, 0x22, 0xA2, 0xAA, 0x2A, 0x2A, 0x22, 0x22,
-                           0x22, 0xA2, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0x22,
-                           0x22, 0xA2, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0x22,
-                           0x22, 0x22, 0x2A, 0xA2, 0x2A, 0xA2, 0x2A, 0x22,
-                           0x22, 0xAA, 0x2A, 0xAA, 0xAA, 0xA2, 0xAA, 0x22,
-                           0x22, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0xAA, 0x22,
-                           0x22, 0xA2, 0xAA, 0xAA, 0xA2, 0x2A, 0xAA, 0x22,
-                           0x22, 0xAA, 0xAA, 0xAA, 0xA2, 0x2A, 0x2A, 0x22,
-                           0x22, 0xA2, 0x2A, 0x22, 0xAA, 0xA2, 0xAA, 0x22,
-                           0x22, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0xAA, 0x22,
-                           0x22, 0x22, 0xAA, 0xAA, 0xAA, 0x22, 0xAA, 0x22,
-                           0x22, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0x2A, 0x22,
-                           0x22, 0xA2, 0xA2, 0xAA, 0xAA, 0xAA, 0x2A, 0x22,
-                           0x22, 0x22, 0xA2, 0xAA, 0x22, 0xAA, 0x22, 0x22,
-                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
-unsigned char dirt[] = {   0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x76,
-                           0x66, 0x60, 0x66, 0x66, 0x66, 0x60, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x67, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x06, 0x66, 0x76, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x06, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x06, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66, 0x66,
-                           0x66, 0x66, 0x66, 0x66, 0x66, 0x76, 0x66, 0x66};
-unsigned char water[] = {  0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                           0x11, 0x99, 0x11, 0x99, 0x11, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x99, 0x11, 0x99, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x11, 0x99, 0x11, 0x99,
-                           0x99, 0x11, 0x11, 0x11, 0x11, 0x11, 0x99, 0x11,
-                           0x11, 0x11, 0x77, 0x11, 0x77, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x77, 0x11, 0x77, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x99, 0x11, 0x99, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x99, 0x11, 0x99, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
-                           0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11};
-/*
- * Build map from text representation
- *  . = grass
- *  * = tree
- *  # = dirt
- *  ~ = water
- */
-unsigned char *map[] = {"................",
-                        "..***...###.....",
-                        ".****..##.###...",
-                        "***~**.#....###.",
-                        "**~~~*.#...~~~#~",
-                        "~~~?~~~#~~~~..#.",
-                        "*~~~**.#....###.",
-                        ".****..#..###...",
-                        ".****..####.....",
-                        "..**..##........",
-                        ".*...##..****...",
-                        ".#####..*....*..",
-                        "##.*...*.#..#.*.",
-                        "#......*......*.",
-                        "##.*....*.##.*..",
-                        ".###.....****..."};
-unsigned char *expandTile(unsigned char *tileptr)
+int mapWidth, mapHeight;
+int tileCount;
+unsigned char far * far *tileMap;
+struct tile_t far *tileSet;
+void expandTile(struct tile_t far *tileptr)
 {
     int row, col;
-    unsigned char *expTile;
-    expTile = malloc(16*16);
     for (row = 0; row < TILE_HEIGHT; row++)
     {
         for (col = 0; col < TILE_WIDTH; col += 2)
         {
-            expTile[row * 16 + col]     = tileptr[row * 8 + col / 2] & 0x0F;
-            expTile[row * 16 + col + 1] = tileptr[row * 8 + col / 2] >> 4;
+            tileptr->tileExp[row * 16 + col]     = tileptr->tile[row * 8 + col / 2] & 0x0F;
+            tileptr->tileExp[row * 16 + col + 1] = tileptr->tile[row * 8 + col / 2] >> 4;
         }
     }
-    return expTile;
 }
-void buildmap(void)
+void loadmap(void)
 {
-    int row, col;
-    unsigned char *tileptr, *grassExp, *treeExp, *dirtExp, *waterExp;
+    int i;
+    unsigned long mapDim;
+    struct tile_t far *tileptr;
 
-    grassExp = expandTile(grass);
-    treeExp  = expandTile(tree);
-    dirtExp  = expandTile(dirt);
-    waterExp = expandTile(water);
-    for (row = 0; row < mapHeight; row++)
-    {
-        for (col = 0; col < mapWidth; col++)
-        {
-            switch (map[row][col])
-            {
-                case '.':
-                    tileptr = grassExp;
-                    break;
-                case '*':
-                    tileptr = treeExp;
-                    break;
-                case '#':
-                    tileptr = dirtExp;
-                    break;
-                case '~':
-                    tileptr = waterExp;
-                    break;
-                default:
-                    tileptr = NULL;
-                    break;
-            }
-            tileMap[row * mapWidth + col] = tileptr;
-        }
-    }
+    tileCount = tilesetLoad("demo.set", (unsigned char far * *)&tileSet, sizeof(struct tile_t));
+    mapDim    = tilemapLoad("demo.map", (unsigned char far *)tileSet, sizeof(struct tile_t), &tileMap);
+    mapHeight = mapDim >> 16;
+    mapWidth  = mapDim;
+    tileptr   = tileSet;
+    for (i = 0; i < tileCount; i++)
+        expandTile(tileptr++);
 }
 unsigned short extgetch(void)
 {
@@ -196,7 +90,7 @@ void plot(unsigned int x, unsigned int y, unsigned char color)
 }
 int tile(int x, int y, int s, int t, int width, int height)
 {
-    unsigned char tileChar, borderColor, *tile;
+    unsigned char tileChar, borderColor, far *tileptr;
     int ss, w;
     int pixaddr;
 
@@ -208,19 +102,19 @@ int tile(int x, int y, int s, int t, int width, int height)
         borderColor = 0x0;
     if (s >= 0 && t >= 0 && (s >> 4) < mapWidth && (t >> 4) < mapHeight)
     {
-        tile = tileMap[(t >> 4) * mapWidth + (s >> 4)];
+        tileptr = ((struct tile_t far *)tileMap[(t >> 4) * mapWidth + (s >> 4)])->tileExp;
         tileChar = 0xB1;
     }
     else
     {
-        tile = NULL;
+        tileptr = NULL;
         tileChar = 0xDB;
     }
-    if (tile)
+    if (tileptr)
     {
         s &= 0x0F;
         t &= 0x0F;
-        tile   += t * 16 + s;
+        tileptr   += t * 16 + s;
         while (height--)
         {
             ss = s;
@@ -246,12 +140,12 @@ int tile(int x, int y, int s, int t, int width, int height)
                         tileChar = 0xD9;
                 }
                 vidmem[pixaddr + (w << 1)]     = tileChar;
-                vidmem[pixaddr + (w << 1) + 1] = (tile[w] << 4) | borderColor;
+                vidmem[pixaddr + (w << 1) + 1] = (tileptr[w] << 4) | borderColor;
                 ss++;
             }
             t++;
             pixaddr = pixaddr + 80;
-            tile   += 16;
+            tileptr += 16;
         }
     }
     else
@@ -303,22 +197,22 @@ void tileScrn(int s, int t)
 int main(int argc, char **argv)
 {
     int orgS, orgT, extS, extT, centerS, centerT;
-    unsigned char *centerTile, tilePix;
+    unsigned char far *centerTile, tilePix;
     char quit, cycle;
 
+    loadmap();
+    txt40();
     orgS = 0;
     orgT = 0;
     extS = mapWidth  << 4;
     extT = mapHeight << 4;
     quit = 0;
-    buildmap();
-    txt40();
     do
     {
         tileScrn(orgS, orgT);
         centerS = orgS + CENTER_X;
         centerT = orgT + CENTER_Y;
-        centerTile = tileMap[(centerT >> 4) * mapWidth + (centerS >> 4)];
+        centerTile = ((struct tile_t far *)tileMap[(centerT >> 4) * mapWidth + (centerS >> 4)])->tileExp;
         if (centerTile)
             tilePix = centerTile[(centerT & 0x0F) * 16 + (centerS & 0x0F)] << 4;
         else
