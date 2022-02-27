@@ -1,11 +1,12 @@
 masm /ml memops;
 masm /ml cgaops;
 masm /ml timer;
+cl /Ox /I..\inc /c mapio.c
 cl /Ox /I..\inc /c lores.c
 cl /Ox /I..\inc /c tiler.c
-lib ..\lib\lores.lib -+lores.obj -+tiler.obj -+timer.obj -+memops.obj -+cgaops.obj ;
+lib ..\lib\lores.lib -+mapio.obj -+lores.obj -+tiler.obj -+timer.obj -+memops.obj -+cgaops.obj ;
 cl /Ox /I..\inc /c /DPROFILE tiler.c
-lib ..\lib\lrprof.lib -+lores.obj -+tiler.obj -+timer.obj -+memops.obj -+cgaops.obj ;
+lib ..\lib\lrprof.lib -+mapio.obj -+lores.obj -+tiler.obj -+timer.obj -+memops.obj -+cgaops.obj ;
 cl /Ox /I..\inc /o..\bin\tiledemo.exe tiledemo.c ..\lib\lores.lib
 cl /Ox /I..\inc /o..\bin\tilesnow.exe /DCGA_SNOW tiledemo.c ..\lib\lores.lib
 cl /Ox /I..\inc /o..\bin\tileprof.exe /DPROFILE tiledemo.c ..\lib\lrprof.lib
