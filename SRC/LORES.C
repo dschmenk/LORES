@@ -18,6 +18,52 @@ static unsigned char ega160misc   =  0x23;
 static unsigned char ega160seq[]  = {0x03, 0x01, 0x03, 0x00, 0x03};
 static unsigned char ega160crtc[] = {0x70, 0x4F, 0x5C, 0x2F, 0x5F, 0x07, 0x04, 0x11, 0x00, 0x01, 0x06, 0x07,
                     /* Start Addr */ 0x00, 0x00, 0x00, 0x00, 0xE1, 0x24, 0xC7, 0x28, 0x08, 0xE0, 0xF0, 0xA3, 0xFF};
+/*
+ * 8x4 dither matrix (4x4 replicated twice horizontally to fill byte).
+ */
+#define BRI_PLANE             3
+#define RED_PLANE             2
+#define GRN_PLANE             1
+#define BLU_PLANE             0
+static unsigned long ddithmask[16] = // Color dither
+{
+    0x00000000L,
+    0x88000000L,
+    0x88002200L,
+    0x8800AA00L,
+    0xAA00AA00L,
+    0xAA44AA00L,
+    0xAA44AA11L,
+    0xAA44AA55L,
+    0xAA55AA55L,
+    0xAADDAA55L,
+    0xAADDAA77L,
+    0xAADDAAFFL,
+    0xAAFFAAFFL,
+    0xEEFFAAFFL,
+    0xEEFFBBFFL,
+    0xEEFFFFFFL,
+};
+static unsigned long bdithmask[16] = // Color dither
+{
+    0x00000000L,
+    0x88000000L,
+    0x88002200L,
+    0x8800AA00L,
+    0xAA00AA00L,
+    0xAA44AA00L,
+    0xAA44AA11L,
+    0xAA44AA55L,
+    0xAA55AA55L,
+    0xAADDAA55L,
+    0xAADDAA77L,
+    0xAADDAAFFL,
+    0xAAFFAAFFL,
+    0xEEFFAAFFL,
+    0xEEFFBBFFL,
+    0xFFFFFFFFL
+};
+
 static unsigned int adapter;
 unsigned int orgAddr = 1;
 unsigned int scrnMask;
@@ -187,6 +233,123 @@ void _textSnow(unsigned int x, unsigned int y, unsigned char color, char *string
         }
         x += 8;
     }
+}
+/*
+ * Build a dithered brush and return the closest solid color match to the RGB.
+ */
+unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned long *pattern)
+{
+    unsigned char clr, l;
+
+    /*
+     * Find MAX(R,G,B)
+     */
+    if (red >= grn && red >= blu)
+        l = red;
+    else if (grn >= red && grn >= blu)
+        l = grn;
+    else // if (blue >= grn && blu >= red)
+        l = blu;
+    if (l > 127) // 50%-100% brightness
+    {
+        /*
+         * Fill brush based on scaled RGB values (brightest -> 100% -> 0x0F).
+         */
+        pattern[BRI_PLANE] = bdithmask[(l >> 3) & 0x0F];
+        pattern[RED_PLANE] = bdithmask[(red << 4) / (l + 8)];
+        pattern[GRN_PLANE] = bdithmask[(grn << 4) / (l + 8)];
+        pattern[BLU_PLANE] = bdithmask[(blu << 4) / (l + 8)];
+        clr        = 0x08
+                   | ((red & 0x80) >> 5)
+                   | ((grn & 0x80) >> 6)
+                   | ((blu & 0x80) >> 7);
+    }
+    else // 0%-50% brightness
+    {
+        /*
+         * Fill brush based on dim RGB values.
+         */
+        if ((l - red) + (l - grn) + (l - blu) < 8)
+        {
+            /*
+             * RGB close to grey.
+             */
+            if (l > 63) // 25%-50% grey
+            {
+                /*
+                 * Mix light grey and dark grey.
+                 */
+                pattern[BRI_PLANE] = ~ddithmask[((l - 64) >> 2)];
+                pattern[RED_PLANE] =
+                pattern[GRN_PLANE] =
+                pattern[BLU_PLANE] =  ddithmask[((l - 64) >> 2)];
+                clr        =  0x0F;
+            }
+            else // 0%-25% grey
+            {
+                /*
+                 * Simple dark grey dither.
+                 */
+                pattern[BRI_PLANE] = ddithmask[(l >> 2)];
+                pattern[RED_PLANE] = 0;
+                pattern[GRN_PLANE] = 0;
+                pattern[BLU_PLANE] = 0;
+                clr        = (l > 31) ? 0x08 : 0x00;
+            }
+        }
+        else
+        {
+            /*
+             * Simple 8 color RGB dither.
+             */
+            pattern[BRI_PLANE] = 0;
+            pattern[RED_PLANE] = ddithmask[red >> 3];
+            pattern[GRN_PLANE] = ddithmask[grn >> 3];
+            pattern[BLU_PLANE] = ddithmask[blu >> 3];
+            clr        = ((red & 0x40) >> 4)
+                       | ((grn & 0x40) >> 5)
+                       | ((blu & 0x40) >> 6);
+        }
+    }
+    return clr;
+}
+/*
+ * This is a horrible way to set a pixel. It builds a 4x4 brush then extracts
+ * the 4 bit pixel value from the 4 color planes. Treat the brush as 4 rows of
+ * individual IRGB bytes instead of the 4 rows of a combined IRGB long in the
+ * build brush routine.
+ */
+void _plotrgb(int x, int y, unsigned char red, unsigned char grn, unsigned char blu)
+{
+    int ofs;
+    volatile unsigned char dummy;
+    unsigned char pixbrush[4][4], pix, idx;
+
+    idx = brush(red, grn, blu, (unsigned long *)pixbrush);
+    /*
+     * Extract pixel value from IRGB planes.
+     */
+    pix  = ((pixbrush[BRI_PLANE][y & 3] >> (x & 3)) & 0x01) << BRI_PLANE;
+    pix |= ((pixbrush[RED_PLANE][y & 3] >> (x & 3)) & 0x01) << RED_PLANE;
+    pix |= ((pixbrush[GRN_PLANE][y & 3] >> (x & 3)) & 0x01) << GRN_PLANE;
+    pix |= ((pixbrush[BLU_PLANE][y & 3] >> (x & 3)) & 0x01) << BLU_PLANE;
+    _plot(x, y, pix);
+}
+void _plotrgbSnow(int x, int y, unsigned char red, unsigned char grn, unsigned char blu)
+{
+    int ofs;
+    volatile unsigned char dummy;
+    unsigned char pixbrush[4][4], pix, idx;
+
+    idx = brush(red, grn, blu, (unsigned long *)pixbrush);
+    /*
+     * Extract pixel value from IRGB planes.
+     */
+    pix  = ((pixbrush[BRI_PLANE][y & 3] >> (x & 3)) & 0x01) << BRI_PLANE;
+    pix |= ((pixbrush[RED_PLANE][y & 3] >> (x & 3)) & 0x01) << RED_PLANE;
+    pix |= ((pixbrush[GRN_PLANE][y & 3] >> (x & 3)) & 0x01) << GRN_PLANE;
+    pix |= ((pixbrush[BLU_PLANE][y & 3] >> (x & 3)) & 0x01) << BLU_PLANE;
+    _plotSnow(x, y, pix);
 }
 
 

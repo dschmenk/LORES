@@ -37,6 +37,9 @@ void _hlinSnow(unsigned int x1, unsigned int x2, unsigned int y, unsigned char c
 void _vlinSnow(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color);
 void _cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);
 void _cpyBufSnow(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);
+unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned long *pattern);
+void _plotrgb(int x, int y, unsigned char red, unsigned char grn, unsigned char blu);
+void _plotrgbSnow(int x, int y, unsigned char red, unsigned char grn, unsigned char blu);
 #ifdef CGA_SNOW
 #define line    _lineSnow
 #define rect    _rectSnow
@@ -44,6 +47,7 @@ void _cpyBufSnow(unsigned int s, unsigned int t, int width, int height, unsigned
 #define plot    _plotSnow
 #define hlin    _hlinSnow
 #define vlin    _vlinSnow
+#define plotrgb _plotrgbSnow
 #define cpyBuf  _cpyBufSnow
 #else
 #define line    _line
@@ -52,6 +56,7 @@ void _cpyBufSnow(unsigned int s, unsigned int t, int width, int height, unsigned
 #define plot    _plot
 #define hlin    _hlin
 #define vlin    _vlin
+#define plotrgb _plotrgb
 #define cpyBuf  _cpyBuf
 #endif
 extern volatile unsigned char rasterTimer;
