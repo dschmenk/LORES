@@ -19,11 +19,13 @@ struct tile_t
 {
     unsigned char tile[TILE_WIDTH * TILE_HEIGHT / 2];
     unsigned char tileExp[TILE_WIDTH * TILE_HEIGHT];
+    int id;
+    int refcount;
 };
 unsigned char far *vidmem = (char far *)0xB8000000L;
 int mapWidth, mapHeight;
 int tileCount;
-unsigned char far * far *tileMap;
+struct tile_t far * far *tileMap;
 struct tile_t far *tileSet;
 void expandTile(struct tile_t far *tileptr)
 {
@@ -41,15 +43,22 @@ void loadmap(void)
 {
     int i;
     unsigned long mapDim;
-    struct tile_t far *tileptr;
+    struct tile_t far *tileptr, far * far *mapptr;
 
     tileCount = tilesetLoad("demo.set", (unsigned char far * *)&tileSet, sizeof(struct tile_t));
-    mapDim    = tilemapLoad("demo.map", (unsigned char far *)tileSet, sizeof(struct tile_t), &tileMap);
+    mapDim    = tilemapLoad("demo.map", (unsigned char far *)tileSet, sizeof(struct tile_t), (unsigned char far * far * *)&tileMap);
     mapHeight = mapDim >> 16;
     mapWidth  = mapDim;
     tileptr   = tileSet;
     for (i = 0; i < tileCount; i++)
+    {
+        tileptr->id = i;
+        tileptr->refcount = 0;
         expandTile(tileptr++);
+    }
+    mapptr = tileMap;
+    for (i = 0; i < mapHeight * mapWidth; i++)
+        (*mapptr++)->refcount++;
 }
 unsigned short extgetch(void)
 {
@@ -59,6 +68,15 @@ unsigned short extgetch(void)
     if (!extch)
         extch = getch() << 8;
     return extch;
+}
+void gotoxy(int x, int y)
+{
+    union REGS regs;
+
+    regs.x.ax = 0x0200;
+    regs.x.bx = 0x0000;
+    regs.x.dx = (y << 8)| x;
+    int86(0x10, &regs, &regs);
 }
 void txt40(void)
 {
@@ -70,10 +88,7 @@ void txt40(void)
     regs.x.ax = 0x1003;
     regs.x.bx = 0x0000;
     int86(0x10, &regs, &regs); /* turn off blink via EGA/VGA BIOS */
-    regs.x.ax = 0x0200;
-    regs.x.bx = 0x0000;
-    regs.x.dx = (25 << 8);
-    int86(0x10, &regs, &regs); /* move cursor off-screen */
+    gotoxy(0, 25); /* move cursor off-screen */
 }
 void txt80(void)
 {
@@ -85,8 +100,8 @@ void txt80(void)
 }
 void plot(unsigned int x, unsigned int y, unsigned char color)
 {
-    unsigned int pixaddr = (y * 80) + (x | 1);
-    vidmem[pixaddr] = (vidmem[pixaddr] & 0x0F) | color;
+    unsigned int pixaddr = (y * 80) + (x * 2) | 1;
+    vidmem[pixaddr] = (color << 4) | color;
 }
 void tile(int x, int y, int s, int t, int width, int height)
 {
@@ -196,9 +211,10 @@ void tileScrn(int s, int t)
  */
 int main(int argc, char **argv)
 {
-    int orgS, orgT, extS, extT, centerS, centerT;
-    unsigned char far *centerTile, tilePix;
-    char quit, cycle;
+    int orgS, orgT, extS, extT, centerS, centerT, i;
+    struct tile_t far *centerTile;
+    unsigned char tilePix, currentColor;
+    char quit, cycle, statusLine[40];
 
     loadmap();
     txt40();
@@ -207,38 +223,57 @@ int main(int argc, char **argv)
     extS = mapWidth  << 4;
     extT = mapHeight << 4;
     quit = 0;
+    currentColor = 0x0F;
     do
     {
         tileScrn(orgS, orgT);
         centerS = orgS + CENTER_X;
         centerT = orgT + CENTER_Y;
-        centerTile = ((struct tile_t far *)tileMap[(centerT >> 4) * mapWidth + (centerS >> 4)])->tileExp;
+        centerTile = (struct tile_t far *)tileMap[(centerT >> 4) * mapWidth + (centerS >> 4)];
         if (centerTile)
-            tilePix = centerTile[(centerT & 0x0F) * 16 + (centerS & 0x0F)] << 4;
+            tilePix = centerTile->tileExp[(centerT & 0x0F) * 16 + (centerS & 0x0F)] << 4;
         else
             tilePix = 0x00;
         vidmem[CENTER_Y * SCREEN_WIDTH * 2 + CENTER_X * 2] = 0xCE;
+        gotoxy(0, 24);
+        printf("Color:  ID:%d Ref:%d (%d, %d) ", centerTile ? centerTile->id : -1, centerTile ? centerTile->refcount : 0, centerS >> 4, centerT >> 4);
+        gotoxy(0, 25);
+        plot(6, 24, currentColor);
         while (!kbhit())
         {
             vidmem[CENTER_Y * SCREEN_WIDTH * 2 + CENTER_X * 2 + 1] = tilePix | (cycle++ & 0x0F);
         }
         switch(extgetch())
         {
-            case UP_ARROW:
+            case UP_ARROW: // Move up
                 if (centerT > 0)
                     orgT--;
                 break;
-            case DOWN_ARROW:
+            case DOWN_ARROW: // Move down
                 if (centerT < extT - 1)
                     orgT++;
                 break;
-            case LEFT_ARROW:
+            case LEFT_ARROW: // Move left
                 if (centerS > 0)
                     orgS--;
                 break;
-            case RIGHT_ARROW:
+            case RIGHT_ARROW: // Move right
                 if (centerS < extS - 1)
                     orgS++;
+                break;
+            case ' ': // Set tile pixel color
+                if (centerTile)
+                    centerTile->tileExp[(centerT & (TILE_HEIGHT-1)) * TILE_HEIGHT + (centerS & (TILE_WIDTH-1))] = currentColor;
+                break;
+            case 'F': // Fill tile with current color
+            case 'f':
+                if (centerTile)
+                    for (i = 0; i < TILE_WIDTH * TILE_HEIGHT; i++)
+                        centerTile->tileExp[i] = currentColor;
+                break;
+            case 'C': // Cycle current color
+            case 'c':
+                currentColor = (currentColor + 1) & 0x0F;
                 break;
             case ESCAPE:
             case 'q':
