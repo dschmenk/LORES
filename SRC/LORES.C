@@ -63,6 +63,153 @@ static unsigned long bdithmask[16] = // Color dither
     0xEEFFBBFFL,
     0xFFFFFFFFL
 };
+/*
+ * 4x4 dither pattern
+ */
+;
+static unsigned long ddither[16][4]=
+{
+    {0x00000000, // 0
+     0x00000000,
+     0x00000000,
+     0x00000000},
+    {0x01000000, // 1
+     0x00000000,
+     0x00000000,
+     0x00000000},
+    {0x01000000, // 2
+     0x00000000,
+     0x00000100,
+     0x00000000},
+    {0x01000000, // 3
+     0x00000000,
+     0x01000100,
+     0x00000000},
+    {0x01000100, // 4
+     0x00000000,
+     0x01000100,
+     0x00000000},
+    {0x01000100, // 5
+     0x00010000,
+     0x01000100,
+     0x00000000},
+    {0x01000100, // 6
+     0x00010000,
+     0x01000100,
+     0x00000001},
+    {0x01000100, // 7
+     0x00010000,
+     0x01000100,
+     0x00010001},
+    {0x01000100, // 8
+     0x00010001,
+     0x01000100,
+     0x00010001},
+    {0x01000100, // 9
+     0x01010001,
+     0x01000100,
+     0x00010001},
+    {0x01000100, // 10
+     0x01010001,
+     0x01000100,
+     0x00010101},
+    {0x01000100, // 11
+     0x01010001,
+     0x01000100,
+     0x01010101},
+    {0x01000100, // 12
+     0x01010101,
+     0x01000100,
+     0x01010101},
+    {0x01010100, // 13
+     0x01010101,
+     0x01000100,
+     0x01010101},
+    {0x01010100, // 14
+     0x01010101,
+     0x01000101,
+     0x01010101},
+    {0x01010100, // 15
+     0x01010101,
+     0x01010101,
+     0x01010101},
+//    {0x01010101, // 16
+//     0x01010101,
+//     0x01010101,
+//     0x01010101}
+};
+
+static unsigned long bdither[16][4]=
+{
+    {0x00000000, // 0
+     0x00000000,
+     0x00000000,
+     0x00000000},
+    {0x01000000, // 1
+     0x00000000,
+     0x00000000,
+     0x00000000},
+    {0x01000000, // 2
+     0x00000000,
+     0x00000100,
+     0x00000000},
+    {0x01000000, // 3
+     0x00000000,
+     0x01000100,
+     0x00000000},
+    {0x01000100, // 4
+     0x00000000,
+     0x01000100,
+     0x00000000},
+    {0x01000100, // 5
+     0x00010000,
+     0x01000100,
+     0x00000000},
+    {0x01000100, // 6
+     0x00010000,
+     0x01000100,
+     0x00000001},
+    {0x01000100, // 7
+     0x00010000,
+     0x01000100,
+     0x00010001},
+    {0x01000100, // 8
+     0x00010001,
+     0x01000100,
+     0x00010001},
+    {0x01000100, // 9
+     0x01010001,
+     0x01000100,
+     0x00010001},
+    {0x01000100, // 10
+     0x01010001,
+     0x01000100,
+     0x00010101},
+    {0x01000100, // 11
+     0x01010001,
+     0x01000100,
+     0x01010101},
+    {0x01000100, // 12
+     0x01010101,
+     0x01000100,
+     0x01010101},
+    {0x01010100, // 13
+     0x01010101,
+     0x01000100,
+     0x01010101},
+    {0x01010100, // 14
+     0x01010101,
+     0x01000101,
+     0x01010101},
+//    {0x01010100, // 15
+//     0x01010101,
+//     0x01010101,
+//     0x01010101},
+    {0x01010101, // 16
+     0x01010101,
+     0x01010101,
+     0x01010101}
+};
 
 static unsigned int adapter;
 unsigned int orgAddr = 1;
@@ -239,7 +386,7 @@ void _textSnow(unsigned int x, unsigned int y, unsigned char color, char *string
  */
 unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned long *pattern)
 {
-    unsigned char clr, l;
+    unsigned char clr, l, i;
 
     /*
      * Find MAX(R,G,B)
@@ -255,10 +402,30 @@ unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned
         /*
          * Fill brush based on scaled RGB values (brightest -> 100% -> 0x0F).
          */
-        pattern[BRI_PLANE] = bdithmask[(l >> 3) & 0x0F];
-        pattern[RED_PLANE] = bdithmask[(red << 4) / (l + 8)];
-        pattern[GRN_PLANE] = bdithmask[(grn << 4) / (l + 8)];
-        pattern[BLU_PLANE] = bdithmask[(blu << 4) / (l + 8)];
+        i = (l >> 3) & 0x0F;
+        pattern[0] = bdither[i][0] << 3;
+        pattern[1] = bdither[i][1] << 3;
+        pattern[2] = bdither[i][2] << 3;
+        pattern[3] = bdither[i][3] << 3;
+        i = (red << 4) / (l + 8);
+        pattern[0] |= bdither[i][0] << 2;
+        pattern[1] |= bdither[i][1] << 2;
+        pattern[2] |= bdither[i][2] << 2;
+        pattern[3] |= bdither[i][3] << 2;
+        i = (grn << 4) / (l + 8);
+        pattern[0] |= bdither[i][0] << 1;
+        pattern[1] |= bdither[i][1] << 1;
+        pattern[2] |= bdither[i][2] << 1;
+        pattern[3] |= bdither[i][3] << 1;
+        i = (blu << 4) / (l + 8);
+        pattern[0] |= bdither[i][0];
+        pattern[1] |= bdither[i][1];
+        pattern[2] |= bdither[i][2];
+        pattern[3] |= bdither[i][3];
+        //pattern[BRI_PLANE] = bdithmask[(l >> 3) & 0x0F];
+        //pattern[RED_PLANE] = bdithmask[(red << 4) / (l + 8)];
+        //pattern[GRN_PLANE] = bdithmask[(grn << 4) / (l + 8)];
+        //pattern[BLU_PLANE] = bdithmask[(blu << 4) / (l + 8)];
         clr        = 0x08
                    | ((red & 0x80) >> 5)
                    | ((grn & 0x80) >> 6)
@@ -279,10 +446,27 @@ unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned
                 /*
                  * Mix light grey and dark grey.
                  */
-                pattern[BRI_PLANE] = ~ddithmask[((l - 64) >> 2)];
-                pattern[RED_PLANE] =
-                pattern[GRN_PLANE] =
-                pattern[BLU_PLANE] =  ddithmask[((l - 64) >> 2)];
+                i = (l - 64) >> 2;
+                pattern[0] = (ddither[i][0] << 3) ^ 0x08080808L;
+                pattern[1] = (ddither[i][1] << 3) ^ 0x08080808L;
+                pattern[2] = (ddither[i][2] << 3) ^ 0x08080808L;
+                pattern[3] = (ddither[i][3] << 3) ^ 0x08080808L;
+                pattern[0] |= ddither[i][0] << 2;
+                pattern[1] |= ddither[i][1] << 2;
+                pattern[2] |= ddither[i][2] << 2;
+                pattern[3] |= ddither[i][3] << 2;
+                pattern[0] |= ddither[i][0] << 1;
+                pattern[1] |= ddither[i][1] << 1;
+                pattern[2] |= ddither[i][2] << 1;
+                pattern[3] |= ddither[i][3] << 1;
+                pattern[0] |= ddither[i][0];
+                pattern[1] |= ddither[i][1];
+                pattern[2] |= ddither[i][2];
+                pattern[3] |= ddither[i][3];
+                //pattern[BRI_PLANE] = ~ddithmask[((l - 64) >> 2)];
+                //pattern[RED_PLANE] =
+                //pattern[GRN_PLANE] =
+                //pattern[BLU_PLANE] =  ddithmask[((l - 64) >> 2)];
                 clr        =  0x0F;
             }
             else // 0%-25% grey
@@ -290,10 +474,15 @@ unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned
                 /*
                  * Simple dark grey dither.
                  */
-                pattern[BRI_PLANE] = ddithmask[(l >> 2)];
-                pattern[RED_PLANE] = 0;
-                pattern[GRN_PLANE] = 0;
-                pattern[BLU_PLANE] = 0;
+                i = l >> 2;
+                pattern[0] = ddither[i][0] << 3;
+                pattern[1] = ddither[i][1] << 3;
+                pattern[2] = ddither[i][2] << 3;
+                pattern[3] = ddither[i][3] << 3;
+                //pattern[BRI_PLANE] = ddithmask[(l >> 2)];
+                //pattern[RED_PLANE] = 0;
+                //pattern[GRN_PLANE] = 0;
+                //pattern[BLU_PLANE] = 0;
                 clr        = (l > 31) ? 0x08 : 0x00;
             }
         }
@@ -302,10 +491,25 @@ unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned
             /*
              * Simple 8 color RGB dither.
              */
-            pattern[BRI_PLANE] = 0;
-            pattern[RED_PLANE] = ddithmask[red >> 3];
-            pattern[GRN_PLANE] = ddithmask[grn >> 3];
-            pattern[BLU_PLANE] = ddithmask[blu >> 3];
+            i = red >> 3;
+            pattern[0] = ddither[i][0] << 2;
+            pattern[1] = ddither[i][1] << 2;
+            pattern[2] = ddither[i][2] << 2;
+            pattern[3] = ddither[i][3] << 2;
+            i = grn >> 3;
+            pattern[0] |= ddither[i][0] << 1;
+            pattern[1] |= ddither[i][1] << 1;
+            pattern[2] |= ddither[i][2] << 1;
+            pattern[3] |= ddither[i][3] << 1;
+            i = blu >> 3;
+            pattern[0] |= ddither[i][0];
+            pattern[1] |= ddither[i][1];
+            pattern[2] |= ddither[i][2];
+            pattern[3] |= ddither[i][3];
+            //pattern[BRI_PLANE] = 0;
+            //pattern[RED_PLANE] = ddithmask[red >> 3];
+            //pattern[GRN_PLANE] = ddithmask[grn >> 3];
+            //pattern[BLU_PLANE] = ddithmask[blu >> 3];
             clr        = ((red & 0x40) >> 4)
                        | ((grn & 0x40) >> 5)
                        | ((blu & 0x40) >> 6);
@@ -329,11 +533,12 @@ void _plotrgb(int x, int y, unsigned char red, unsigned char grn, unsigned char 
     /*
      * Extract pixel value from IRGB planes.
      */
-    pix  = ((pixbrush[BRI_PLANE][y & 3] >> (x & 3)) & 0x01) << BRI_PLANE;
-    pix |= ((pixbrush[RED_PLANE][y & 3] >> (x & 3)) & 0x01) << RED_PLANE;
-    pix |= ((pixbrush[GRN_PLANE][y & 3] >> (x & 3)) & 0x01) << GRN_PLANE;
-    pix |= ((pixbrush[BLU_PLANE][y & 3] >> (x & 3)) & 0x01) << BLU_PLANE;
-    _plot(x, y, pix);
+    //pix  = ((pixbrush[BRI_PLANE][y & 3] >> (x & 3)) & 0x01) << BRI_PLANE;
+    //pix |= ((pixbrush[RED_PLANE][y & 3] >> (x & 3)) & 0x01) << RED_PLANE;
+    //pix |= ((pixbrush[GRN_PLANE][y & 3] >> (x & 3)) & 0x01) << GRN_PLANE;
+    //pix |= ((pixbrush[BLU_PLANE][y & 3] >> (x & 3)) & 0x01) << BLU_PLANE;
+    //_plot(x, y, pix);
+    _plot(x, y, pixbrush[y & 3][x & 3]);
 }
 void _plotrgbSnow(int x, int y, unsigned char red, unsigned char grn, unsigned char blu)
 {
@@ -345,11 +550,12 @@ void _plotrgbSnow(int x, int y, unsigned char red, unsigned char grn, unsigned c
     /*
      * Extract pixel value from IRGB planes.
      */
-    pix  = ((pixbrush[BRI_PLANE][y & 3] >> (x & 3)) & 0x01) << BRI_PLANE;
-    pix |= ((pixbrush[RED_PLANE][y & 3] >> (x & 3)) & 0x01) << RED_PLANE;
-    pix |= ((pixbrush[GRN_PLANE][y & 3] >> (x & 3)) & 0x01) << GRN_PLANE;
-    pix |= ((pixbrush[BLU_PLANE][y & 3] >> (x & 3)) & 0x01) << BLU_PLANE;
-    _plotSnow(x, y, pix);
+    //pix  = ((pixbrush[BRI_PLANE][y & 3] >> (x & 3)) & 0x01) << BRI_PLANE;
+    //pix |= ((pixbrush[RED_PLANE][y & 3] >> (x & 3)) & 0x01) << RED_PLANE;
+    //pix |= ((pixbrush[GRN_PLANE][y & 3] >> (x & 3)) & 0x01) << GRN_PLANE;
+    //pix |= ((pixbrush[BLU_PLANE][y & 3] >> (x & 3)) & 0x01) << BLU_PLANE;
+    //_plotSnow(x, y, pix);
+    _plotSnow(x, y, pixbrush[y & 3][x & 3]);
 }
 
 
