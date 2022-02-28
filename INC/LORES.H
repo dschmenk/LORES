@@ -37,7 +37,7 @@ void _hlinSnow(unsigned int x1, unsigned int x2, unsigned int y, unsigned char c
 void _vlinSnow(unsigned int x, unsigned int y1, unsigned int y2, unsigned char color);
 void _cpyBuf(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);
 void _cpyBufSnow(unsigned int s, unsigned int t, int width, int height, unsigned char far *buf);
-unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned long *pattern);
+unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned int *pattern);
 void _plotrgb(int x, int y, unsigned char red, unsigned char grn, unsigned char blu);
 void _plotrgbSnow(int x, int y, unsigned char red, unsigned char grn, unsigned char blu);
 #ifdef CGA_SNOW
