@@ -77,7 +77,10 @@ unsigned long tilemapLoad(char *filename, unsigned char far *tileset, int sizeof
                 for (i = 0; i < width; i++)
                 {
                     read(fd, &index, sizeof(int));
-                    *mapptr++ = tileset + index * sizeoftile;
+                    if (index == 0xFFFF)
+                        *mapptr++ = NULL;
+                    else
+                        *mapptr++ = tileset + index * sizeoftile;
                 }
         }
         else
@@ -100,7 +103,13 @@ int tilemapSave(char *filename, unsigned char far *tileset, int sizeoftile, unsi
         for (j = 0; j < height; j++)
             for (i = 0; i < width; i++)
             {
-                index = (*tilemap++ - tileset) / sizeoftile;
+                if (*tilemap == NULL)
+                {
+                    index = 0xFFFF;
+                    tilemap++;
+                }
+                else
+                    index = (*tilemap++ - tileset) / sizeoftile;
                 write(fd, &index, sizeof(int));
             }
         close(fd);

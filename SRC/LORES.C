@@ -69,13 +69,6 @@ unsigned int scrnMask;
 unsigned int scanline[100]; // Precalculated scanline offsets
 unsigned char borderColor;
 
-void txt40(void)
-{
-    union REGS regs;
-
-    regs.x.ax = 1;
-    int86(0x10, &regs, &regs);
-}
 void txt80(void)
 {
     union REGS regs;

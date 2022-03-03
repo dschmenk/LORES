@@ -20,7 +20,6 @@
 #define rasterBorder(c) outp(0x3D9, c)
 #define rasterDisable() outp(0x3D8, 0x01)
 #define rasterEnable()  outp(0x3D8, 0x09)
-void txt40(void);
 void txt80(void);
 unsigned int gr160(unsigned char fill, unsigned char border);
 void _line(unsigned int x1, unsigned int y1, unsigned int x2, unsigned int y2, unsigned char color);
