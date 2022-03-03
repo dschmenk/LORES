@@ -14,6 +14,10 @@
 #define RIGHT_ARROW     0x4D00
 #define UP_ARROW        0x4800
 #define DOWN_ARROW      0x5000
+#define PAGE_UP         0x4900
+#define PAGE_DOWN       0x5100
+#define HOME            0x4700
+#define END             0x4F00
 #define SCREEN_WIDTH    40
 #define SCREEN_HEIGHT   24
 #define STATUS_LINE     SCREEN_HEIGHT
@@ -322,7 +326,7 @@ void mapPreview(void)
     viewExit();
     txt40();
 }
-char getRowCol(char *action)
+char getResponse(char *question)
 {
     unsigned short ch;
 
@@ -330,7 +334,7 @@ char getRowCol(char *action)
     gotoxy(0, 24);
     printf(statusClear);
     gotoxy(8, 24);
-    printf("%s R)ow or C)olumn?", action);
+    printf("%s", question);
     fflush(stdout);
     ch = toupper(extgetch());
     gotoxy(0, 24);
@@ -490,16 +494,17 @@ int main(int argc, char **argv)
     int orgS, orgT, extS, extT, centerS, centerT, i;
     struct tile_t far *centerTile, far *selectTile;
     unsigned char tilePix, currentColor;
-    char quit, cycle, *mapFilename;
+    char quit, modified, cycle, mapName[40];
 
     if (argc > 1)
     {
-        mapFilename = argv[1];
-        LoadMap(mapFilename);
+        strcpy(mapName, argv[1]);
+        LoadMap(mapName);
+        modified = 0;
     }
     else
     {
-        mapFilename = "noname";
+        strcpy(mapName, "noname");
         tileCount   = 1;
         tileSet     = (struct tile_t far *)_fmalloc(tileCount * sizeof(struct tile_t));
         tileSet[0].id = 0;
@@ -510,6 +515,7 @@ int main(int argc, char **argv)
         tileMap = (struct tile_t far * far *)_fmalloc(mapHeight * (mapWidth + 1) * sizeof(unsigned char far *));
         for (i = 0; i < mapWidth * mapHeight; i++)
             tileMap[i] = tileSet;
+        modified = 1;
     }
     txt40();
     orgS = 0;
@@ -521,116 +527,146 @@ int main(int argc, char **argv)
     selectTile = NULL;
     do
     {
-        tileScrn40(orgS, orgT);
+        if (orgS < -CENTER_X)
+            orgS = -CENTER_X;
+        else if (orgS >= extS - CENTER_X)
+            orgS = extS - CENTER_X - 1;
+        if (orgT < -CENTER_Y)
+            orgT = -CENTER_Y;
+        else if (orgT >= extT - CENTER_Y)
+            orgT = extT - CENTER_Y - 1;
         centerS = orgS + CENTER_X;
         centerT = orgT + CENTER_Y;
         centerTile = tileMap[(centerT >> 4) * mapWidth + (centerS >> 4)];
-        if (centerTile)
-            tilePix = centerTile->tileExp[(centerT & 0x0F) * 16 + (centerS & 0x0F)] << 4;
-        else
-            tilePix = 0x00;
-        vidmem[CENTER_Y * SCREEN_WIDTH * 2 + CENTER_X * 2] = 0xCE;
+        tileScrn40(orgS, orgT);
         gotoxy(0, 24);
         printf("Color:  ID:%d (%d) (%d, %d) ", centerTile ? centerTile->id : -1, selectTile ? selectTile->id : -1, centerS >> 4, centerT >> 4);
         gotoxy(0, 25);
         plot40(6, 24, currentColor);
+        vidmem[CENTER_Y * SCREEN_WIDTH * 2 + CENTER_X * 2] = 0xCE;
+        tilePix = centerTile ? centerTile->tileExp[(centerT & 0x0F) * 16 + (centerS & 0x0F)] << 4 : 0x00;
         while (!kbhit())
-        {
             vidmem[CENTER_Y * SCREEN_WIDTH * 2 + CENTER_X * 2 + 1] = tilePix | (cycle++ & 0x0F);
-        }
         switch(extgetch())
         {
+            case '8': // Jump up
+            case PAGE_UP:
+                orgT -= TILE_HEIGHT;
+                break;
             case UP_ARROW: // Move up
-                if (centerT > 0)
-                    orgT--;
+                orgT--;
+                break;
+            case '2': // Jump down
+            case PAGE_DOWN:
+                orgT += TILE_HEIGHT;
                 break;
             case DOWN_ARROW: // Move down
-                if (centerT < extT - 1)
-                    orgT++;
+                orgT++;
+                break;
+            case '4': // Jump left
+            case HOME:
+                orgS -= TILE_WIDTH;
                 break;
             case LEFT_ARROW: // Move left
-                if (centerS > 0)
-                    orgS--;
+                orgS--;
+                break;
+            case '6': // Jump right
+            case END:
+                orgS += TILE_WIDTH;
                 break;
             case RIGHT_ARROW: // Move right
-                if (centerS < extS - 1)
-                    orgS++;
+                orgS++;
                 break;
             case ' ': // Set tile pixel color
                 if (centerTile)
+                {
                     centerTile->tileExp[(centerT & (TILE_HEIGHT-1)) * TILE_HEIGHT + (centerS & (TILE_WIDTH-1))] = currentColor;
+                    modified = 1;
+                }
                 break;
-            case 'F': // Fill tile with current color
-            case 'f':
+            case 'f': // Fill tile with current color
                 if (centerTile)
+                {
                     for (i = 0; i < TILE_WIDTH * TILE_HEIGHT; i++)
                         centerTile->tileExp[i] = currentColor;
+                    modified = 1;
+                }
                 break;
             case 'N': // Next color
+                currentColor += 7;
             case 'n':
                 currentColor = (currentColor + 1) & 0x0F;
                 break;
-            case 'C': // Copy current tile
-            case 'c':
+            case 'c': // Copy current tile
                 selectTile = centerTile;
                 break;
-            case 'V': // Paste selected tile
-            case 'v':
+            case 'v': // Paste selected tile
                 tileMap[(centerT >> 4) * mapWidth + (centerS >> 4)] = selectTile;
+                modified = 1;
                 break;
-            case 'X': // Exchange current and selected tile
-            case 'x':
+            case 'x': // Exchange current and selected tile
                 tileMap[(centerT >> 4) * mapWidth + (centerS >> 4)] = selectTile;
                 selectTile = centerTile;
+                modified = 1;
                 break;
-            case 'S': // Select tile from list
-            case 's':
+            case 's': // Select tile from list
                 selectTile = tileSelectList(centerS >> 4, centerT >> 4);
                 break;
-            case 'P': // Preview
-            case 'p':
+            case 'p': // Preview
                 mapPreview();
                 break;
-            case 'T': // New tile
-            case 't':
+            case 't': // New tile
                 selectTile = tileNew();
                 break;
-            case 'I': // Insert row/column
-            case 'i':
-                switch(getRowCol("Insert"))
+            case 'i': // Insert row/column
+                switch (getResponse("Insert R)ow or C)olumn?"))
                 {
                     case 'R':
                         rowNew(centerT >> 4);
+                        modified = 1;
                         break;
                     case 'C':
                         colNew(centerS >> 4);
+                        modified = 1;
                         break;
                 }
                 extS = mapWidth  << 4;
                 extT = mapHeight << 4;
                 break;
-            case 'D': // Delete row/column
-            case 'd':
-                switch(getRowCol("Delete"))
+            case 'd': // Delete row/column
+                switch(getResponse("Delete R)ow or C)olumn?"))
                 {
                     case 'R':
                         rowDel(centerT >> 4);
+                        modified = 1;
                         break;
                     case 'C':
                         colDel(centerS >> 4);
+                        modified = 1;
                         break;
                 }
                 extS = mapWidth  << 4;
                 extT = mapHeight << 4;
                 break;
             case 'W': // Write map to file
+                plot40(6, 24, BLACK);
+                gotoxy(0, 24);
+                printf(statusClear);
+                gotoxy(8, 24);
+                printf("Write map name:");
+                fflush(stdout);
+                gets(mapName);
+                gotoxy(0, 24);
+                printf(statusClear);
             case 'w':
-                SaveMap(mapFilename);
+                SaveMap(mapName);
+                modified = 0;
                 break;
-            case ESCAPE:
+            case ESCAPE: // Quit
             case 'q':
-            case 'Q':
                 quit = 1;
+                if (modified && getResponse("Write map (Y/N)?") == 'Y')
+                    SaveMap(mapName);
                 break;
         }
     } while (!quit);
