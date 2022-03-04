@@ -9,6 +9,7 @@
 #define CTRL_C          0x0003
 #define CTRL_V          0x0016
 #define CTRL_X          0x0018
+#define RETURN          0x000D
 #define ESCAPE          0x001B
 #define LEFT_ARROW      0x4B00
 #define RIGHT_ARROW     0x4D00
@@ -194,7 +195,7 @@ void tileSetRebuild(void)
         tileptr++;
     }
 }
-struct tile_t far * tileSelectList(int s, int t)
+int tileSelectList(int s, int t)
 {
     struct tile_t far * far *saveMap;
     int saveWidth, saveHeight;
@@ -234,8 +235,9 @@ struct tile_t far * tileSelectList(int s, int t)
                     selected++;
                 break;
             case ESCAPE:
-                selected = saveMap[t * saveWidth + s]->id;
+                selected = -1;
             case ' ':
+            case RETURN:
                 quit = 1;
                 break;
         }
@@ -247,7 +249,7 @@ struct tile_t far * tileSelectList(int s, int t)
     gotoxy(0, 24);
     printf(statusClear);
     fflush(stdout);
-    return &tileSet[selected];
+    return selected;
 }
 struct tile_t far * tileNew(void)
 {
@@ -282,6 +284,46 @@ struct tile_t far * tileNew(void)
         return &tileSet[tileCount++];
     }
     return NULL;
+}
+void tileDel(int index)
+{
+    int i, j;
+    struct tile_t far *newSet;
+    newSet = (struct tile_t far *)_fmalloc((tileCount - 1) * sizeof(struct tile_t));
+    if (newSet)
+    {
+        /*
+         * Copy over existing tiles
+         */
+        for (i = 0; i < index; i++)
+        {
+            newSet[i].id = i;
+            for (j = 0; j < TILE_WIDTH * TILE_HEIGHT; j++)
+                newSet[i].tileExp[j] = tileSet[i].tileExp[j];
+        }
+        for (i = index + 1; i < tileCount; i++)
+        {
+            newSet[i].id = i - 1;
+            for (j = 0; j < TILE_WIDTH * TILE_HEIGHT; j++)
+                newSet[i - 1].tileExp[j] = tileSet[i].tileExp[j];
+        }
+        /*
+         * Update map references
+         */
+        for (j = 0; j < mapHeight; j++)
+            for (i = 0; i < mapWidth; i++)
+            {
+                if (tileMap[j * mapWidth + i]->id == index)
+                    tileMap[j * mapWidth + i] = NULL;
+                else if (tileMap[j * mapWidth + i]->id < index)
+                    tileMap[j * mapWidth + i] = &newSet[(tileMap[j * mapWidth + i])->id];
+                else
+                    tileMap[j * mapWidth + i] = &newSet[(tileMap[j * mapWidth + i])->id - 1];
+            }
+        _ffree(tileSet);
+        tileSet = newSet;
+        tileCount--;
+    }
 }
 void mapPreview(void)
 {
@@ -325,21 +367,6 @@ void mapPreview(void)
     } while (!quit);
     viewExit();
     txt40();
-}
-char getResponse(char *question)
-{
-    unsigned short ch;
-
-    plot40(6, 24, BLACK);
-    gotoxy(0, 24);
-    printf(statusClear);
-    gotoxy(8, 24);
-    printf("%s", question);
-    fflush(stdout);
-    ch = toupper(extgetch());
-    gotoxy(0, 24);
-    printf(statusClear);
-    return ch;
 }
 void rowNew(int row)
 {
@@ -422,6 +449,21 @@ void colDel(int col)
             tileMap = newMap;
         }
     }
+}
+char getResponse(char *question)
+{
+    unsigned short ch;
+
+    plot40(6, 24, BLACK);
+    gotoxy(0, 24);
+    printf(statusClear);
+    gotoxy(8, 24);
+    printf("%s", question);
+    fflush(stdout);
+    ch = toupper(extgetch());
+    gotoxy(0, 24);
+    printf(statusClear);
+    return ch;
 }
 void LoadMap(char *filebase)
 {
@@ -610,13 +652,22 @@ int main(int argc, char **argv)
                 modified = 1;
                 break;
             case 's': // Select tile from list
-                selectTile = tileSelectList(centerS >> 4, centerT >> 4);
+                if ((i = tileSelectList(centerS >> 4, centerT >> 4)) >= 0)
+                    selectTile = &tileSet[i];
                 break;
             case 'p': // Preview
                 mapPreview();
                 break;
             case 't': // New tile
                 selectTile = tileNew();
+                break;
+            case 'K': // Kill tile
+                if (tileCount > 1)
+                {
+                    if ((i = tileSelectList(centerS >> 4, centerT >> 4)) >= 0)
+                        tileDel(i);
+                    modified = 1;
+                }
                 break;
             case 'i': // Insert row/column
                 switch (getResponse("Insert R)ow or C)olumn?"))

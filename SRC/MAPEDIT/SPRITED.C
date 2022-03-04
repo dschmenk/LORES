@@ -28,7 +28,7 @@
 #define MAX_NUM_SPRITES     64
 char statusClear[] = "                                      ";
 unsigned char far *vidmem = (char far *)0xB8000000L;
-unsigned char far *vidptr;
+unsigned char far *disptr;
 int spriteWidth, spriteHeight, spriteCount, sizeofSprite;
 unsigned char far *spritePage;
 unsigned short extgetch(void)
@@ -64,7 +64,7 @@ void txt40(void)
 void plot40(unsigned int x, unsigned int y, unsigned char color)
 {
     unsigned int pixaddr = (y * 80) + (x * 2);
-    vidmem[pixaddr]     = (color == 8) ? 0xB1 : ' '; 
+    vidmem[pixaddr]     = (color == 8) ? 0xB1 : ' ';
     vidmem[pixaddr + 1] = color << 4;
 }
 void sprite40(unsigned char far *spriteptr)
@@ -80,12 +80,181 @@ void sprite40(unsigned char far *spriteptr)
             pixhi = *spriteptr++ & 0xF0;
             charlo = pixlo == 0x80 ? 0xB1 : ' ';
             charhi = pixhi == 0x80 ? 0xB1 : ' ';
-            vidptr[y * 80 + (x << 1) + 0] = charlo;
-            vidptr[y * 80 + (x << 1) + 1] = pixlo;
-            vidptr[y * 80 + (x << 1) + 2] = charhi;
-            vidptr[y * 80 + (x << 1) + 3] = pixhi;
+            disptr[y * 80 + (x << 1) + 0] = charlo;
+            disptr[y * 80 + (x << 1) + 1] = pixlo;
+            disptr[y * 80 + (x << 1) + 2] = charhi;
+            disptr[y * 80 + (x << 1) + 3] = pixhi;
         }
     }
+}
+int spriteNew(void)
+{
+    int i, j;
+    unsigned char far *newPage, spriteptr;
+
+    newPage = (unsigned char far *)_fmalloc((spriteCount + 1) * sizeofSprite);
+    if (newPage)
+    {
+        /*
+         * Init fresh tile
+         */
+        for (j = 0; j < sizeofSprite; j++)
+            newPage[spriteCount * sizeofSprite + j] = GREY | (GREY << 4);
+        /*
+         * Copy over existing tiles
+         */
+        for (i = 0; i < spriteCount; i++)
+            for (j = 0; j < sizeofSprite; j++)
+                newPage[i * sizeofSprite + j] = spritePage[i * sizeofSprite + j];
+        if (spritePage)
+            _ffree(spritePage);
+        spritePage = newPage;
+        return ++spriteCount;
+    }
+    return spriteCount;
+}
+int spriteDel(int index)
+{
+    int i, j;
+    unsigned char far *newPage, spriteptr;
+
+    newPage = (unsigned char far *)_fmalloc((spriteCount - 1) * sizeofSprite);
+    if (newPage)
+    {
+        /*
+         * Copy over existing tiles
+         */
+        for (i = 0; i < index; i++)
+            for (j = 0; j < sizeofSprite; j++)
+                newPage[i * sizeofSprite + j] = spritePage[i * sizeofSprite + j];
+        for (i = index + 1; i < spriteCount; i++)
+            for (j = 0; j < sizeofSprite; j++)
+                newPage[(i - 1) * sizeofSprite + j] = spritePage[i * sizeofSprite + j];
+        if (spritePage)
+            _ffree(spritePage);
+        spritePage = newPage;
+        if (index >= --spriteCount)
+            index = spriteCount - 1;
+    }
+    return index;
+}
+void rowNew(int row)
+{
+    int i, j, k, newSize;
+    unsigned char far * newPage;
+
+    if (spriteHeight + 1 <= SCREEN_HEIGHT)
+    {
+        newSize = spriteWidth * (spriteHeight + 1)/2;
+        newPage = (unsigned char far *)_fmalloc(spriteCount * newSize);
+        if (newPage)
+        {
+            for (k = 0; k < spriteCount; k++)
+            {
+                for (j = 0; j <= row; j++)
+                    for (i = 0; i < spriteWidth; i += 2)
+                        newPage[k * newSize + (j * spriteWidth + i)/2] = spritePage[k * sizeofSprite + (j * spriteWidth + i)/2];
+                for (j = row; j < spriteHeight; j++)
+                    for (i = 0; i < spriteWidth; i += 2)
+                        newPage[k * newSize + ((j + 1) * spriteWidth + i)/2] = spritePage[k * sizeofSprite + (j * spriteWidth + i)/2];
+            }
+            _ffree(spritePage);
+            spritePage   = newPage;
+            sizeofSprite = newSize;
+            spriteHeight++;
+        }
+    }
+}
+void colNew(int col)
+{
+    int i, j, k, newWidth, newSize;
+    unsigned char far * newPage;
+
+    if (spriteWidth + 2 <= SCREEN_WIDTH)
+    {
+        col     &= ~1;
+        newWidth = spriteWidth + 2;
+        newSize  = newWidth * spriteHeight / 2;
+        newPage  = (unsigned char far *)_fmalloc(spriteCount * newSize);
+        if (newPage)
+        {
+            for (k = 0; k < spriteCount; k++)
+            {
+                for (i = 0; i <= col; i += 2)
+                    for (j = 0; j < spriteHeight; j++)
+                        newPage[k * newSize + (j * newWidth + i)/2] = spritePage[k * sizeofSprite + (j * spriteWidth + i)/2];
+                for (i = col; i < spriteWidth; i += 2)
+                    for (j = 0; j < spriteHeight; j++)
+                        newPage[k * newSize + (j * newWidth + (i + 2))/2] = spritePage[k * sizeofSprite + (j * spriteWidth + i)/2];
+            }
+            _ffree(spritePage);
+            spritePage   = newPage;
+            sizeofSprite = newSize;
+            spriteWidth  = newWidth;
+        }
+    }
+}
+int rowDel(int row)
+{
+    int i, j, k, newSize;
+    unsigned char far * newPage;
+
+    if (spriteHeight > 1)
+    {
+        newSize = spriteWidth * (spriteHeight - 1)/2;
+        newPage = (unsigned char far *)_fmalloc(spriteCount * newSize);
+        if (newPage)
+        {
+            for (k = 0; k < spriteCount; k++)
+            {
+                for (j = 0; j < row; j++)
+                    for (i = 0; i < spriteWidth; i += 2)
+                        newPage[k * newSize + (j * spriteWidth + i)/2] = spritePage[k * sizeofSprite + (j * spriteWidth + i)/2];
+                for (j = row + 1; j < spriteHeight; j++)
+                    for (i = 0; i < spriteWidth; i += 2)
+                        newPage[k * newSize + ((j - 1) * spriteWidth + i)/2] = spritePage[k * sizeofSprite + (j * spriteWidth + i)/2];
+            }
+            _ffree(spritePage);
+            spritePage   = newPage;
+            sizeofSprite = newSize;
+            spriteHeight--;
+            if (row >= spriteHeight)
+                row--;
+        }
+    }
+    return row;
+}
+int colDel(int col)
+{
+    int i, j, k, newWidth, newSize;
+    unsigned char far * newPage;
+
+    if (spriteWidth > 2)
+    {
+        col     &= ~1;
+        newWidth = spriteWidth - 2;
+        newSize  = newWidth * spriteHeight / 2;
+        newPage  = (unsigned char far *)_fmalloc(spriteCount * newSize);
+        if (newPage)
+        {
+            for (k = 0; k < spriteCount; k++)
+            {
+                for (i = 0; i < col; i += 2)
+                    for (j = 0; j < spriteHeight; j++)
+                        newPage[k * newSize + (j * newWidth + i)/2] = spritePage[k * sizeofSprite + (j * spriteWidth + i)/2];
+                for (i = col + 2; i < spriteWidth; i += 2)
+                    for (j = 0; j < spriteHeight; j++)
+                        newPage[k * newSize + (j * newWidth + (i - 2))/2] = spritePage[k * sizeofSprite + (j * spriteWidth + i)/2];
+            }
+            _ffree(spritePage);
+            spritePage   = newPage;
+            sizeofSprite = newSize;
+            spriteWidth  = newWidth;
+            if (col >= spriteWidth)
+                col -= 2;
+        }
+    }
+    return col;
 }
 char getResponse(char *question)
 {
@@ -133,7 +302,7 @@ void SaveSprite(char *filebase)
 int main(int argc, char **argv)
 {
     unsigned char far *currentSprite;
-    int currentIndex, plotX, plotY;
+    int currentIndex, selectIndex, plotX, plotY, j;
     unsigned char currentColor, spritePix;
     char quit, modified, cycle, spriteName[40];
 
@@ -145,22 +314,28 @@ int main(int argc, char **argv)
     }
     else
     {
-        printf("Usage: sprited <filebase>\n");
-        exit(1);
+        strcpy(spriteName, "noname");
+        spriteCount  = 0;
+        spriteWidth  =
+        spriteHeight = 8;
+        sizeofSprite = spriteWidth * spriteHeight / 2;
+        spritePage   = NULL;
+        modified     = spriteNew();
     }
     txt40();
-    vidptr        = vidmem + (SCREEN_HEIGHT - spriteHeight) / 2 * 80 + (SCREEN_WIDTH - spriteWidth);
+    disptr        = vidmem + (SCREEN_HEIGHT - spriteHeight) / 2 * 80 + (SCREEN_WIDTH - spriteWidth);
+    selectIndex   =
     currentIndex  = 0;
     currentSprite = spritePage;
     currentColor  = 0x0F;
-    plotX         = spriteWidth / 2;
+    plotX         = spriteWidth  / 2;
     plotY         = spriteHeight / 2;
     quit          = 0;
     do
     {
         sprite40(currentSprite);
         gotoxy(0, 24);
-        printf("Color:  ID:%d ", currentIndex);
+        printf("Color:  ID:%d (%d)", currentIndex, selectIndex);
         gotoxy(0, 25);
         plot40(6, 24, currentColor);
         if (plotX < 0)
@@ -175,10 +350,10 @@ int main(int argc, char **argv)
             spritePix = currentSprite[(plotY * spriteWidth + plotX) >> 1] & 0xF0;
         else
             spritePix = currentSprite[(plotY * spriteWidth + plotX) >> 1] << 4;
-        vidptr[plotY * SCREEN_WIDTH * 2 + plotX * 2] = 0xCE;
+        disptr[plotY * SCREEN_WIDTH * 2 + plotX * 2] = 0xCE;
         while (!kbhit())
-            vidptr[plotY * SCREEN_WIDTH * 2 + plotX * 2 + 1] = spritePix | (cycle++ & 0x0F);
-        vidptr[plotY * SCREEN_WIDTH * 2 + plotX * 2] = ' ';
+            disptr[plotY * SCREEN_WIDTH * 2 + plotX * 2 + 1] = spritePix | (cycle++ & 0x0F);
+        disptr[plotY * SCREEN_WIDTH * 2 + plotX * 2] = ' ';
         switch (extgetch())
         {
             case UP_ARROW: // Move cursor up
@@ -209,14 +384,16 @@ int main(int argc, char **argv)
             case RIGHT_ARROW: // Move cursor right
                 plotX++;
                 break;
-            case ' ': // Set tile pixel color
+            case ' ': // Set sprite pixel color
                 if (plotX & 1)
                     currentSprite[(plotY * spriteWidth + plotX) >> 1] = (currentSprite[(plotY * spriteWidth + plotX) >> 1] & 0x0F) | (currentColor << 4);
                 else
                     currentSprite[(plotY * spriteWidth + plotX) >> 1] = (currentSprite[(plotY * spriteWidth + plotX) >> 1] & 0xF0) | currentColor;
                 modified = 1;
                 break;
-            case 'f': // Fill tile with current color
+            case 'f': // Fill sprite with current color
+                for (j = 0; j < sizeofSprite; j++)
+                    currentSprite[j] = currentColor | (currentColor << 4);
                 modified = 1;
                 break;
             case 'N': // Next color
@@ -224,16 +401,66 @@ int main(int argc, char **argv)
             case 'n':
                 currentColor = (currentColor + 1) & 0x0F;
                 break;
+            case 's': // New sprite
+                currentIndex  = spriteNew() - 1;
+                currentSprite = spritePage + currentIndex * sizeofSprite;
+                modified = 1;
+                break;
+            case 'K': // Kill sprite
+                if (spriteCount > 1 && getResponse("Delete sprite image (Y/N)?") == 'Y')
+                {
+                    currentIndex  = spriteDel(currentIndex);
+                    currentSprite = spritePage + currentIndex * sizeofSprite;
+                    modified = 1;
+                }
+                break;
             case 'c': // Copy current image
+                selectIndex = currentIndex;
                 break;
             case 'v': // Paste selected tile
+                for (j = 0; j < sizeofSprite; j++)
+                    currentSprite[j] = spritePage[selectIndex * sizeofSprite + j];
                 modified = 1;
                 break;
             case 'x': // Exchange current and selected tile
+                for (j = 0; j < sizeofSprite; j++)
+                {
+                    spritePix = currentSprite[j];
+                    currentSprite[j] = spritePage[selectIndex * sizeofSprite + j];
+                    spritePage[selectIndex * sizeofSprite + j] = spritePix;
+                }
                 modified = 1;
                 break;
-            case 'a': // Add image
-                modified = 1;
+            case 'i': // Insert row/column
+                switch (getResponse("Insert R)ow or C)olumn?"))
+                {
+                    case 'R':
+                        rowNew(plotY);
+                        modified = 1;
+                        break;
+                    case 'C':
+                        colNew(plotX);
+                        modified = 1;
+                        break;
+                }
+                disptr = vidmem + (SCREEN_HEIGHT - spriteHeight) / 2 * 80 + (SCREEN_WIDTH - spriteWidth);
+                currentSprite = spritePage + currentIndex * sizeofSprite;
+                break;
+            case 'd': // Delete row/column
+                switch(getResponse("Delete R)ow or C)olumn?"))
+                {
+                    case 'R':
+                        plotY = rowDel(plotY);
+                        modified = 1;
+                        break;
+                    case 'C':
+                        plotX = colDel(plotX);
+                        modified = 1;
+                        break;
+                }
+                txt40(); // Clear screen
+                disptr = vidmem + (SCREEN_HEIGHT - spriteHeight) / 2 * 80 + (SCREEN_WIDTH - spriteWidth);
+                currentSprite = spritePage + currentIndex * sizeofSprite;
                 break;
             case 'W': // Write sprite page to file
                 plot40(6, 24, BLACK);
