@@ -6,6 +6,7 @@
 
 extern volatile unsigned int frameCount;
 
+#ifdef STATIC_ASSETS
 /*
  * Map and tile data
  */
@@ -137,8 +138,9 @@ unsigned char testile3[] = {0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                           0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
-
-unsigned char far *tilemap[16][16];
+#define MAP_WIDTH       16
+#define MAP_HEIGHT      16
+unsigned char far *tilemap[MAP_HEIGHT][MAP_WIDTH];
 unsigned char far *tileAnimate[4] = {testile, testile1, testile2, testile3};
 /*
  * Build map from text representation
@@ -168,9 +170,9 @@ void buildmap(void)
     int row, col;
     unsigned char far *tileptr;
 
-    for (row = 0; row < 16; row++)
+    for (row = 0; row < MAP_HEIGHT; row++)
     {
-        for (col = 0; col < 16; col++)
+        for (col = 0; col < MAP_WIDTH; col++)
         {
             switch (map[row][col])
             {
@@ -243,7 +245,18 @@ unsigned char angry[FACE_HEIGHT*FACE_WIDTH/2] = {
      0x88, 0xC8, 0xCC, 0x44, 0xCC, 0xCC, 0x44, 0xCC, 0x8C, 0x88,
      0x88, 0x88, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0xCC, 0x88, 0x88,
      0x88, 0x88, 0x88, 0xC8, 0xCC, 0xCC, 0x8C, 0x88, 0x88, 0x88};
-
+#else
+#include "mapio.h"
+#define MAP_WIDTH       mapWidth
+#define MAP_HEIGHT      mapHeight
+int mapWidth, mapHeight;
+unsigned char far * far *tilemap;
+unsigned char far * tileset, far *tileAnimate[4];
+#define FACE_WIDTH      faceWidth
+#define FACE_HEIGHT     faceHeight
+int faceWidth, faceHeight;
+unsigned char far *face, far *angry;
+#endif
 /*
  * Demo tiling and scrolling screen
  */
@@ -254,8 +267,18 @@ int main(int argc, char **argv)
     unsigned long st;
     int movedir, scrolldir;
     unsigned char cycle;
-
+#ifdef STATIC_ASSETS
     buildmap();
+#else
+    spriteLoad("demo.spr", &face, &faceWidth, &faceHeight);
+    angry = face + faceWidth * faceHeight / 2;
+    tilesetLoad("demo.set",     &tileset, 16*16/2);
+    st = tilemapLoad("demo.map", tileset, 16*16/2, &tilemap);
+    mapWidth  = st;
+    mapHeight = st >> 16;
+    for (cycle = 0; cycle < 4; cycle++)
+        tileAnimate[cycle] = tileset + (cycle + 5) * 16 * 16 / 2;
+#endif
     /*
      * Set initial coordinates and scroll direction.
      * Horizontal scroll increment must be two,
@@ -270,7 +293,7 @@ int main(int argc, char **argv)
     /*
      * Use hardware scrolling on CGA
      */
-    viewInit(gr160(BLACK, BROWN), viewS, viewT, 16, 16, (unsigned char far * far *)tilemap);
+    viewInit(gr160(BLACK, BROWN), viewS, viewT, MAP_WIDTH, MAP_HEIGHT, (unsigned char far * far *)tilemap);
     spriteEnable(0, faceS, faceT, FACE_WIDTH, FACE_HEIGHT, face);
     spriteEnable(1, 0x94, 0x74, FACE_WIDTH, FACE_HEIGHT, angry);
     viewRefresh(0);
@@ -290,8 +313,8 @@ int main(int argc, char **argv)
             /*
              * Change scroll direction at map boundaries
              */
-            if ((faceS >= ((16 << 4) - FACE_WIDTH - 2))  || (faceS < 2)) incS = -incS;
-            if ((faceT >= ((16 << 4) - FACE_HEIGHT - 2)) || (faceT < 2)) incT = -incT;
+            if ((faceS >= ((MAP_WIDTH << 4)  - FACE_WIDTH - 2))  || (faceS < 2)) incS = -incS;
+            if ((faceT >= ((MAP_HEIGHT << 4) - FACE_HEIGHT - 2)) || (faceT < 2)) incT = -incT;
             st = spritePosition(0, faceS + incS, faceT + incT);
             faceS = st;
             faceT = st >> 16;
