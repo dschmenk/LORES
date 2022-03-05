@@ -4,6 +4,7 @@
 #include <conio.h>
 #include "lores.h"
 #include "tiler.h"
+#include "mapio.h"
 #define ESCAPE          0x001B
 #define LEFT_ARROW      0x4B00
 #define RIGHT_ARROW     0x4D00
@@ -30,6 +31,7 @@ unsigned char Enter, Exit, xDeadEnd, yDeadEnd;
 /*
  * Map and tile data
  */
+#if 0
 unsigned char exitile0[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
                            0x9F, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0xF9,
                            0x9F, 0x99, 0x99, 0x99, 0x99, 0x99, 0x99, 0xF9,
@@ -95,10 +97,15 @@ unsigned char exitile3[] = {0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                            0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22,
                            0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22, 0x22};
 unsigned char far *tileExitAnimate[4] = {exitile0, exitile1, exitile2, exitile3};
+#else
+unsigned char far *tilesetExit;
+unsigned char far *tileExitAnimate[4];
+#endif
 // WALL_TOP        0x01
 // WALL_BOTTOM     0x02
 // WALL_LEFT       0x04
 // WALL_RIGHT      0x08
+#if 0
 unsigned char tile0[] = {  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
                            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -358,10 +365,15 @@ unsigned char tileF[] = {  0x78, 0x88, 0x88, 0x78, 0x87, 0x88, 0x88, 0x87,
 unsigned char far *maze2map[16] = {
                             tile0, tile1, tile2, tile3, tile4, tile5, tile6, tile7,
                             tile8, tile9, tileA, tileB, tileC, tileD, tileE, tileF};
+#else
+unsigned char far *tilesetWalls;
+unsigned char far *maze2map[16];
+#endif
 unsigned char far *tilemap[MAX_HEIGHT * MAX_WIDTH];
 /*
  * 10X10 Sprite
  */
+#if 0
 #define FACE_WIDTH      10
 #define FACE_HEIGHT     10
 unsigned char face[FACE_HEIGHT*FACE_WIDTH/2] = {
@@ -375,6 +387,12 @@ unsigned char face[FACE_HEIGHT*FACE_WIDTH/2] = {
     0xE8, 0x9E, 0x99, 0xE9, 0x8E,
     0x88, 0xEE, 0xEE, 0xEE, 0x88,
     0x88, 0xE8, 0xEE, 0x8E, 0x88};
+#else
+#define FACE_WIDTH      faceWidth
+#define FACE_HEIGHT     faceHeight
+int faceWidth, faceHeight;
+unsigned char far *face;
+#endif
 int solve(int x, int y, unsigned char dirEntry)
 {
     unsigned char dirOptions;
@@ -660,14 +678,22 @@ int main(int argc, char **argv)
 {
     unsigned int mazeX, mazeY;
     unsigned int faceS, viewS, moveToS, faceT, moveToT, viewT;
-    int incS, incT;
+    int incS, incT, i;
     unsigned long st;
     unsigned int adapter, scrolldir, seed;
     unsigned char cycleExit, quit;
     struct dostime_t time;
     int hours, minutes, seconds, hseconds;
     char *level;
+    unsigned char far *tilesetExit;
 
+    tilesetLoad("exit.set",   &tilesetExit,  16*16/2);
+    tilesetLoad("walls.set",  &tilesetWalls, 16*16/2);
+    spriteLoad("player.spr", &face, &faceWidth, &faceHeight);
+    for (i = 0; i < 4; i++)
+        tileExitAnimate[i] = tilesetExit + i * 16 * 16 / 2;
+    for (i = 0; i < 16; i++)
+        maze2map[i] = tilesetWalls + i * 16 * 16 / 2;
     mapWidth  = MAX_WIDTH/2;
     mapHeight = MAX_HEIGHT/2;
     level = "Medium";
