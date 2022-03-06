@@ -37,7 +37,6 @@ Without specifying a base name, a blank map and tile set will be created. With a
  |    w       | Write file         
  |   ESC      | Quit               
  |    q       | Quit               
- |------------|--------------------
 
 ## SPRITED
 Sprite pages (multiple same-size sprite images) can be loaded, edited and saved as `.SPR` files. SPRITED is run as:
@@ -69,4 +68,3 @@ Without specifying a base name, a blank sprite page will be created. Commands ar
  |    w       | Write file         
  |   ESC      | Quit               
  |    q       | Quit               
- |------------|--------------------
