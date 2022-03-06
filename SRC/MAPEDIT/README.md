@@ -74,3 +74,7 @@ Without specifying a base name, a blank sprite page will be created. Commands ar
  |    w       | Write file         
  |   ESC      | Quit               
  |    q       | Quit               
+
+## Executables
+
+Real-mode MS-DOS programs are located in the [BIN](https://github.com/dschmenk/LORES/tree/main/BIN) directory.
