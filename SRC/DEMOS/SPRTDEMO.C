@@ -251,7 +251,7 @@ unsigned char angry[FACE_HEIGHT*FACE_WIDTH/2] = {
 #define MAP_HEIGHT      mapHeight
 int mapWidth, mapHeight;
 unsigned char far * far *tilemap;
-unsigned char far * tileset, far *tileAnimate[4];
+unsigned char far *tileset, far *tileAnimate[4];
 #define FACE_WIDTH      faceWidth
 #define FACE_HEIGHT     faceHeight
 int faceWidth, faceHeight;
@@ -270,14 +270,16 @@ int main(int argc, char **argv)
 #ifdef STATIC_ASSETS
     buildmap();
 #else
-    spriteLoad("demo.spr", &face, &faceWidth, &faceHeight);
-    angry = face + faceWidth * faceHeight / 2;
+    if (cycle = spriteLoad("demo.spr", &face, &faceWidth, &faceHeight))
+        angry = face + faceWidth * faceHeight / 2;
+    else
+        angry = face;
     tilesetLoad("demo.set",     &tileset, 16*16/2);
     st = tilemapLoad("demo.map", tileset, 16*16/2, &tilemap);
     mapWidth  = st;
     mapHeight = st >> 16;
     for (cycle = 0; cycle < 4; cycle++)
-        tileAnimate[cycle] = tileset + (cycle + 5) * 16 * 16 / 2;
+        tileAnimate[cycle] = tileset + (cycle + 5) * 16*16/2;
 #endif
     /*
      * Set initial coordinates and scroll direction.

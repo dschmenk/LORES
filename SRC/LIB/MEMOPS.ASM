@@ -267,7 +267,9 @@ tilemidrows:
 ; tileBufRow(s, 0, heightBuf - y, tilerow, widthBuf, buf);
 tilebuflast:
         mov     WORD PTR [bp-20], ax    ; height = heightBuf - y
+        push    ds
         call    tileBufRow
+        pop     ds
         pop     si
         pop     di
         mov     sp, bp
