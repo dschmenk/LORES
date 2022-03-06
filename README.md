@@ -18,7 +18,9 @@ Contents:
   - [Tile Map](#tile-map)
   - [Sprites](#sprites-1)
   - [View](#view)
+  - [Asset File I/O](#file-io)
 - [Building](#building)
+- [Editors](./SRC/MAPEDIT/README.md)
 - [Samples and Demos](#samples-and-demos)
   - [Video](https://youtu.be/rIbONSlyQeU)
 
@@ -175,6 +177,33 @@ Big daddy of them all. Coordinates tile, sprite and scrolling updates. Return (s
 Global variable that increments every frame:
 
     extern unsigned int frameCount;
+
+## File I/O
+
+Load tile set:
+
+    int tilesetLoad(char *filename, unsigned char far * *tileset, int sizeoftile);
+
+Save tile set:
+
+    int tilesetSave(char *filename, unsigned char far *tileset, int sizeoftile, int count);
+
+Load tile map:
+
+    unsigned long tilemapLoad(char *filename, unsigned char far *tileset, int sizeoftile, unsigned char far * far * *tilemap);
+
+Save tile map:
+
+    int tilemapSave(char *filename, unsigned char far *tileset, int sizeoftile, unsigned char far * far *tilemap, int width, int height);
+
+Load sprite page:
+
+    int spriteLoad(char *filename, unsigned char far * *spritepage, int *width, int *height);
+
+Save sprite page:
+
+    int spriteSave(char *filename, unsigned char far *spritepage, int width, int height, int count);
+
 
 ## Building
 
