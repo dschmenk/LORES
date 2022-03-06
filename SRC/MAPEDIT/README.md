@@ -9,7 +9,7 @@ Tileset are loaded and save in `.SET` files. Tilesets are referenced in the virt
 Without specifying a base name, a blank map and tile set will be created. With a base name, the tile set and tile map will be loaded and displayed for editing. Commands are single key operations:
 
  |     Key    |      Command       
- |------------|--------------------
+ |:----------:|--------------------
  |   PgUp     | Move tile up       
  | ShiftUp    | Move tile up       
  |   PgDn     | Move tile down     
@@ -48,7 +48,7 @@ Without specifying a base name, a blank sprite page will be created. Commands ar
 
 
  |     Key    |      Command       
- |------------|--------------------
+ |:----------:|--------------------
  | ShiftLeft  | Move sprite left   
  | ShiftRight | Move sprite right  
  |    Up      | Move pixel up      
