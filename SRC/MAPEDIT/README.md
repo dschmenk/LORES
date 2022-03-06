@@ -3,7 +3,7 @@ The LORES library provides an API for programming the CGA to implement a virtual
 
 ## MAPEDIT
 
-![MAPEDIT](https://./mapedit_000.png "mapedit")
+![MAPEDIT](https://github.com/dschmenk/LORES/blob/main/SRC/MAPEDIT/mapedit_000.png "mapedit")
 
 Tileset are loaded and save in `.SET` files. Tilesets are referenced in the virtual tile maps, loaded and saved in `.MAP` files. MAPEDIT will match the base name and load/save both the tileset and tilemap files together. MAPEDIT is run as:
 
@@ -43,7 +43,7 @@ Without specifying a base name, a blank map and tile set will be created. With a
 
 ## SPRITED
 
-![SPRITED](https://./sprited_000.png "sprited")
+![SPRITED](https://github.com/dschmenk/LORES/blob/main/SRC/MAPEDIT/sprited_000.png "sprited")
 
 Sprite pages (multiple same-size sprite images) can be loaded, edited and saved as `.SPR` files. SPRITED is run as:
 
