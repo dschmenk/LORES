@@ -67,7 +67,7 @@ Without specifying a base name, a blank sprite page will be created. Commands ar
  |    v       | Paste sprite       
  |    x       | eXchange sprite    
  |    s       | new Sprite         
- |    K       | Kill (del) tile    
+ |    K       | Kill (del) sprite    
  |    i       | Insert row/col map
  |    d       | Delete row/col map
  |    W       | Write to filename  
