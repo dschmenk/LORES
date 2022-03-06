@@ -46,7 +46,6 @@ Sprite pages (multiple same-size sprite images) can be loaded, edited and saved 
 
 Without specifying a base name, a blank sprite page will be created. Commands are single key operations:
 
-
  |     Key    |      Command       
  |:----------:|--------------------
  | ShiftLeft  | Move sprite left   
