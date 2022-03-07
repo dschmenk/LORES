@@ -13,12 +13,12 @@ Without specifying a base name, a blank map and tile set will be created. With a
 
  |     Key    |      Command       
  |:----------:|--------------------
- |   PgUp     | Move tile up       
- | ShiftUp    | Move tile up       
- |   PgDn     | Move tile down     
- | ShiftDown  | Move tile down     
- | ShiftLeft  | Move tile left     
- | ShiftRight | Move tile right    
+ |   PgUp     | Move up tile       
+ | ShiftUp    | Move up tile       
+ |   PgDn     | Move down tile
+ | ShiftDown  | Move down tile     
+ | ShiftLeft  | Move left tile     
+ | ShiftRight | Move right tile    
  |    Up      | Move pixel up      
  |   Down     | Move pixel down    
  |  Right     | Move pixel right   
@@ -53,8 +53,8 @@ Without specifying a base name, a blank sprite page will be created. Commands ar
 
  |     Key    |      Command       
  |:----------:|--------------------
- | ShiftLeft  | Move sprite left   
- | ShiftRight | Move sprite right  
+ | ShiftLeft  | Move left sprite   
+ | ShiftRight | Move right sprite  
  |    Up      | Move pixel up      
  |   Down     | Move pixel down    
  |  Right     | Move pixel right   
