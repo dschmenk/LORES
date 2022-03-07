@@ -19,10 +19,10 @@ Without specifying a base name, a blank map and tile set will be created. With a
  | ShiftDown  | Move down tile     
  | ShiftLeft  | Move left tile     
  | ShiftRight | Move right tile    
- |    Up      | Move pixel up      
- |   Down     | Move pixel down    
- |  Right     | Move pixel right   
- |   Left     | Move pixel left    
+ |    Up      | Move up pixel       
+ |   Down     | Move down pixel     
+ |  Right     | Move right pixel    
+ |   Left     | Move left pixel    
  |  Space     | Set pixel color    
  |    f       | Fill tile color    
  |    N       | Next pixel color   
@@ -55,10 +55,10 @@ Without specifying a base name, a blank sprite page will be created. Commands ar
  |:----------:|--------------------
  | ShiftLeft  | Move left sprite   
  | ShiftRight | Move right sprite  
- |    Up      | Move pixel up      
- |   Down     | Move pixel down    
- |  Right     | Move pixel right   
- |   Left     | Move pixel left    
+ |    Up      | Move up pixel       
+ |   Down     | Move down pixel     
+ |  Right     | Move right pixel   
+ |   Left     | Move left pixel    
  |  Space     | Set pixel color    
  |    f       | Fill sprite color  
  |    N       | Next pixel color   
