@@ -1,5 +1,7 @@
 # CGA LoRes 160x100 16 Color Scrolling Tile and Sprite Library
 
+![SPRTDEMO](https://github.com/dschmenk/LORES/blob/main/sprtdemo_000.png "sprtdemo")
+
 Real mode DOS library providing hardware assisted scrolling using a tile based virtual map and sprites.
 
 Contents:
