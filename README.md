@@ -50,7 +50,7 @@ To take advantage of the additional time available during inactive video, a pseu
 
 ### Performance
 
-The library is implemented in a combination of C and 8086 assembly. Any routine that touches pixel data is implemented in assembly for performance reasons. The higher level logic is generally written in C, for ease of understanding and development. Output from the C compiler is verified to not be doing anything horrifically inefficient. The code was profiled to get it fast. There may be a few more cycles to extract from the routines, but nothing that will change the overall approach to the library's implementation. Because there aren't many CPU cycles available between frames, incremental rendering and clever scheduling are the keys to creating a successful game.
+The library is implemented in a combination of C and 8086 assembly. Any routine that touches pixel data is implemented in assembly for performance reasons. The higher level logic is generally written in C, for ease of understanding and development. Output from the C compiler is verified to not be doing anything horrifically inefficient. The code was profiled to get it fast. There may be a few more cycles to extract from the routines, but nothing that will change the overall approach to the library's implementation. The library itself is a small model C library but all assets are far data pointers. Because there aren't many CPU cycles available between frames, incremental rendering and clever scheduling are the keys to creating a successful game.
 
 ### Alternate Usage
 
