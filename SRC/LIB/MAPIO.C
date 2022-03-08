@@ -2,6 +2,8 @@
  * I/O routines to load and save tiles, maps, and sprites.
  */
 #include <stdio.h>
+#include <stdlib.h>
+#include <io.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -27,7 +29,7 @@ int tilesetLoad(char *filename, unsigned char far * *tileset, int sizeoftile)
                 fd      = open(filename, O_RDONLY | O_BINARY);
                 for (i = 0; i < count; i++)
                 {
-                    read(fd, tile, 8*16);
+                    read(fd, (char *)tile, 8*16);
                     for (j = 0; j < 8*16; j++)
                         tileptr[j] = tile[j];
                     tileptr += sizeoftile;
@@ -52,7 +54,7 @@ int tilesetSave(char *filename, unsigned char far *tileset, int sizeoftile, int 
         {
             for (j = 0; j < 8*16; j++)
                 tile[j] = tileset[j];
-            write(fd, tile, 8*16);
+            write(fd, (char *)tile, 8*16);
             tileset += sizeoftile;
         }
         close(fd);
@@ -61,14 +63,15 @@ int tilesetSave(char *filename, unsigned char far *tileset, int sizeoftile, int 
 }
 unsigned long tilemapLoad(char *filename, unsigned char far *tileset, int sizeoftile, unsigned char far * far * *tilemap)
 {
-    int fd, width, height, i, j, index;
+    int fd, width, height, i, j;
+    unsigned int index;
     unsigned char far * far *mapptr;
 
     fd = open(filename, O_RDONLY | O_BINARY);
     if (fd)
     {
-        read(fd, &width,  sizeof(int));
-        read(fd, &height, sizeof(int));
+        read(fd, (char *)&width,  sizeof(int));
+        read(fd, (char *)&height, sizeof(int));
         *tilemap = (unsigned char far * far *)_fmalloc(width * height * sizeof(unsigned char far *));
         if (*tilemap)
         {
@@ -76,7 +79,7 @@ unsigned long tilemapLoad(char *filename, unsigned char far *tileset, int sizeof
             for (j = 0; j < height; j++)
                 for (i = 0; i < width; i++)
                 {
-                    read(fd, &index, sizeof(int));
+                    read(fd, (char *)&index, sizeof(unsigned int));
                     if (index == 0xFFFF)
                         *mapptr++ = NULL;
                     else
@@ -93,13 +96,14 @@ unsigned long tilemapLoad(char *filename, unsigned char far *tileset, int sizeof
 }
 int tilemapSave(char *filename, unsigned char far *tileset, int sizeoftile, unsigned char far * far *tilemap, int width, int height)
 {
-    int fd, i, j, index;
+    int fd, i, j;
+    unsigned int index;
 
     fd = open(filename, O_RDWR | O_CREAT | O_TRUNC | O_BINARY);
     if (fd)
     {
-        write(fd, &width,  sizeof(int));
-        write(fd, &height, sizeof(int));
+        write(fd, (char *)&width,  sizeof(int));
+        write(fd, (char *)&height, sizeof(int));
         for (j = 0; j < height; j++)
             for (i = 0; i < width; i++)
             {
@@ -110,7 +114,7 @@ int tilemapSave(char *filename, unsigned char far *tileset, int sizeoftile, unsi
                 }
                 else
                     index = (*tilemap++ - tileset) / sizeoftile;
-                write(fd, &index, sizeof(int));
+                write(fd, (char *)&index, sizeof(unsigned int));
             }
         close(fd);
     }
@@ -124,9 +128,9 @@ int spriteLoad(char *filename, unsigned char far * *spritepage, int *width, int 
     fd = open(filename, O_RDONLY | O_BINARY);
     if (fd)
     {
-        read(fd, width,  sizeof(int));
-        read(fd, height, sizeof(int));
-        read(fd, &count, sizeof(int));
+        read(fd, (char *)width,  sizeof(int));
+        read(fd, (char *)height, sizeof(int));
+        read(fd, (char *)&count, sizeof(int));
         sizeofsprite = *width * *height / 2;
         sprite       = malloc(sizeofsprite);
         *spritepage  = (unsigned char far *)_fmalloc(sizeofsprite * count);
@@ -157,9 +161,9 @@ int spriteSave(char *filename, unsigned char far *spritepage, int width, int hei
     fd = open(filename, O_RDWR | O_CREAT | O_TRUNC | O_BINARY);
     if (fd)
     {
-        write(fd, &width,  sizeof(int));
-        write(fd, &height, sizeof(int));
-        write(fd, &count,  sizeof(int));
+        write(fd, (char *)&width,  sizeof(int));
+        write(fd, (char *)&height, sizeof(int));
+        write(fd, (char *)&count,  sizeof(int));
         sizeofsprite = width * height / 2;
         sprite       = malloc(sizeofsprite);
         for (i = 0; i < count; i++)

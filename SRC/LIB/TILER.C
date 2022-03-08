@@ -1,5 +1,6 @@
 #include <dos.h>
 #include <conio.h>
+#include <malloc.h>
 #include "lores.h"
 #include "tiler.h"
 extern unsigned int scanline[100]; // Precalculated scanline offsets
@@ -52,8 +53,8 @@ unsigned char far *tileUpdatePtr[16];
 struct sprite_t
 {
     unsigned char far *spriteptr;   // Sprite image
-    unsigned char far *spritebuf;   // Surrounding background+sprite
-    unsigned char far *erasebuf;    // Erase previous sprite position
+    unsigned char     *spritebuf;   // Surrounding background+sprite
+    unsigned char     *erasebuf;    // Erase previous sprite position
     unsigned int       s, bufS, eraS;
     unsigned int       t, bufT, eraT;
     int                width,  bufWidth, eraWidth;
