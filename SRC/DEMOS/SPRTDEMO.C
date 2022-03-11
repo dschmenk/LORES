@@ -279,7 +279,7 @@ int main(int argc, char **argv)
     mapWidth  = st;
     mapHeight = st >> 16;
     for (cycle = 0; cycle < 4; cycle++)
-        tileAnimate[cycle] = tileset + (cycle + 5) * 16*16/2;
+        tileAnimate[cycle] = tileset + (cycle + 4) * 16*16/2;
 #endif
     /*
      * Set initial coordinates and scroll direction.
