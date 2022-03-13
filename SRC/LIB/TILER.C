@@ -757,7 +757,6 @@ void viewInit(int adapter, unsigned int s, unsigned int t, unsigned int width, u
         viewRefresh = viewRedraw;
         tileScrn(orgS, orgT);
         outpw(0x3D4, 0x0000 + 12);
-        orgAddr = 0x4001; // Draw to back buffer
     }
     else
     {   // CGA

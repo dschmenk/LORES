@@ -339,7 +339,7 @@ int main(int argc, char **argv)
     unsigned long st;
     unsigned int adapter, scrolldir, seed;
     unsigned char cycleExit, quit;
-    struct dostime_t time;
+    struct dostime_t now;
     int hours, minutes, seconds, hseconds;
     char *level;
     unsigned char far *tilesetExit;
@@ -360,8 +360,8 @@ int main(int argc, char **argv)
     mapWidth  = MAX_WIDTH/2;
     mapHeight = MAX_HEIGHT/2;
     level = "Medium";
-    _dos_gettime(&time);
-    seed = (time.hsecond << 8) | time.second;
+    _dos_gettime(&now);
+    seed = (now.hsecond << 8) | now.second;
     /*
      * Check for easy option
      */
@@ -389,9 +389,9 @@ int main(int argc, char **argv)
     }
     srand(seed);
     adapter = gr160(BLACK, BLACK);
-    _dos_gettime(&time);
-    seconds = (time.second + 4) % 60;
-    while (time.second != seconds)
+    _dos_gettime(&now);
+    seconds = (now.second + 4) % 60;
+    while (now.second != seconds)
     {
         text(40, 46, rand() & 0x0F, "Maze Runner");
         text(48, 54, rand() & 0x0F, "by Resman");
@@ -400,7 +400,7 @@ int main(int argc, char **argv)
             getch();
             break;
         }
-        _dos_gettime(&time);
+        _dos_gettime(&now);
     }
     rect(40, 46, 88, 16, BLACK);
     while (!buildmaze())
