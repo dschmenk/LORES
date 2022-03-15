@@ -325,16 +325,20 @@ void tileDel(int index)
         tileCount--;
     }
 }
-void mapPreview(void)
+void mapPreview(int s, int t)
 {
-    int s, t, maxS, maxT, quit;
+    int maxS, maxT, quit;
     tileSetRebuild();
-    quit =
-    s    =
-    t    = 0;
+    quit = 0;
     maxS = mapWidth*TILE_WIDTH   - 160;
     maxT = mapHeight*TILE_HEIGHT - 100;
-    viewInit(gr160(BLACK, BLACK), 0, 6, mapWidth, mapHeight, (unsigned char far * far *)tileMap);
+    s -= 80;
+    if (s < 0) s = 0;
+    else if (s > maxS) s = maxS;
+    t -= 50;
+    if (t < 0) t = 0;
+    else if (t > maxT) t = maxT;
+    viewInit(gr160(BLACK, BLACK), s, t, mapWidth, mapHeight, (unsigned char far * far *)tileMap);
     do
     {
         tileScrn(s, t);
@@ -656,7 +660,7 @@ int main(int argc, char **argv)
                     selectTile = &tileSet[i];
                 break;
             case 'p': // Preview
-                mapPreview();
+                mapPreview(centerS, centerT);
                 break;
             case 't': // New tile
                 selectTile = tileNew();
