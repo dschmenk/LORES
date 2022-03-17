@@ -1,5 +1,5 @@
 # Tile Set/Map Editor and Sprite Editor
-The LORES library provides an API for programming the CGA to implement a virtual tiled map and sprites. Instead of creating assets with graph paper and transcribe them into hexadecimal arrays in source files, tile sets and tiled maps can be created and edited with the MAPEDIT.EXE program, sprites can be created and edited with the SPRITED.EXE program.
+The LORES library provides an API for programming the CGA to implement a virtual tiled map and sprites. Instead of creating assets with graph paper and transcribe them into hexadecimal arrays in source files, tile sets and tiled maps can be created and edited with the MAPEDIT.EXE program, sprites can be created and edited with the SPRITED.EXE program. WIth the sprite rotator, a sprite image can be rotated around the center and saved as a sprite page.
 
 ## MAPEDIT
 
@@ -74,6 +74,12 @@ Without specifying a base name, a blank sprite page will be created. Commands ar
  |    w       | Write file         
  |   ESC      | Quit               
  |    q       | Quit               
+
+## SPROTATE
+
+A sprite image can be rotated around the center by an increment. The first image in a sprite file will be rotated `n` times to complete a full rotation, then re-saved in the sprite page file. Note: any other images in the sprite page will be overwritten. Further editing may be required to clean up any pixels that got rounded poorly.
+
+    SPROTATE [FILENAME] [ROTATE INCREMENTS]
 
 ## Executables
 
