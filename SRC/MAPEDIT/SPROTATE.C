@@ -122,7 +122,7 @@ int main(int argc, char **argv)
     spriteOrgX = (double)spriteWidth  / 2.0 - 0.5;
     spriteOrgY = (double)spriteHeight / 2.0 - 0.5;
     spriteptr  = spriteRot;
-    for (i = 0; i < rotCount; i++)
+    for (i = rotCount; i; i--)
     {
         angle  = PIx2 * (double)i / (double)rotCount;
         sine   = sin(angle);

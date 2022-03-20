@@ -89,33 +89,51 @@ void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew)
 /*
  * Sprite routines
  */
-void spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *spriteImg)
+int spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *spriteImg)
 {
     struct sprite_t *sprite;
 
     sprite = &spriteTable[index];
-    sprite->state     = STATE_MOVING;
-    sprite->spriteptr = spriteImg;
-    sprite->spritebuf = (unsigned char *)malloc((width+ERASE_BORDER+1)/2*(height+ERASE_BORDER)); // Leave room for erase border
-    sprite->erasebuf  = (unsigned char *)malloc(((width+1)/2)*height);
-    sprite->width     = width;
-    sprite->height    = height;
-    sprite->s         = s;
-    sprite->bufS      = s & 0xFFFE;
-    sprite->t         = t;
-    sprite->bufT      = t;
-    sprite->bufWidth  = ((sprite->s + width + 1) & 0xFFFE) - sprite->bufS;
-    sprite->bufHeight = height;
+    if (sprite->state == STATE_INACTIVE)
+    {
+        sprite->spriteptr = spriteImg;
+        sprite->spritebuf = (unsigned char *)malloc((width+ERASE_BORDER+2)/2*(height+ERASE_BORDER)); // Leave room for erase border
+        sprite->erasebuf  = (unsigned char *)malloc(((width+2)/2)*height);
+        sprite->width     = width;
+        sprite->height    = height;
+        sprite->s         = s;
+        sprite->bufS      = s & 0xFFFE;
+        sprite->t         = t;
+        sprite->bufT      = t;
+        sprite->bufWidth  = ((sprite->s + width + 1) & 0xFFFE) - sprite->bufS;
+        sprite->bufHeight = height;
+        if (sprite->spriteptr && sprite->spritebuf && sprite->erasebuf)
+            sprite->state = STATE_MOVING;
+        else
+        {
+            if (sprite->spritebuf)
+                free(sprite->spritebuf);
+            if (sprite->erasebuf)
+                free(sprite->erasebuf);
+            sprite->spriteptr = 0L;
+            sprite->spritebuf = 0L;
+            sprite->erasebuf  = 0L;
+        }
+    }
+    return sprite->state == STATE_MOVING;
 }
 void spriteDisable(int index)
 {
     struct sprite_t *sprite;
 
     sprite = &spriteTable[index];
-    sprite->state    = STATE_DISABLING;
-    sprite->eraS     = sprite->s & 0xFFFE;
-    sprite->eraWidth = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->eraS;
-    sprite->eraT     = sprite->t;
+    if (sprite->state >= STATE_ACTIVE)
+    {
+        sprite->state    = STATE_DISABLING;
+        sprite->eraS     = sprite->s & 0xFFFE;
+        sprite->eraWidth = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->eraS;
+        sprite->eraT     = sprite->t;
+    }
 }
 void spriteUpdate(int index, unsigned char far *spriteImg)
 {
@@ -138,67 +156,77 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t)
     struct sprite_t *sprite;
 
     sprite = &spriteTable[index];
-    if (s > (widthMapS - sprite->width))
-        s = widthMapS - sprite->width;
-    if (t > (widthMapT - sprite->height))
-        t = widthMapT - sprite->height;
-    if (s != sprite->s || t != sprite->t || sprite->state == STATE_MOVING)
+    if (sprite->state >= STATE_ACTIVE)
     {
-        deltaS = s - sprite->s;
-        deltaT = t - sprite->t;
-        if ((deltaS <= ERASE_BORDER && deltaS >= -ERASE_BORDER) && (deltaT <= ERASE_BORDER && deltaT >= -ERASE_BORDER))
+        if (s > (widthMapS - sprite->width))
+            s = widthMapS - sprite->width;
+        if (t > (widthMapT - sprite->height))
+            t = widthMapT - sprite->height;
+        if (s != sprite->s || t != sprite->t || sprite->state == STATE_MOVING)
         {
-            /*
-             * More efficient to use STATE_MOVING()
-             */
-            sprite->state = STATE_MOVING;
-            if (deltaS <= 0)
+            deltaS = s - sprite->s;
+            deltaT = t - sprite->t;
+            if ((deltaS <= ERASE_BORDER && deltaS >= -ERASE_BORDER) && (deltaT <= ERASE_BORDER && deltaT >= -ERASE_BORDER))
             {
                 /*
-                 * Create erase border to the right
+                 * More efficient to use STATE_MOVING()
                  */
-                sprite->bufS     = s & 0xFFFE;
-                sprite->bufWidth = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
+                sprite->state = STATE_MOVING;
+                if (deltaS <= 0)
+                {
+                    /*
+                     * Create erase border to the right
+                     */
+                    sprite->bufS     = s & 0xFFFE;
+                    sprite->bufWidth = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
+                }
+                else // deltaS > 0
+                {
+                    /*
+                     * Create erase border to the left
+                     */
+                    sprite->bufS     = sprite->s & 0xFFFE;
+                    sprite->bufWidth = ((s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
+                }
+                if (deltaT <= 0)
+                {
+                    /*
+                     * Create erase border to the bottom
+                     */
+                    sprite->bufT      = t;
+                    sprite->bufHeight = (sprite->t + sprite->height) - sprite->bufT;
+                }
+                else // deltaT > 0
+                {
+                    /*
+                     * Create erase border to the top
+                     */
+                    sprite->bufT      = sprite->t;
+                    sprite->bufHeight = (t + sprite->width) - sprite->bufT;
+                }
+                sprite->s = s;
+                sprite->t = t;
             }
-            else // deltaS > 0
-                /*
-                 * Create erase border to the left
-                 */
-                sprite->bufWidth = ((s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
-            if (deltaT <= 0)
+            else
             {
                 /*
-                 * Create erase border to the bottom
+                 * Erase at old position and draw at new position
                  */
+                sprite->state     = STATE_POSITIONING;
+                sprite->eraS      = sprite->s & 0xFFFE;
+                sprite->eraWidth  = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->eraS;
+                sprite->eraT      = sprite->t;
+                sprite->bufS      = s & 0xFFFE;
+                sprite->bufWidth  = ((s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
                 sprite->bufT      = t;
-                sprite->bufHeight = (sprite->t + sprite->height) - sprite->bufT;
+                sprite->bufHeight = sprite->height;
+                sprite->s         = s;
+                sprite->t         = t;
             }
-            else // deltaT > 0
-                /*
-                 * Create erase border to the top
-                 */
-                sprite->bufHeight = (t + sprite->width) - sprite->bufT;
-            sprite->s     = s;
-            sprite->t     = t;
         }
-        else
-        {
-            /*
-             * Erase at old position and draw at new position
-             */
-            sprite->state     = STATE_POSITIONING;
-            sprite->eraS      = sprite->s & 0xFFFE;
-            sprite->eraWidth  = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->eraS;
-            sprite->eraT      = sprite->t;
-            sprite->bufS      = s & 0xFFFE;
-            sprite->bufWidth  = ((s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
-            sprite->bufT      = t;
-            sprite->bufHeight = sprite->height;
-            sprite->s         = s;
-            sprite->t         = t;
-        }
+        return ((unsigned long)sprite->t << 16) | sprite->s;
     }
-    return ((unsigned long)sprite->t << 16) | sprite->s;
+    return 0L;
 }
 void spriteIntersectRect(unsigned int leftS, unsigned int topT, int rectWidth, int rectHeight)
 {
@@ -229,6 +257,7 @@ void spriteIntersectRect(unsigned int leftS, unsigned int topT, int rectWidth, i
 void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
 {
     int leftS, rightS, topT, bottomT;
+    int deltaS, deltaT;
     int width, height, spanAbove, spanBelow;
     struct sprite_t *sprite;
     unsigned char far *bufAbove;
@@ -263,32 +292,28 @@ void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
             bufAbove  = spriteAbove->spritebuf;
             spanBelow = sprite->bufWidth >> 1;
             bufBelow  = sprite->spritebuf;
-            if ((leftS - (int)sprite->bufS) > 0)
+            deltaS    = leftS - (int)sprite->bufS;
+            if (deltaS > 0)
+                bufBelow += deltaS >> 1;
+            else if (deltaS < 0)
             {
-                bufBelow += (leftS - (int)sprite->bufS) >> 1;
+                width    +=  deltaS;
+                bufAbove += -deltaS >> 1;
             }
-            else if (((int)sprite->bufS - leftS) > 0)
+            deltaS = rightS - ((int)sprite->bufS + sprite->bufWidth);
+            if (deltaS > 0)
+                width -= deltaS;
+            deltaT = topT - (int)sprite->bufT;
+            if (deltaT > 0)
+                bufBelow += deltaT * spanBelow;
+            else if (deltaT < 0)
             {
-                width    -=  (int)sprite->bufS - leftS;
-                bufAbove += ((int)sprite->bufS - leftS) >> 1;
+                height   +=  deltaT;
+                bufAbove += -deltaT * spanAbove;
             }
-            if ((rightS - ((int)sprite->bufS + sprite->bufWidth)) > 0)
-            {
-                width -= rightS - ((int)sprite->bufS + sprite->bufWidth);
-            }
-            if ((topT - (int)sprite->bufT) > 0)
-            {
-                bufBelow += (topT - (int)sprite->bufT) * spanBelow;
-            }
-            else if (((int)sprite->bufT - topT) > 0)
-            {
-                height   -=  (int)sprite->bufT - topT;
-                bufAbove += ((int)sprite->bufT - topT) * spanAbove;
-            }
-            if ((bottomT - ((int)sprite->bufT + sprite->bufHeight)) > 0)
-            {
-                height -= bottomT - ((int)sprite->bufT + sprite->bufHeight);
-            }
+            deltaT = bottomT - ((int)sprite->bufT + sprite->bufHeight);
+            if (deltaT > 0)
+                height -= deltaT;
             cpyBuf2Buf(width, height, spanBelow, bufBelow, spanAbove, bufAbove);
         }
     }
@@ -508,13 +533,9 @@ unsigned long viewScroll(int scrolldir)
         {
             if (sprite->state == STATE_ACTIVE)
             {
-                sprite->bufS      = sprite->s & 0xFFFE;
-                sprite->bufWidth  = ((sprite->s + sprite->width + 1) & 0xFFFE) - sprite->bufS;
-                sprite->bufT      = sprite->t;
-                sprite->bufHeight = sprite->height;
                 spriteIntersectSpriteBuf(sprite);
                 /*
-                 * State could get updated if other ananosprite moving underneath
+                 * State could get updated if another sprite moving underneath
                  */
                 if (sprite->state == STATE_MOVING)
                     spriteBuf(sprite->s - sprite->bufS, sprite->t - sprite->bufT, sprite->width, sprite->height, sprite->spriteptr, sprite->bufWidth >> 1, sprite->spritebuf);
@@ -576,8 +597,6 @@ unsigned long viewScroll(int scrolldir)
             {
                 _cpyBuf(sprite->bufS, sprite->bufT, sprite->bufWidth, sprite->bufHeight, sprite->spritebuf);
                 sprite->state = STATE_ACTIVE;
-                sprite->bufS  = sprite->s & 0xFFFE;
-                sprite->bufT  = sprite->t;
             }
             else if (sprite->state == STATE_POSITIONING)
             {
@@ -687,38 +706,50 @@ unsigned long viewRedraw(int scrolldir)
      */
     for (sprite = &spriteTable[0]; sprite < &spriteTable[NUM_SPRITES]; sprite++)
     {
-        if ((sprite->state >= STATE_ACTIVE)
-         && (sprite->s < extS)
-         && ((sprite->s + sprite->width) > orgS)
-         && (sprite->t < extT)
-         && ((sprite->t + sprite->height) > orgT))
+        if (sprite->state >= STATE_ACTIVE)
         {
-            spriteX      = sprite->s - orgS;
-            spriteY      = sprite->t - orgT;
-            spriteWidth  = sprite->width;
-            spriteHeight = sprite->height;
-            spriteImg    = sprite->spriteptr;
-            if (spriteX < 0)
+            if ((sprite->s < extS)
+            && ((sprite->s + sprite->width) > orgS)
+            &&  (sprite->t < extT)
+            && ((sprite->t + sprite->height) > orgT))
             {
-                spriteImg   += spriteX >> 1;
-                spriteWidth += spriteX;
-                spriteX      = 0;
+                spriteX      = sprite->s - orgS;
+                spriteY      = sprite->t - orgT;
+                spriteWidth  = sprite->width;
+                spriteHeight = sprite->height;
+                spriteImg    = sprite->spriteptr;
+                if (spriteX < 0)
+                {
+                    spriteImg   -= spriteX >> 1;
+                    spriteWidth += spriteX;
+                    spriteX      = 0;
+                }
+                if (spriteX + spriteWidth > 160)
+                {
+                    spriteWidth = 160 - spriteX;
+                }
+                if (spriteY < 0)
+                {
+                    spriteImg    -= (spriteY * sprite->width) >> 1;
+                    spriteHeight += spriteY;
+                    spriteY       = 0;
+                }
+                if (spriteY + spriteHeight > 100)
+                {
+                    spriteHeight = 100 - spriteY;
+                }
+                if (spriteWidth > 1)
+                    spriteScrn(spriteX, spriteY, spriteWidth, spriteHeight, sprite->width >> 1, spriteImg);
             }
-            if (spriteX + spriteWidth > 160)
-            {
-                spriteWidth = 160 - spriteX;
-            }
-            if (spriteY < 0)
-            {
-                spriteImg    += (-spriteY * sprite->width) >> 1;
-                spriteHeight += spriteY;
-                spriteY       = 0;
-            }
-            if (spriteY + spriteHeight > 100)
-            {
-                spriteHeight = 100 - spriteY;
-            }
-            spriteScrn(spriteX, spriteY, spriteWidth, spriteHeight, sprite->width >> 1, spriteImg);
+        }
+        else if (sprite->state == STATE_DISABLING)
+        {
+            free(sprite->spritebuf);
+            free(sprite->erasebuf);
+            sprite->state     = STATE_INACTIVE;
+            sprite->spriteptr = 0L;
+            sprite->spritebuf = 0L;
+            sprite->erasebuf  = 0L;
         }
     }
     /*
@@ -788,7 +819,7 @@ void viewExit(void)
             spriteTable[i].spriteptr = 0L;
             spriteTable[i].spritebuf = 0L;
             spriteTable[i].erasebuf  = 0L;
-            spriteTable[i].state         = STATE_INACTIVE;
+            spriteTable[i].state     = STATE_INACTIVE;
         }
     }
     disableRasterTimer();
