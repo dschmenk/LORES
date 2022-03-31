@@ -655,6 +655,11 @@ int main(int argc, char **argv)
                 selectTile = centerTile;
                 modified = 1;
                 break;
+            case 'r': // Replace tile image with selected
+                if (selectTile >= 0)
+                    for (i = 0; i < TILE_WIDTH * TILE_HEIGHT; i++)
+                        centerTile->tileExp[i] = selectTile->tileExp[i];
+                break;
             case 's': // Select tile from list
                 if ((i = tileSelectList(centerS >> 4, centerT >> 4)) >= 0)
                     selectTile = &tileSet[i];
