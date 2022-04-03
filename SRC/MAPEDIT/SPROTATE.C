@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 {
     int i, x, y, rotCount, rotX, rotY, sizeofSprite;
     unsigned char *spriteRot, *spriteptr;
-    double angle, sine, cosine, spriteOrgX, spriteOrgY;
+    double angle, sine, cosine, spriteOrg;
 
     if (argc > 2)
     {
@@ -119,8 +119,7 @@ int main(int argc, char **argv)
     txt40();
 #endif
     disptr     = vidmem + (SCREEN_HEIGHT - spriteHeight) / 2 * 80 + (SCREEN_WIDTH - spriteWidth);
-    spriteOrgX = (double)spriteWidth  / 2.0 - 0.5;
-    spriteOrgY = (double)spriteHeight / 2.0 - 0.5;
+    spriteOrg = (double)spriteHeight / 2.0 - 0.5;
     spriteptr  = spriteRot;
     for (i = rotCount; i; i--)
     {
@@ -130,8 +129,8 @@ int main(int argc, char **argv)
         for (y = 0; y < spriteHeight; y++)
             for (x = 0; x < spriteWidth; x++)
             {
-                rotX = floor(cosine * ((double)x - spriteOrgX) - sine   * ((double)y - spriteOrgY) + spriteOrgX + 0.5);
-                rotY = floor(sine   * ((double)x - spriteOrgX) + cosine * ((double)y - spriteOrgY) + spriteOrgY + 0.5);
+                rotX = floor(cosine * ((double)x - spriteOrg) - sine   * ((double)y - spriteOrg) + spriteOrg + 0.5);
+                rotY = floor(sine   * ((double)x - spriteOrg) + cosine * ((double)y - spriteOrg) + spriteOrg + 0.5);
                 plot(x, y, pixel(rotX, rotY, spritePage, spriteWidth, spriteHeight), spriteptr, spriteWidth, spriteHeight);
             }
 #ifdef INTERACTIVE

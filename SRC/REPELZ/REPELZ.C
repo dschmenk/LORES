@@ -45,6 +45,7 @@
  */
 #define MAX_SPEED               1
 #define MIN_SPEED               3
+#define TURN_SPEED              16
 /*
  * Sound sequences
  */
@@ -458,7 +459,7 @@ int main(int argc, char **argv)
                         }
                         break;
                     case LEFT_ARROW: // Turn left
-                        droneAngle -= 16;
+                        droneAngle -= TURN_SPEED;
                         if ((droneAngle >> 4) != droneDir)
                         {
                             droneDir   = droneAngle >> 4;
@@ -470,7 +471,7 @@ int main(int argc, char **argv)
                         }
                         break;
                     case RIGHT_ARROW: // Turn right
-                        droneAngle += 16;
+                        droneAngle += TURN_SPEED;
                         if ((droneAngle >> 4) != droneDir)
                         {
                             droneDir   = droneAngle >> 4;
