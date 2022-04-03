@@ -310,6 +310,8 @@ int main(int argc, char **argv)
     {
         strcpy(spriteName, argv[1]);
         LoadSprite(spriteName);
+        if (spriteHeight < spriteWidth)
+            spriteWidth = spriteHeight;
         modified = 0;
     }
     else
