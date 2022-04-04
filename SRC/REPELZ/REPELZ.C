@@ -4,6 +4,9 @@
 #include "lores.h"
 #include "tiler.h"
 #include "mapio.h"
+#ifndef USE_GETCH
+#include "keyboard.h"
+#endif
 #define ESCAPE          0x001B
 #define SPACEBAR        0x0020
 #define LEFT_ARROW      0x4B00
@@ -45,7 +48,11 @@
  */
 #define MAX_SPEED               1
 #define MIN_SPEED               3
+#ifdef USE_GETCH
 #define TURN_SPEED              16
+#else
+#define TURN_SPEED              4
+#endif
 /*
  * Sound sequences
  */
@@ -185,6 +192,7 @@ unsigned char xy2angle(int x, int y)
             return 4;
         else return 6;
     }
+    return 0;
 }
 /*
  * Demo tiling and scrolling screen
@@ -202,10 +210,10 @@ int main(int argc, char **argv)
     int samS, samT, samPrevS, samPrevT, samWidth, samHeight, samInFlight, sizeofSAM;
     int fireballSeq, fireballWidth, fireballHeight, sizeofFireball;
     unsigned char far *drone, far *missile, far *sam, far *fireball;
-    unsigned char droneAngle, droneDir, samDir, ending, explosion, quit, singlestep;
-    int diffS, diffT, viewOffsetS, viewOffsetT;
+    unsigned char droneAngle, droneDir, samDir, ending, explosion, quit;
+    int diffS, diffT, viewOffsetS, viewOffsetT, numTanks, numSAMs, liveTanks, liveSAMs;
     unsigned long st;
-    int scrolldir, i;
+    int scrolldir, i, j;
 
     if (!spriteLoad("drone.spr", &drone, &droneWidth, &droneHeight))
     {
@@ -267,9 +275,29 @@ int main(int argc, char **argv)
         fprintf(stderr, "Unable to load tile map\n");
         exit(1);
     }
-    mapWidth        = st;
-    mapHeight       = st >> 16;
-    maxS             = mapWidth << 4;
+    mapWidth  = st;
+    mapHeight = st >> 16;
+    numTanks  =
+    numSAMs   = 0;
+    for (j = 0; j < mapHeight; j++)
+        for (i = 0; i <mapWidth; i++)
+        {
+            switch (tilemap[j * mapWidth + i]->index)
+            {
+                case TANK_UP:
+                case TANK_DOWN:
+                case TANK_LEFT:
+                case TANK_RIGHT:
+                    numTanks++;
+                    break;
+                case SAM_LAUNCHER:
+                    numSAMs++;
+                    break;
+            }
+        }
+    liveTanks       = numTanks;
+    liveSAMs        = numSAMs;
+    maxS            = mapWidth << 4;
     maxT            = mapHeight << 4;
     viewOffsetS     = 80 - droneWidth / 2;
     viewOffsetT     = 50 - droneHeight / 2;
@@ -291,9 +319,11 @@ int main(int argc, char **argv)
     explosion       =
     samInFlight     =
     missileInFlight = 0;
-    singlestep      =
     ending          =
     quit            = 0;
+#ifndef USE_GETCH
+    KeyboardInstallDriver();
+#endif
     viewInit(gr160(BLACK, BROWN), viewS, viewT, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
     spriteEnable(0, droneS, droneT, droneWidth, droneHeight, drone + droneDir * sizeofDrone);
     SET_SOUND(droneBuzz[droneSpeed]);
@@ -326,16 +356,19 @@ int main(int argc, char **argv)
                 scrolldir |= SCROLL_DOWN2;
             else if (droneT > viewT + viewOffsetT + 1)
                 scrolldir |= SCROLL_UP2;
-            /*
-             * Bounce drone off map boundaries for now
-             */
             if (droneS < 0 || droneS > maxS - droneWidth || droneT < 0 || droneT > maxT - droneHeight)
             {
-                droneAngle ^= 0x80;
-                droneDir  = droneAngle >> 4;
-                droneIncS = cosFix[droneDir] / droneSpeed;
-                droneIncT = sinFix[droneDir]   / droneSpeed;
-                spriteUpdate(0, drone + droneDir * sizeofDrone);
+                /*
+                 * Drone explodes at map edge
+                 */
+                droneFixS   = (long)dronePrevS << 16;
+                droneFixT   = (long)dronePrevT << 16;
+                droneIncS   =
+                droneIncT   = 0;
+                ending      = 1;
+                explosion   = 1;
+                spriteDisable(0);
+                spriteEnable(3, dronePrevS + (droneWidth - fireballWidth)/2, dronePrevT + (droneHeight - fireballHeight)/2, fireballWidth, fireballHeight, fireball);
             }
             spritePosition(0, droneS, droneT);
         }
@@ -369,10 +402,14 @@ int main(int argc, char **argv)
                          */
                         if (tilemap[missileMapY * mapWidth + missileMapX]->isTarget)
                         {
+                            if (tilemap[missileMapY * mapWidth + missileMapX]->index == SAM_LAUNCHER)
+                                liveSAMs--;
+                            else
+                                liveTanks--;
                             /*
                              * Create explosion
                              */
-                            explosion = 1;
+                            explosion       = 1;
                             missileInFlight = 0;
                             spriteDisable(1);
                             spriteEnable(3, (missileMapX << 4) + 8 - fireballWidth/2, (missileMapY << 4) + 8 - fireballHeight/2, fireballWidth, fireballHeight, fireball);
@@ -418,8 +455,8 @@ int main(int argc, char **argv)
                             /*
                              * Create explosion
                              */
-                            ending    = 1;
-                            explosion = 1;
+                            ending      = 1;
+                            explosion   = 1;
                             samInFlight = 0;
                             spriteDisable(0);
                             spriteDisable(2);
@@ -440,6 +477,7 @@ int main(int argc, char **argv)
         switch (frameCount & 0x03)
         {
             case 0: // Deal with user input
+#ifdef USE_GETCH
                 switch (getkb())
                 {
                     case UP_ARROW: // Speed up
@@ -497,13 +535,61 @@ int main(int argc, char **argv)
                             }
                         }
                         break;
-                    case 's':
-                        singlestep = 1;
-                        break;
                     case ESCAPE: // Quit
                         quit = 1;
                         break;
                 }
+#else
+                if (KeyboardGetKey(SCAN_UP_ARROW)) //  Speed up
+                {
+                    if (droneSpeed > MAX_SPEED)
+                    {
+                        droneSpeed--;
+                        droneIncS = cosFix[droneDir] / droneSpeed;
+                        droneIncT = sinFix[droneDir] / droneSpeed;
+                    }
+                }
+                if (KeyboardGetKey(SCAN_DOWN_ARROW)) // Slow down
+                {
+                    if (droneSpeed < MIN_SPEED)
+                    {
+                        droneSpeed++;
+                        droneIncS = cosFix[droneDir] / droneSpeed;
+                        droneIncT = sinFix[droneDir] / droneSpeed;
+                    }
+                }
+                if (KeyboardGetKey(SCAN_LEFT_ARROW)) // Turn left
+                    droneAngle -= TURN_SPEED;
+                if (KeyboardGetKey(SCAN_RIGHT_ARROW)) // Turn right
+                    droneAngle += TURN_SPEED;
+                if ((droneAngle >> 4) != droneDir)
+                {
+                    droneDir   = droneAngle >> 4;
+                    droneIncS  = cosFix[droneDir] / droneSpeed;
+                    droneIncT  = sinFix[droneDir] / droneSpeed;
+                    droneFixS &= 0xFFFE0000L;
+                    droneFixT &= 0xFFFE0000L;
+                    spriteUpdate(0, drone + droneDir * sizeofDrone);
+                }
+                if (KeyboardGetKey(SCAN_SPACE)) // Fire missile
+                {
+                    if (!missileInFlight)
+                    {
+                        missileIncS = (cosFix[droneDir] << 1) + droneIncS;
+                        missileFixS = droneFixS + missileIncS + ((long)(droneWidth - missileWidth) << 15);
+                        missileIncT = (sinFix[droneDir] << 1) + droneIncT;
+                        missileFixT = droneFixT + missileIncT + ((long)(droneHeight - missileHeight) << 15);
+                        if (spriteEnable(1, missileFixS >> 16, missileFixT >> 16, missileWidth, missileHeight, missile + droneDir * sizeofMissile))
+                        {
+                            missilePrevMapX = 0;
+                            missilePrevMapY = 0;
+                            missileInFlight = MISSILE_FLIGHT_TIME;
+                        }
+                    }
+                }
+                if (KeyboardGetKey(SCAN_ESC)) // Quit
+                    quit = 1;
+#endif
                 break;
             case 1: // Sound sequencing
                 if (explosion)
@@ -552,20 +638,9 @@ int main(int argc, char **argv)
                         {
                             if (i >= 0 && i < mapHeight && tilemap[i * mapWidth + droneMapX - SAM_RANGE]->index == SAM_LAUNCHER)
                             {
-                                /*
-                                 * Launch SAM at drone
-                                 */
-                                samFixS = ((long)(droneMapX - SAM_RANGE) << 20) + ((long)(16 - samWidth) << 15);
-                                samFixT = ((long)i << 20) + ((long)(16 - samHeight) << 15);
-                                samDir  = xy2angle((int)(samFixS >> 16) - droneS, (int)(samFixT >> 16) - droneT);
-                                samIncS = cosFix[samDir];
-                                samIncT = sinFix[samDir];
-                                if (spriteEnable(2, samFixS >> 16, samFixT >> 16, samWidth, samHeight, sam + samDir * sizeofSAM))
-                                {
-                                    samPrevS    = 0;
-                                    samPrevT    = 0;
-                                    samInFlight = SAM_FLIGHT_TIME;
-                                }
+                                samFixS     = ((long)(droneMapX - SAM_RANGE) << 20) + ((long)(16 - samWidth) << 15);
+                                samFixT     = ((long)i << 20) + ((long)(16 - samHeight) << 15);
+                                samInFlight = SAM_FLIGHT_TIME;
                                 break;
                             }
                         }
@@ -576,20 +651,9 @@ int main(int argc, char **argv)
                         {
                             if (i >= 0 && i < mapHeight && tilemap[i * mapWidth + droneMapX + SAM_RANGE]->index == SAM_LAUNCHER)
                             {
-                                /*
-                                 * Launch SAM at drone
-                                 */
-                                samFixS = ((long)(droneMapX + SAM_RANGE) << 20) + ((long)(16 - samWidth) << 15);
-                                samFixT = ((long)i << 20) + ((long)(16 - samHeight) << 15);
-                                samDir  = xy2angle((int)(samFixS >> 16) - droneS, (int)(samFixT >> 16) - droneT);
-                                samIncS = cosFix[samDir];
-                                samIncT = sinFix[samDir];
-                                if (spriteEnable(2, samFixS >> 16, samFixT >> 16, samWidth, samHeight, sam + samDir * sizeofSAM))
-                                {
-                                    samPrevS    = 0;
-                                    samPrevT    = 0;
-                                    samInFlight = SAM_FLIGHT_TIME;
-                                }
+                                samFixS     = ((long)(droneMapX + SAM_RANGE) << 20) + ((long)(16 - samWidth) << 15);
+                                samFixT     = ((long)i << 20) + ((long)(16 - samHeight) << 15);
+                                samInFlight = SAM_FLIGHT_TIME;
                                 break;
                             }
                         }
@@ -602,20 +666,9 @@ int main(int argc, char **argv)
                             {
                                 if (i >= 0 && i < mapWidth && tilemap[(droneMapY - SAM_RANGE) * mapWidth + i]->index == SAM_LAUNCHER)
                                 {
-                                    /*
-                                     * Launch SAM at drone
-                                     */
-                                    samFixS = ((long)i << 20) + ((long)(16 - samWidth) << 15);
-                                    samFixT = ((long)(droneMapY - SAM_RANGE) << 20) + ((long)(16 - samHeight) << 15);
-                                    samDir  = xy2angle((int)(samFixS >> 16) - droneS, (int)(samFixT >> 16) - droneT);
-                                    samIncS = cosFix[samDir];
-                                    samIncT = sinFix[samDir];
-                                    if (spriteEnable(2, samFixS >> 16, samFixT >> 16, samWidth, samHeight, sam + samDir * sizeofSAM))
-                                    {
-                                        samPrevS    = 0;
-                                        samPrevT    = 0;
-                                        samInFlight = SAM_FLIGHT_TIME;
-                                    }
+                                    samFixS     = ((long)i << 20) + ((long)(16 - samWidth) << 15);
+                                    samFixT     = ((long)(droneMapY - SAM_RANGE) << 20) + ((long)(16 - samHeight) << 15);
+                                    samInFlight = SAM_FLIGHT_TIME;
                                     break;
                                 }
                             }
@@ -626,24 +679,29 @@ int main(int argc, char **argv)
                             {
                                 if (i >= 0 && i < mapWidth && tilemap[(droneMapY + SAM_RANGE) * mapWidth + i]->index == SAM_LAUNCHER)
                                 {
-                                    /*
-                                     * Launch SAM at drone
-                                     */
-                                    samFixS = ((long)i << 20) + ((long)(16 - samWidth) << 15);
-                                    samFixT = ((long)(droneMapY + SAM_RANGE) << 20) + ((long)(16 - samHeight) << 15);
-                                    samDir  = xy2angle((int)(samFixS >> 16) - droneS, (int)(samFixT >> 16) - droneT);
-                                    samIncS = cosFix[samDir];
-                                    samIncT = sinFix[samDir];
-                                    if (spriteEnable(2, samFixS >> 16, samFixT >> 16, samWidth, samHeight, sam + samDir * sizeofSAM))
-                                    {
-                                        samPrevS    = 0;
-                                        samPrevT    = 0;
-                                        samInFlight = SAM_FLIGHT_TIME;
-                                    }
+                                    samFixS     = ((long)i << 20) + ((long)(16 - samWidth) << 15);
+                                    samFixT     = ((long)(droneMapY + SAM_RANGE) << 20) + ((long)(16 - samHeight) << 15);
+                                    samInFlight = SAM_FLIGHT_TIME;
                                     break;
                                 }
                             }
                         }
+                    }
+                    if (samInFlight)
+                    {
+                        /*
+                         * Launch SAM at drone
+                         */
+                        samDir  = xy2angle((int)(samFixS >> 16) - droneS, (int)(samFixT >> 16) - droneT);
+                        samIncS = cosFix[samDir];
+                        samIncT = sinFix[samDir];
+                        if (spriteEnable(2, samFixS >> 16, samFixT >> 16, samWidth, samHeight, sam + samDir * sizeofSAM))
+                        {
+                            samPrevS    = 0;
+                            samPrevT    = 0;
+                        }
+                        else
+                            samInFlight = 0;
                     }
                 }
                 dronePrevMapX = droneMapX;
@@ -652,14 +710,17 @@ int main(int argc, char **argv)
         }
         dronePrevS = droneS;
         dronePrevT = droneT;
-        st = viewRefresh(scrolldir);
-        viewS  = st;
-        viewT  = st >> 16;
-        if (singlestep)
-            singlestep = getch() == 's';
+        st         = viewRefresh(scrolldir);
+        viewS      = st;
+        viewT      = st >> 16;
     } while (!quit);
     STOP_SOUND;
+#ifndef USE_GETCH
+    KeyboardUninstallDriver();
+#endif
     viewExit();
     txt80();
+    printf("\n\t%d of %d tanks destroyed\n",       numTanks - liveTanks, numTanks);
+    printf("\t%d of %d SAM launchers destroyed\n", numSAMs  - liveSAMs,  numSAMs);
     return 0;
 }
