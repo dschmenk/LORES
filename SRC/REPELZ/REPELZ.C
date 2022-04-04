@@ -137,6 +137,22 @@ struct tile
     int           index;
 } far *tileset, far * far *tilemap;
 int tileCount;
+void intro(char *txtfile)
+{
+    FILE *fp;
+    char txt[128];
+
+    txt80();
+    fp = fopen(txtfile, "r");
+    if (fp)
+    {
+        while (fgets(txt, 128, fp))
+            printf("%s", txt);
+        fclose(fp);
+    }
+    else
+        printf("Unable to open %s\n", txtfile);
+}
 /*
  * Extended keyboard input
  */
@@ -162,33 +178,33 @@ unsigned char xy2angle(int x, int y)
     absY = y >= 0 ? y : -y;
     if (x >= 0 && y >= 0)
     {
-        if (absX > absY << 2)
+        if (absX > absY << 5)
             return 8;
-        else if (absY > absX << 2)
+        else if (absY > absX << 5)
             return 12;
         else return 10;
     }
     else if (x < 0 && y >= 0)
     {
-        if (absX > absY << 2)
+        if (absX > absY << 5)
             return 0;
-        else if (absY > absX << 2)
+        else if (absY > absX << 5)
             return 12;
         else return 14;
     }
     else if (x < 0 && y < 0)
     {
-        if (absX > absY << 2)
+        if (absX > absY << 5)
             return 0;
-        else if (absY > absX << 2)
+        else if (absY > absX << 5)
             return 4;
         else return 2;
     }
     else if (x >= 0 && y < 0)
     {
-        if (absX > absY << 2)
+        if (absX > absY << 5)
             return 8;
-        else if (absY > absX << 2)
+        else if (absY > absX << 5)
             return 4;
         else return 6;
     }
@@ -215,6 +231,7 @@ int main(int argc, char **argv)
     unsigned long st;
     int scrolldir, i, j;
 
+    intro("intro.txt");
     if (!spriteLoad("drone.spr", &drone, &droneWidth, &droneHeight))
     {
         viewExit();
@@ -321,6 +338,8 @@ int main(int argc, char **argv)
     missileInFlight = 0;
     ending          =
     quit            = 0;
+    puts("Press a key to continue...");
+    getch();
 #ifndef USE_GETCH
     KeyboardInstallDriver();
 #endif
@@ -540,7 +559,7 @@ int main(int argc, char **argv)
                         break;
                 }
 #else
-                if (KeyboardGetKey(SCAN_UP_ARROW)) //  Speed up
+                if (KeyboardGetKey(SCAN_KP_8) || KeyboardGetKey(SCAN_UP_ARROW)) //  Speed up
                 {
                     if (droneSpeed > MAX_SPEED)
                     {
@@ -549,7 +568,7 @@ int main(int argc, char **argv)
                         droneIncT = sinFix[droneDir] / droneSpeed;
                     }
                 }
-                if (KeyboardGetKey(SCAN_DOWN_ARROW)) // Slow down
+                if (KeyboardGetKey(SCAN_KP_2) || KeyboardGetKey(SCAN_DOWN_ARROW)) // Slow down
                 {
                     if (droneSpeed < MIN_SPEED)
                     {
@@ -558,9 +577,9 @@ int main(int argc, char **argv)
                         droneIncT = sinFix[droneDir] / droneSpeed;
                     }
                 }
-                if (KeyboardGetKey(SCAN_LEFT_ARROW)) // Turn left
+                if (KeyboardGetKey(SCAN_KP_4) || KeyboardGetKey(SCAN_LEFT_ARROW)) // Turn left
                     droneAngle -= TURN_SPEED;
-                if (KeyboardGetKey(SCAN_RIGHT_ARROW)) // Turn right
+                if (KeyboardGetKey(SCAN_KP_6) || KeyboardGetKey(SCAN_RIGHT_ARROW)) // Turn right
                     droneAngle += TURN_SPEED;
                 if ((droneAngle >> 4) != droneDir)
                 {

@@ -1,0 +1,22 @@
+                                   RepelZ
+
+ Your region has just been invaded by a neighboring country. You must defend
+ your homeland by destroying the invading tanks and surface-to-air (SAM)
+ launchers with your drone. They will be advancing on roads leading from the
+ region boundary (marked in red). Don't go past the red boundary as the enemy
+ has full control of the airways and your drone will be immediately destroyed.
+ The SAM installations will launch missiles at your drone when in range. The
+ faster you fly the drone, the harder it will be for the SAM to hit, but also
+ more difficult to fire at the tanks and SAM launchers.
+
+                    Controls:
+                        UP ARROW    - speed up
+                        DOWN ARROW  - slow down
+                        LEFT ARROW  - turn left
+                        RIGHT ARROW - turn right
+                        SPACEBAR    - fire rocket
+                        ESCAPE      - quit game
+
+Good Luck!
+
+     *Any similarity to current events may or may not be coincidental.
