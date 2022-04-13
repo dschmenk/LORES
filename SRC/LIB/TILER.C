@@ -792,8 +792,8 @@ void viewInit(int adapter, unsigned int s, unsigned int t, unsigned int width, u
     {   // CGA
         orgAddr = (orgT * 160 + orgS | 1) & 0x3FFF;
         viewRefresh = viewScroll;
-        setStartAddr(orgAddr >> 1);
         rasterDisable(); /* Turn off video */
+        setStartAddr(orgAddr >> 1);
         tileScrn(orgS, orgT);
         rasterEnable();  /* Turn on video */
     }

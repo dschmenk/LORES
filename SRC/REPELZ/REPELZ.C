@@ -48,11 +48,6 @@
  */
 #define MAX_SPEED               1
 #define MIN_SPEED               3
-#ifdef USE_GETCH
-#define TURN_SPEED              16
-#else
-#define TURN_SPEED              4
-#endif
 /*
  * Sound sequences
  */
@@ -90,11 +85,11 @@ int samAlert[] = {
 /*
  * Missile flight time
  */
-#define MISSILE_FLIGHT_TIME     30
+#define MISSILE_FLIGHT_TIME     35
 /*
  * SAM flight time
  */
-#define SAM_FLIGHT_TIME         60
+#define SAM_FLIGHT_TIME         100
 /*
  * SAM launch distance
  */
@@ -170,6 +165,7 @@ unsigned short getkb(void)
 /*
  * Convert cartesian coordiantes to angle
  */
+#define DIFF_POW    2
 unsigned char xy2angle(int x, int y)
 {
     int absX, absY;
@@ -178,33 +174,33 @@ unsigned char xy2angle(int x, int y)
     absY = y >= 0 ? y : -y;
     if (x >= 0 && y >= 0)
     {
-        if (absX > absY << 5)
+        if (absX > (absY << DIFF_POW))
             return 8;
-        else if (absY > absX << 5)
+        else if (absY > (absX << DIFF_POW))
             return 12;
         else return 10;
     }
     else if (x < 0 && y >= 0)
     {
-        if (absX > absY << 5)
+        if (absX > (absY << DIFF_POW))
             return 0;
-        else if (absY > absX << 5)
+        else if (absY > (absX << DIFF_POW))
             return 12;
         else return 14;
     }
     else if (x < 0 && y < 0)
     {
-        if (absX > absY << 5)
+        if (absX > (absY << DIFF_POW))
             return 0;
-        else if (absY > absX << 5)
+        else if (absY > (absX << DIFF_POW))
             return 4;
         else return 2;
     }
     else if (x >= 0 && y < 0)
     {
-        if (absX > absY << 5)
+        if (absX > (absY << DIFF_POW))
             return 8;
-        else if (absY > absX << 5)
+        else if (absY > (absX << DIFF_POW))
             return 4;
         else return 6;
     }
@@ -218,7 +214,7 @@ int main(int argc, char **argv)
     int maxS, maxT, viewS, viewT;
     long droneFixS, droneFixT, droneIncS, droneIncT;
     int droneS, droneT, dronePrevS, dronePrevT, droneMapX, droneMapY, dronePrevMapX, dronePrevMapY;
-    int droneWidth, droneHeight, sizeofDrone, droneSpeed;
+    int droneWidth, droneHeight, sizeofDrone, droneSpeed, throttle;
     long missileFixS, missileFixT, missileIncS, missileIncT;
     int missileS, missileT, missileWidth, missileHeight, missileInFlight, sizeofMissile;
     int missileMapX, missileMapY, missilePrevMapX, missilePrevMapY;
@@ -226,11 +222,29 @@ int main(int argc, char **argv)
     int samS, samT, samPrevS, samPrevT, samWidth, samHeight, samInFlight, sizeofSAM;
     int fireballSeq, fireballWidth, fireballHeight, sizeofFireball;
     unsigned char far *drone, far *missile, far *sam, far *fireball;
-    unsigned char droneAngle, droneDir, samDir, ending, explosion, quit;
+    unsigned char dirMask, turnAngle, droneAngle, droneDir, samDir, ending, explosion, quit;
     int diffS, diffT, viewOffsetS, viewOffsetT, numTanks, numSAMs, liveTanks, liveSAMs;
     unsigned long st;
     int scrolldir, i, j;
 
+    if (argc == 2 && !strcmp(argv[1], "-16"))
+    {
+        dirMask   = 0x0F;
+#ifdef USE_GETCH
+        turnAngle = 16;
+#else
+        turnAngle = 2;
+#endif
+    }
+    else
+    {
+        dirMask = 0x0E;
+#ifdef USE_GETCH
+        turnAngle = 32;
+#else
+        turnAngle = 4;
+#endif
+    }
     intro("intro.txt");
     if (!spriteLoad("drone.spr", &drone, &droneWidth, &droneHeight))
     {
@@ -330,9 +344,10 @@ int main(int argc, char **argv)
     droneDir        = 0;
     droneSpeed      = MIN_SPEED;
     droneIncS       = cosFix[droneDir] / droneSpeed;
-    droneIncT       = sinFix[droneDir]   / droneSpeed;
+    droneIncT       = sinFix[droneDir] / droneSpeed;
     viewS           = (droneS - viewOffsetS) & 0xFFFE;
     viewT           = (droneT - viewOffsetT) & 0xFFFE;
+    throttle        = droneSpeed << 3;
     explosion       =
     samInFlight     =
     missileInFlight = 0;
@@ -343,14 +358,14 @@ int main(int argc, char **argv)
 #ifndef USE_GETCH
     KeyboardInstallDriver();
 #endif
-    viewInit(gr160(BLACK, BROWN), viewS, viewT, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
+    viewInit(gr160(BLACK, BLACK), viewS, viewT, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
     spriteEnable(0, droneS, droneT, droneWidth, droneHeight, drone + droneDir * sizeofDrone);
     SET_SOUND(droneBuzz[droneSpeed]);
     START_SOUND;
     do
     {
 #ifdef PROFILE
-        rasterBorder(WHITE);
+        //rasterBorder(WHITE);
 #endif
         scrolldir = 0;
         /*
@@ -516,10 +531,10 @@ int main(int argc, char **argv)
                         }
                         break;
                     case LEFT_ARROW: // Turn left
-                        droneAngle -= TURN_SPEED;
-                        if ((droneAngle >> 4) != droneDir)
+                        droneAngle -= turnAngle;
+                        if (((droneAngle >> 4) & dirMask) != droneDir)
                         {
-                            droneDir   = droneAngle >> 4;
+                            droneDir   = (droneAngle >> 4) & dirMask;
                             droneIncS  = cosFix[droneDir] / droneSpeed;
                             droneIncT  = sinFix[droneDir] / droneSpeed;
                             droneFixS &= 0xFFFE0000L;
@@ -528,10 +543,10 @@ int main(int argc, char **argv)
                         }
                         break;
                     case RIGHT_ARROW: // Turn right
-                        droneAngle += TURN_SPEED;
-                        if ((droneAngle >> 4) != droneDir)
+                        droneAngle += turnAngle;
+                        if (((droneAngle >> 4) & dirMask) != droneDir)
                         {
-                            droneDir   = droneAngle >> 4;
+                            droneDir   = (droneAngle >> 4) & dirMask;
                             droneIncS  = cosFix[droneDir] / droneSpeed;
                             droneIncT  = sinFix[droneDir] / droneSpeed;
                             droneFixS &= 0xFFFE0000L;
@@ -563,27 +578,33 @@ int main(int argc, char **argv)
                 {
                     if (droneSpeed > MAX_SPEED)
                     {
-                        droneSpeed--;
-                        droneIncS = cosFix[droneDir] / droneSpeed;
-                        droneIncT = sinFix[droneDir] / droneSpeed;
+                        if ((--throttle >> 3) != droneSpeed)
+                        {
+                            droneSpeed = throttle >> 3;
+                            droneIncS  = cosFix[droneDir] / droneSpeed;
+                            droneIncT  = sinFix[droneDir] / droneSpeed;
+                        }
                     }
                 }
                 if (KeyboardGetKey(SCAN_KP_2) || KeyboardGetKey(SCAN_DOWN_ARROW)) // Slow down
                 {
                     if (droneSpeed < MIN_SPEED)
                     {
-                        droneSpeed++;
-                        droneIncS = cosFix[droneDir] / droneSpeed;
-                        droneIncT = sinFix[droneDir] / droneSpeed;
+                        if ((++throttle >> 3) != droneSpeed)
+                        {
+                            droneSpeed = throttle >> 3;
+                            droneIncS  = cosFix[droneDir] / droneSpeed;
+                            droneIncT  = sinFix[droneDir] / droneSpeed;
+                        }
                     }
                 }
                 if (KeyboardGetKey(SCAN_KP_4) || KeyboardGetKey(SCAN_LEFT_ARROW)) // Turn left
-                    droneAngle -= TURN_SPEED;
+                    droneAngle -= turnAngle;
                 if (KeyboardGetKey(SCAN_KP_6) || KeyboardGetKey(SCAN_RIGHT_ARROW)) // Turn right
-                    droneAngle += TURN_SPEED;
-                if ((droneAngle >> 4) != droneDir)
+                    droneAngle += turnAngle;
+                if (((droneAngle >> 4) & dirMask) != droneDir)
                 {
-                    droneDir   = droneAngle >> 4;
+                    droneDir   = (droneAngle >> 4) & dirMask;
                     droneIncS  = cosFix[droneDir] / droneSpeed;
                     droneIncT  = sinFix[droneDir] / droneSpeed;
                     droneFixS &= 0xFFFE0000L;
@@ -637,12 +658,17 @@ int main(int argc, char **argv)
             case 3: // Enemy AI
                 if (samInFlight)
                 {
+                    /*
+                     * Steer SAM into drone
+                     */
                     i = samDir;
                     samDir = xy2angle(samS - droneS, samT - droneT);
                     if (i != samDir)
                     {
                         samIncS = cosFix[samDir];
                         samIncT = sinFix[samDir];
+                        samIncS -= samIncS >> 2; // Slow SAM down a little
+                        samIncT -= samIncT >> 2;
                         spriteUpdate(2, sam + samDir * sizeofSAM);
                     }
                 }
@@ -714,10 +740,12 @@ int main(int argc, char **argv)
                         samDir  = xy2angle((int)(samFixS >> 16) - droneS, (int)(samFixT >> 16) - droneT);
                         samIncS = cosFix[samDir];
                         samIncT = sinFix[samDir];
+                        samIncS -= samIncS >> 2; // Slow SAM down a little
+                        samIncT -= samIncT >> 2;
                         if (spriteEnable(2, samFixS >> 16, samFixT >> 16, samWidth, samHeight, sam + samDir * sizeofSAM))
                         {
-                            samPrevS    = 0;
-                            samPrevT    = 0;
+                            samPrevS = 0;
+                            samPrevT = 0;
                         }
                         else
                             samInFlight = 0;
@@ -734,8 +762,16 @@ int main(int argc, char **argv)
         viewT      = st >> 16;
     } while (!quit);
     STOP_SOUND;
+    if (ending)
+    {
+        text(16, 60, DARKRED, "Drone Destroyed!");
+        frameCount = 0;
+        while (frameCount < 120)
+            statusRasterTimer();
+    }
 #ifndef USE_GETCH
     KeyboardUninstallDriver();
+    if (kbhit()) getch(); // Clean up any straggling keypresses
 #endif
     viewExit();
     txt80();
