@@ -46,8 +46,8 @@
 /*
  * Drone speeds
  */
-#define MAX_SPEED               1
-#define MIN_SPEED               3
+#define MAX_SPEED               2
+#define MIN_SPEED               5
 /*
  * Sound sequences
  */
@@ -120,6 +120,36 @@ long cosFix[] = {
     0x000061f7,
     0x0000b504,
     0x0000ec83,
+};
+#define XMAJOR  1
+#define YMAJOR  0
+struct step
+{
+    long fixInc;
+    int  xStep;
+    int  yStep;
+    char axis;
+    char err;
+    int  dx2;
+    int  dy2;
+} dirSteps[16] =
+{
+    {0x00010000, 2, 2, XMAJOR, -8, 16, 0}, //[0,0],[1,0],[2,0],[3,0],[4,0],[5,0],[6,0],[7,0],[8,0],
+    {0x0000EC83, 2, 2, XMAJOR, -1, 14, 6}, //[0,0],[1,0],[2,1],[3,1],[4,2],[5,2],[6,3],[7,3],
+    {0x0000B504, 2, 2, XMAJOR, 5, 10, 10}, //[0,0],[1,1],[2,2],[3,3],[4,4],[5,5],
+    {0x0000EC83, 2, 2, YMAJOR, -1, 6, 14}, //[0,0],[0,1],[1,2],[1,3],[2,4],[2,5],[3,6],[3,7],
+    {0x00010000, 2, 2, YMAJOR, -8, 0, 16}, //[0,0],[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],
+    {0x0000EC83, -2, 2, YMAJOR, -1, 6, 14}, //[0,0],[0,1],[-1,2],[-1,3],[-2,4],[-2,5],[-3,6],[-3,7],
+    {0x0000B504, -2, 2, XMAJOR, 5, 10, 10}, //[0,0],[-1,1],[-2,2],[-3,3],[-4,4],[-5,5],
+    {0x0000EC83, -2, 2, XMAJOR, -1, 14, 6}, //[0,0],[-1,0],[-2,1],[-3,1],[-4,2],[-5,2],[-6,3],[-7,3],
+    {0x00010000, -2, 2, XMAJOR, -8, 16, 0}, //[0,0],[-1,0],[-2,0],[-3,0],[-4,0],[-5,0],[-6,0],[-7,0],[-8,0],
+    {0x0000EC83, -2, -2, XMAJOR, -1, 14, 6}, //[0,0],[-1,0],[-2,-1],[-3,-1],[-4,-2],[-5,-2],[-6,-3],[-7,-3],
+    {0x0000B504, -2, -2, XMAJOR, 5, 10, 10}, //[0,0],[-1,-1],[-2,-2],[-3,-3],[-4,-4],[-5,-5],
+    {0x0000EC83, -2, -2, YMAJOR, -1, 6, 14}, //[0,0],[0,-1],[-1,-2],[-1,-3],[-2,-4],[-2,-5],[-3,-6],[-3,-7],
+    {0x00010000, 2, -2, YMAJOR, -8, 0, 16}, //[0,0],[0,-1],[0,-2],[0,-3],[0,-4],[0,-5],[0,-6],[0,-7],[0,-8],
+    {0x0000EC83, 2, -2, YMAJOR, -1, 6, 14}, //[0,0],[0,-1],[1,-2],[1,-3],[2,-4],[2,-5],[3,-6],[3,-7],
+    {0x0000B504, 2, -2, XMAJOR, 5, 10, 10}, //[0,0],[1,-1],[2,-2],[3,-3],[4,-4],[5,-5],
+    {0x0000EC83, 2, -2, XMAJOR, -1, 14, 6}, //[0,0],[1,0],[2,-1],[3,-1],[4,-2],[5,-2],[6,-3],[7,-3],
 };
 /*
  * Tile map
@@ -212,8 +242,9 @@ unsigned char xy2angle(int x, int y)
 int main(int argc, char **argv)
 {
     int maxS, maxT, viewS, viewT;
-    long droneFixS, droneFixT, droneIncS, droneIncT;
-    int droneS, droneT, dronePrevS, dronePrevT, droneMapX, droneMapY, dronePrevMapX, dronePrevMapY;
+    long droneFix, droneInc;
+    struct step *droneStep;
+    int droneS, droneT, droneMapX, droneMapY, dronePrevMapX, dronePrevMapY, droneErr;
     int droneWidth, droneHeight, sizeofDrone, droneSpeed, throttle;
     long missileFixS, missileFixT, missileIncS, missileIncT;
     int missileS, missileT, missileWidth, missileHeight, missileInFlight, sizeofMissile;
@@ -222,29 +253,16 @@ int main(int argc, char **argv)
     int samS, samT, samPrevS, samPrevT, samWidth, samHeight, samInFlight, sizeofSAM;
     int fireballSeq, fireballWidth, fireballHeight, sizeofFireball;
     unsigned char far *drone, far *missile, far *sam, far *fireball;
-    unsigned char dirMask, turnAngle, droneAngle, droneDir, samDir, ending, explosion, quit;
+    unsigned char turnAngle, droneAngle, droneDir, samDir, ending, explosion, quit;
     int diffS, diffT, viewOffsetS, viewOffsetT, numTanks, numSAMs, liveTanks, liveSAMs;
     unsigned long st;
     int scrolldir, i, j;
 
-    if (argc == 2 && !strcmp(argv[1], "-16"))
-    {
-        dirMask   = 0x0F;
 #ifdef USE_GETCH
-        turnAngle = 16;
+    turnAngle = 16;
 #else
-        turnAngle = 2;
+    turnAngle = 4;
 #endif
-    }
-    else
-    {
-        dirMask = 0x0E;
-#ifdef USE_GETCH
-        turnAngle = 32;
-#else
-        turnAngle = 4;
-#endif
-    }
     intro("intro.txt");
     if (!spriteLoad("drone.spr", &drone, &droneWidth, &droneHeight))
     {
@@ -332,19 +350,17 @@ int main(int argc, char **argv)
     maxT            = mapHeight << 4;
     viewOffsetS     = 80 - droneWidth / 2;
     viewOffsetT     = 50 - droneHeight / 2;
-    droneFixS       = (long)maxS << 15;
-    droneFixT       = (long)maxT << 15;
-    droneS          = (int)(droneFixS >> 16) & 0xFFFE;
-    droneT          = (int)(droneFixT >> 16) & 0xFFFE;
-    dronePrevS      = droneS;
-    dronePrevT      = droneT;
+    droneS          = (maxS >> 1) & 0xFFFE;
+    droneT          = (maxT >> 1) & 0xFFFE;
     dronePrevMapX   =
     dronePrevMapY   = 0;
     droneAngle      =
     droneDir        = 0;
     droneSpeed      = MIN_SPEED;
-    droneIncS       = cosFix[droneDir] / droneSpeed;
-    droneIncT       = sinFix[droneDir] / droneSpeed;
+    droneStep       = &dirSteps[droneDir];
+    droneFix        = 0;
+    droneInc        = droneStep->fixInc / droneSpeed;
+    droneErr        = droneStep->err;
     viewS           = (droneS - viewOffsetS) & 0xFFFE;
     viewT           = (droneT - viewOffsetT) & 0xFFFE;
     throttle        = droneSpeed << 3;
@@ -371,14 +387,33 @@ int main(int argc, char **argv)
         /*
          * Update drone position
          */
-        droneFixS += droneIncS;
-        droneS     = (int)(droneFixS >> 16) & 0xFFFE;
-        droneMapX  = droneS >> 4;
-        droneFixT += droneIncT;
-        droneT     = (int)(droneFixT >> 16) & 0xFFFE;
-        droneMapY  = droneT >> 4;
-        if (droneS != dronePrevS || droneT != dronePrevT)
+        droneFix += droneInc;
+        if (droneFix >> 16) // Check for integer quantity > 0
         {
+            droneFix &= 0x0000FFFFL; // Zero out integer quantity
+            if (droneStep->axis == XMAJOR)
+            {
+                if (droneErr >= 0)
+                {
+                    droneErr -= droneStep->dx2;
+                    droneT   += droneStep->yStep;
+                }
+                droneErr += droneStep->dy2;
+                droneS   += droneStep->xStep;
+            }
+            else
+            {
+                if (droneErr >= 0)
+                {
+                    droneErr -= droneStep->dy2;
+                    droneS  += droneStep->xStep;
+                }
+                droneErr += droneStep->dx2;
+                droneT   += droneStep->yStep;
+
+            }
+            droneMapX  = droneS >> 4;
+            droneMapY  = droneT >> 4;
             /*
              * Attempt to keep drone centered by scrolling map
              */
@@ -395,14 +430,14 @@ int main(int argc, char **argv)
                 /*
                  * Drone explodes at map edge
                  */
-                droneFixS   = (long)dronePrevS << 16;
-                droneFixT   = (long)dronePrevT << 16;
-                droneIncS   =
-                droneIncT   = 0;
-                ending      = 1;
-                explosion   = 1;
+                if (droneS < 0)                       droneS = 0;
+                else if (droneS > maxS - droneWidth)  droneS = maxS - droneWidth;
+                if (droneT < 0)                       droneT = 0;
+                else if (droneT > maxT - droneHeight) droneT = maxT - droneHeight;
+                droneInc =
+                ending   = 1;
                 spriteDisable(0);
-                spriteEnable(3, dronePrevS + (droneWidth - fireballWidth)/2, dronePrevT + (droneHeight - fireballHeight)/2, fireballWidth, fireballHeight, fireball);
+                spriteEnable(4, droneS + (droneWidth - fireballWidth)/2, droneT + (droneHeight - fireballHeight)/2, fireballWidth, fireballHeight, fireball);
             }
             spritePosition(0, droneS, droneT);
         }
@@ -490,11 +525,10 @@ int main(int argc, char **argv)
                              * Create explosion
                              */
                             ending      = 1;
-                            explosion   = 1;
                             samInFlight = 0;
                             spriteDisable(0);
                             spriteDisable(2);
-                            spriteEnable(3, samS + (samWidth - fireballWidth)/2, samT + (samHeight - fireballHeight)/2, fireballWidth, fireballHeight, fireball);
+                            spriteEnable(4, samS + (samWidth - fireballWidth)/2, samT + (samHeight - fireballHeight)/2, fireballWidth, fireballHeight, fireball);
                         }
                         samPrevS = samS;
                         samPrevT = samT;
@@ -518,49 +552,45 @@ int main(int argc, char **argv)
                         if (droneSpeed > MAX_SPEED)
                         {
                             droneSpeed--;
-                            droneIncS = cosFix[droneDir] / droneSpeed;
-                            droneIncT = sinFix[droneDir] / droneSpeed;
+                            droneInc = droneStep->fixInc / droneSpeed;
                         }
                         break;
                     case DOWN_ARROW: // Slow down
                         if (droneSpeed < MIN_SPEED)
                         {
                             droneSpeed++;
-                            droneIncS = cosFix[droneDir] / droneSpeed;
-                            droneIncT = sinFix[droneDir] / droneSpeed;
+                            droneInc = droneStep->fixInc / droneSpeed;
                         }
                         break;
                     case LEFT_ARROW: // Turn left
                         droneAngle -= turnAngle;
-                        if (((droneAngle >> 4) & dirMask) != droneDir)
+                        if (((droneAngle >> 4) & 0x0F) != droneDir)
                         {
-                            droneDir   = (droneAngle >> 4) & dirMask;
-                            droneIncS  = cosFix[droneDir] / droneSpeed;
-                            droneIncT  = sinFix[droneDir] / droneSpeed;
-                            droneFixS &= 0xFFFE0000L;
-                            droneFixT &= 0xFFFE0000L;
+                            droneDir  = (droneAngle >> 4) & 0x0F;
+                            droneStep = &dirSteps[droneDir];
+                            droneInc  = droneStep->fixInc / droneSpeed;
+                            droneErr  = droneStep->err;
                             spriteUpdate(0, drone + droneDir * sizeofDrone);
                         }
                         break;
                     case RIGHT_ARROW: // Turn right
                         droneAngle += turnAngle;
-                        if (((droneAngle >> 4) & dirMask) != droneDir)
+                        if (((droneAngle >> 4) & 0x0F) != droneDir)
                         {
-                            droneDir   = (droneAngle >> 4) & dirMask;
-                            droneIncS  = cosFix[droneDir] / droneSpeed;
-                            droneIncT  = sinFix[droneDir] / droneSpeed;
-                            droneFixS &= 0xFFFE0000L;
-                            droneFixT &= 0xFFFE0000L;
+                            droneDir  = (droneAngle >> 4) & 0x0F;
+                            droneStep = &dirSteps[droneDir];
+                            droneInc  = droneStep->fixInc / droneSpeed;
+                            droneErr  = droneStep->err;
                             spriteUpdate(0, drone + droneDir * sizeofDrone);
                         }
                         break;
                     case SPACEBAR: // Fire missile
                         if (!missileInFlight)
                         {
-                            missileIncS = (cosFix[droneDir] << 1) + droneIncS;
-                            missileFixS = droneFixS + missileIncS + ((long)(droneWidth - missileWidth) << 15);
-                            missileIncT = (sinFix[droneDir] << 1) + droneIncT;
-                            missileFixT = droneFixT + missileIncT + ((long)(droneHeight - missileHeight) << 15);
+                            missileIncS = (cosFix[droneDir] << 1) + cosFix[droneDir] / droneSpeed;
+                            missileFixS = ((long)droneS << 16) + missileIncS + ((long)(droneWidth - missileWidth) << 15);
+                            missileIncT = (sinFix[droneDir] << 1) + sinFix[droneDir] / droneSpeed;
+                            missileFixT = ((long)droneT << 16) + missileIncT + ((long)(droneHeight - missileHeight) << 15);
                             if (spriteEnable(1, missileFixS >> 16, missileFixT >> 16, missileWidth, missileHeight, missile + droneDir * sizeofMissile))
                             {
                                 missilePrevMapX = 0;
@@ -581,8 +611,7 @@ int main(int argc, char **argv)
                         if ((--throttle >> 3) != droneSpeed)
                         {
                             droneSpeed = throttle >> 3;
-                            droneIncS  = cosFix[droneDir] / droneSpeed;
-                            droneIncT  = sinFix[droneDir] / droneSpeed;
+                            droneInc   = droneStep->fixInc / droneSpeed;
                         }
                     }
                 }
@@ -593,8 +622,7 @@ int main(int argc, char **argv)
                         if ((++throttle >> 3) != droneSpeed)
                         {
                             droneSpeed = throttle >> 3;
-                            droneIncS  = cosFix[droneDir] / droneSpeed;
-                            droneIncT  = sinFix[droneDir] / droneSpeed;
+                            droneInc   = droneStep->fixInc / droneSpeed;
                         }
                     }
                 }
@@ -602,23 +630,22 @@ int main(int argc, char **argv)
                     droneAngle -= turnAngle;
                 if (KeyboardGetKey(SCAN_KP_6) || KeyboardGetKey(SCAN_RIGHT_ARROW)) // Turn right
                     droneAngle += turnAngle;
-                if (((droneAngle >> 4) & dirMask) != droneDir)
+                if (((droneAngle >> 4) & 0x0F) != droneDir)
                 {
-                    droneDir   = (droneAngle >> 4) & dirMask;
-                    droneIncS  = cosFix[droneDir] / droneSpeed;
-                    droneIncT  = sinFix[droneDir] / droneSpeed;
-                    droneFixS &= 0xFFFE0000L;
-                    droneFixT &= 0xFFFE0000L;
+                    droneDir  = (droneAngle >> 4) & 0x0F;
+                    droneStep = &dirSteps[droneDir];
+                    droneInc  = droneStep->fixInc / droneSpeed;
+                    droneErr  = droneStep->err;
                     spriteUpdate(0, drone + droneDir * sizeofDrone);
                 }
                 if (KeyboardGetKey(SCAN_SPACE)) // Fire missile
                 {
                     if (!missileInFlight)
                     {
-                        missileIncS = (cosFix[droneDir] << 1) + droneIncS;
-                        missileFixS = droneFixS + missileIncS + ((long)(droneWidth - missileWidth) << 15);
-                        missileIncT = (sinFix[droneDir] << 1) + droneIncT;
-                        missileFixT = droneFixT + missileIncT + ((long)(droneHeight - missileHeight) << 15);
+                        missileIncS = (cosFix[droneDir] << 1) + cosFix[droneDir] / droneSpeed;
+                        missileFixS = ((long)droneS << 16) + missileIncS + ((long)(droneWidth - missileWidth) << 15);
+                        missileIncT = (sinFix[droneDir] << 1) + sinFix[droneDir] / droneSpeed;
+                        missileFixT = ((long)droneT << 16) + missileIncT + ((long)(droneHeight - missileHeight) << 15);
                         if (spriteEnable(1, missileFixS >> 16, missileFixT >> 16, missileWidth, missileHeight, missile + droneDir * sizeofMissile))
                         {
                             missilePrevMapX = 0;
@@ -648,11 +675,19 @@ int main(int argc, char **argv)
                     {
                         explosion = 0;
                         spriteDisable(3);
-                        if (ending)
-                            quit = 1;
                     }
                     else
                         spriteUpdate(3, fireball + explosion++ * sizeofFireball);
+                }
+                if (ending)
+                {
+                    if (ending == fireballSeq)
+                    {
+                        spriteDisable(4);
+                        quit = 1;
+                    }
+                    else
+                        spriteUpdate(4, fireball + ending++ * sizeofFireball);
                 }
                 break;
             case 3: // Enemy AI
@@ -755,11 +790,9 @@ int main(int argc, char **argv)
                 dronePrevMapY = droneMapY;
                 break;
         }
-        dronePrevS = droneS;
-        dronePrevT = droneT;
-        st         = viewRefresh(scrolldir);
-        viewS      = st;
-        viewT      = st >> 16;
+        st    = viewRefresh(scrolldir);
+        viewS = st;
+        viewT = st >> 16;
     } while (!quit);
     STOP_SOUND;
     if (ending)
