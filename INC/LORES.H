@@ -61,5 +61,5 @@ void _plotrgbSnow(int x, int y, unsigned char red, unsigned char grn, unsigned c
 extern volatile unsigned char rasterTimer;
 int enableRasterTimer(int scanline);
 int disableRasterTimer(void);
-int statusRasterTimer();
+int statusRasterTimer(void);
 void setStartAddr(int addr); // Synchronously set CRTC start address with end of active video

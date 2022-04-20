@@ -144,7 +144,7 @@ void interrupt far KeyboardIsr()
 void KeyboardInstallDriver(void)
 {
     // Make sure the new ISR isn't already in use.
-    if(oldKeyboardIsr == 0L)
+    if (oldKeyboardIsr == 0L)
     {
         oldKeyboardIsr = getvect(KEYBOARD_INTERRUPT_VECTOR);
         setvect(KEYBOARD_INTERRUPT_VECTOR, KeyboardIsr);
@@ -155,10 +155,10 @@ void KeyboardInstallDriver(void)
 void KeyboardUninstallDriver(void)
 {
     // Make sure the new ISR is in use.
-    if(oldKeyboardIsr != (void *)0)
+    if (oldKeyboardIsr != 0L)
     {
         setvect(KEYBOARD_INTERRUPT_VECTOR, oldKeyboardIsr);
-        oldKeyboardIsr = (void *)0;
+        oldKeyboardIsr = 0L;
     }
 }
 

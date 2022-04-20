@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
 #include <dos.h>
 #include <conio.h>
 #include "lores.h"
@@ -162,6 +165,18 @@ struct tile
     int           index;
 } far *tileset, far * far *tilemap;
 int tileCount;
+/*
+ * Sprites
+ */
+unsigned char far *drone, far *missile, far *sam, far *fireball;
+int droneWidth, droneHeight, sizeofDrone;
+int missileWidth, missileHeight, missileInFlight, sizeofMissile;
+int samWidth, samHeight, sizeofSAM;
+int fireballSeq, fireballWidth, fireballHeight, sizeofFireball;
+int numTanks, numSAMs, liveTanks, liveSAMs;
+/*
+ * Display intro screen
+ */
 void intro(char *txtfile)
 {
     FILE *fp;
@@ -178,6 +193,7 @@ void intro(char *txtfile)
     else
         printf("Unable to open %s\n", txtfile);
 }
+#ifdef USE_GETCH
 /*
  * Extended keyboard input
  */
@@ -192,6 +208,7 @@ unsigned short getkb(void)
         extch = getch() << 8;
     return extch;
 }
+#endif
 /*
  * Convert cartesian coordiantes to angle
  */
@@ -239,113 +256,28 @@ unsigned char xy2angle(int x, int y)
 /*
  * Demo tiling and scrolling screen
  */
-int main(int argc, char **argv)
+void repelz(void)
 {
     int maxS, maxT, viewS, viewT;
     long droneFix, droneInc;
     struct step *droneStep;
     int droneS, droneT, droneMapX, droneMapY, dronePrevMapX, dronePrevMapY, droneErr;
-    int droneWidth, droneHeight, sizeofDrone, droneSpeed, throttle;
+    int droneSpeed, throttle;
     long missileFixS, missileFixT, missileIncS, missileIncT;
-    int missileS, missileT, missileWidth, missileHeight, missileInFlight, sizeofMissile;
+    int missileS, missileT;
     int missileMapX, missileMapY, missilePrevMapX, missilePrevMapY;
     long samFixS, samFixT, samIncS, samIncT;
-    int samS, samT, samPrevS, samPrevT, samWidth, samHeight, samInFlight, sizeofSAM;
-    int fireballSeq, fireballWidth, fireballHeight, sizeofFireball;
-    unsigned char far *drone, far *missile, far *sam, far *fireball;
+    int samS, samT, samPrevS, samPrevT, samInFlight;
     unsigned char turnAngle, droneAngle, droneDir, samDir, ending, explosion, quit;
-    int diffS, diffT, viewOffsetS, viewOffsetT, numTanks, numSAMs, liveTanks, liveSAMs;
+    int diffS, diffT, viewOffsetS, viewOffsetT;
     unsigned long st;
-    int scrolldir, i, j;
+    int scrolldir, i;
 
 #ifdef USE_GETCH
-    turnAngle = 16;
+#define turnAngle   16
 #else
-    turnAngle = 4;
+#define turnAngle   4
 #endif
-    intro("intro.txt");
-    if (!spriteLoad("drone.spr", &drone, &droneWidth, &droneHeight))
-    {
-        viewExit();
-        txt80();
-        fprintf(stderr, "Unable to load drone sprite page\n");
-        exit(1);
-    }
-    sizeofDrone = droneWidth * droneHeight / 2;
-    if (!spriteLoad("missile.spr", &missile, &missileWidth, &missileHeight))
-    {
-        viewExit();
-        txt80();
-        fprintf(stderr, "Unable to load missile sprite page\n");
-        exit(1);
-    }
-    sizeofMissile = missileWidth * missileHeight / 2;
-    if (!spriteLoad("sam.spr", &sam, &samWidth, &samHeight))
-    {
-        viewExit();
-        txt80();
-        fprintf(stderr, "Unable to load SAM sprite page\n");
-        exit(1);
-    }
-    sizeofSAM = samWidth * samHeight / 2;
-    if (!(fireballSeq = spriteLoad("fireball.spr", &fireball, &fireballWidth, &fireballHeight)))
-    {
-        viewExit();
-        txt80();
-        fprintf(stderr, "Unable to load missile sprite page\n");
-        exit(1);
-    }
-    sizeofFireball = fireballWidth * fireballHeight / 2;
-    if ((tileCount = tilesetLoad("warzone.set", (unsigned char far * *)&tileset, sizeof(struct tile))) == 0)
-    {
-        viewExit();
-        txt80();
-        fprintf(stderr, "Unable to load tile set\n");
-        exit(1);
-    }
-    /*
-     * Tag target tiles
-     */
-    for (i = 0; i < tileCount; i++)
-    {
-        tileset[i].isTarget = 0;
-        tileset[i].index    = i;
-    }
-    tileset[TANK_UP].isTarget      = 1;
-    tileset[TANK_DOWN].isTarget    = 1;
-    tileset[TANK_LEFT].isTarget    = 1;
-    tileset[TANK_RIGHT].isTarget   = 1;
-    tileset[SAM_LAUNCHER].isTarget = 1;
-    st = tilemapLoad("warzone.map", (unsigned char far *)tileset, sizeof(struct tile), (unsigned char far * far * *)&tilemap);
-    if (!st)
-    {
-        viewExit();
-        txt80();
-        fprintf(stderr, "Unable to load tile map\n");
-        exit(1);
-    }
-    mapWidth  = st;
-    mapHeight = st >> 16;
-    numTanks  =
-    numSAMs   = 0;
-    for (j = 0; j < mapHeight; j++)
-        for (i = 0; i <mapWidth; i++)
-        {
-            switch (tilemap[j * mapWidth + i]->index)
-            {
-                case TANK_UP:
-                case TANK_DOWN:
-                case TANK_LEFT:
-                case TANK_RIGHT:
-                    numTanks++;
-                    break;
-                case SAM_LAUNCHER:
-                    numSAMs++;
-                    break;
-            }
-        }
-    liveTanks       = numTanks;
-    liveSAMs        = numSAMs;
     maxS            = mapWidth << 4;
     maxT            = mapHeight << 4;
     viewOffsetS     = 80 - droneWidth / 2;
@@ -369,8 +301,6 @@ int main(int argc, char **argv)
     missileInFlight = 0;
     ending          =
     quit            = 0;
-    puts("Press a key to continue...");
-    getch();
 #ifndef USE_GETCH
     KeyboardInstallDriver();
 #endif
@@ -810,5 +740,91 @@ int main(int argc, char **argv)
     txt80();
     printf("\n\t%d of %d tanks destroyed\n",       numTanks - liveTanks, numTanks);
     printf("\t%d of %d SAM launchers destroyed\n", numSAMs  - liveSAMs,  numSAMs);
+}
+int main(int argc, char **argv)
+{
+    unsigned long st;
+    int i, j;
+
+    intro("intro.txt");
+    if (!spriteLoad("drone.spr", &drone, &droneWidth, &droneHeight))
+    {
+        fprintf(stderr, "Unable to load drone sprite page\n");
+        exit(1);
+    }
+    sizeofDrone = droneWidth * droneHeight / 2;
+    if (!spriteLoad("missile.spr", &missile, &missileWidth, &missileHeight))
+    {
+        fprintf(stderr, "Unable to load missile sprite page\n");
+        exit(1);
+    }
+    sizeofMissile = missileWidth * missileHeight / 2;
+    if (!spriteLoad("sam.spr", &sam, &samWidth, &samHeight))
+    {
+        fprintf(stderr, "Unable to load SAM sprite page\n");
+        exit(1);
+    }
+    sizeofSAM = samWidth * samHeight / 2;
+    if (!(fireballSeq = spriteLoad("fireball.spr", &fireball, &fireballWidth, &fireballHeight)))
+    {
+        fprintf(stderr, "Unable to load missile sprite page\n");
+        exit(1);
+    }
+    sizeofFireball = fireballWidth * fireballHeight / 2;
+    if ((tileCount = tilesetLoad("warzone.set", (unsigned char far * *)&tileset, sizeof(struct tile))) == 0)
+    {
+        fprintf(stderr, "Unable to load tile set\n");
+        exit(1);
+    }
+    /*
+     * Tag target tiles
+     */
+    for (i = 0; i < tileCount; i++)
+    {
+        tileset[i].isTarget = 0;
+        tileset[i].index    = i;
+    }
+    tileset[TANK_UP].isTarget      = 1;
+    tileset[TANK_DOWN].isTarget    = 1;
+    tileset[TANK_LEFT].isTarget    = 1;
+    tileset[TANK_RIGHT].isTarget   = 1;
+    tileset[SAM_LAUNCHER].isTarget = 1;
+    st = tilemapLoad("warzone.map", (unsigned char far *)tileset, sizeof(struct tile), (unsigned char far * far * *)&tilemap);
+    if (!st)
+    {
+        viewExit();
+        txt80();
+        fprintf(stderr, "Unable to load tile map\n");
+        exit(1);
+    }
+    mapWidth  = st;
+    mapHeight = st >> 16;
+    numTanks  =
+    numSAMs   = 0;
+    for (j = 0; j < mapHeight; j++)
+        for (i = 0; i <mapWidth; i++)
+        {
+            switch (tilemap[j * mapWidth + i]->index)
+            {
+                case TANK_UP:
+                case TANK_DOWN:
+                case TANK_LEFT:
+                case TANK_RIGHT:
+                    numTanks++;
+                    break;
+                case SAM_LAUNCHER:
+                    numSAMs++;
+                    break;
+            }
+        }
+    liveTanks = numTanks;
+    liveSAMs  = numSAMs;
+    puts("Press a key to continue...");
+    getch();
+    do
+    {
+        repelz();
+        printf("\n\tContinue playing? (Y/N)"); fflush(stdout);
+    } while (toupper(getch()) == 'Y');
     return 0;
 }
