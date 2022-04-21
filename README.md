@@ -254,4 +254,6 @@ There is a sample project file, SPRTDEMO.PRJ for building the SPRTDEMO.EXE sampl
 
 A playable demo, [Maze Runner](SRC/MAZERUNR/README.md), is available in the SRC\\MAZERUNR directory. It is also builds four versions of the EXE for each option combination using the BUILD.BAT in the Maze Runner directory.
 
+Another playable game, [RepelZ](SRC/REPELZ/readme.md) Is a complete 2D scrolling game with multiple simultaneous sprites, sophisticated input, and complex enemy A.I.
+
 To run on modern hardware, a DOS emulator such as DOSBox-X can be used. Note that DOSBox in it's current relase has CGA emulation bugs (DOSBox-X works fine), however, using the Tandy machine options does seem to work.
