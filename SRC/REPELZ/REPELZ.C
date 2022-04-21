@@ -170,7 +170,7 @@ int tileCount;
  */
 unsigned char far *drone, far *missile, far *sam, far *fireball;
 int droneWidth, droneHeight, sizeofDrone;
-int missileWidth, missileHeight, missileInFlight, sizeofMissile;
+int missileWidth, missileHeight, sizeofMissile;
 int samWidth, samHeight, sizeofSAM;
 int fireballSeq, fireballWidth, fireballHeight, sizeofFireball;
 int numTanks, numSAMs, liveTanks, liveSAMs;
@@ -264,7 +264,7 @@ void repelz(void)
     int droneS, droneT, droneMapX, droneMapY, dronePrevMapX, dronePrevMapY, droneErr;
     int droneSpeed, throttle;
     long missileFixS, missileFixT, missileIncS, missileIncT;
-    int missileS, missileT;
+    int missileS, missileT, missileInFlight;
     int missileMapX, missileMapY, missilePrevMapX, missilePrevMapY;
     long samFixS, samFixT, samIncS, samIncT;
     int samS, samT, samPrevS, samPrevT, samInFlight;
@@ -284,7 +284,7 @@ void repelz(void)
     viewOffsetT     = 50 - droneHeight / 2;
     droneS          = (maxS >> 1) & 0xFFFE;
     droneT          = (maxT >> 1) & 0xFFFE;
-    dronePrevMapX   =
+    dronePrevMapX   = 0;
     dronePrevMapY   = 0;
     droneAngle      = 0x08;
     droneDir        = 0;
@@ -296,10 +296,10 @@ void repelz(void)
     viewS           = (droneS - viewOffsetS) & 0xFFFE;
     viewT           = (droneT - viewOffsetT) & 0xFFFE;
     throttle        = droneSpeed << 3;
-    explosion       =
-    samInFlight     =
+    explosion       = 0;
+    samInFlight     = 0;
     missileInFlight = 0;
-    ending          =
+    ending          = 0;
     quit            = 0;
 #ifndef USE_GETCH
     KeyboardInstallDriver();
@@ -613,8 +613,8 @@ void repelz(void)
                 {
                     if (ending == fireballSeq)
                     {
-                        spriteDisable(4);
                         quit = 1;
+                        spriteDisable(4);
                     }
                     else
                         spriteUpdate(4, fireball + ending++ * sizeofFireball);
