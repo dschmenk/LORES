@@ -173,7 +173,7 @@ int droneWidth, droneHeight, sizeofDrone;
 int missileWidth, missileHeight, sizeofMissile;
 int samWidth, samHeight, sizeofSAM;
 int fireballSeq, fireballWidth, fireballHeight, sizeofFireball;
-int numTanks, numSAMs, liveTanks, liveSAMs;
+int numDrones, numTanks, numSAMs, liveTanks, liveSAMs;
 /*
  * Display intro screen
  */
@@ -290,15 +290,15 @@ void repelz(void)
     droneDir        = 0;
     droneSpeed      = MIN_SPEED;
     droneStep       = &dirSteps[droneDir];
-    droneFix        = 0L;
     droneInc        = droneStep->fixInc / droneSpeed;
     droneErr        = droneStep->err;
+    droneFix        = 0L;
     viewS           = (droneS - viewOffsetS) & 0xFFFE;
     viewT           = (droneT - viewOffsetT) & 0xFFFE;
     throttle        = droneSpeed << 3;
-    explosion       = 0;
     samInFlight     = 0;
     missileInFlight = 0;
+    explosion       = 0;
     ending          = 0;
     quit            = 0;
 #ifndef USE_GETCH
@@ -340,7 +340,6 @@ void repelz(void)
                 }
                 droneErr += droneStep->dx2;
                 droneT   += droneStep->yStep;
-
             }
             droneMapX  = droneS >> 4;
             droneMapY  = droneT >> 4;
@@ -364,7 +363,7 @@ void repelz(void)
                 else if (droneS > maxS - droneWidth)  droneS = maxS - droneWidth;
                 if (droneT < 0)                       droneT = 0;
                 else if (droneT > maxT - droneHeight) droneT = maxT - droneHeight;
-                droneInc =
+                droneInc = 0;
                 ending   = 1;
                 spriteDisable(0);
                 spriteEnable(4, droneS + (droneWidth - fireballWidth)/2, droneT + (droneHeight - fireballHeight)/2, fireballWidth, fireballHeight, fireball);
@@ -530,7 +529,8 @@ void repelz(void)
                         }
                         break;
                     case ESCAPE: // Quit
-                        quit = 1;
+                        if (!samInFlight) // Don't allow cheating if about to be hit by SAM
+                            quit = 1;
                         break;
                 }
 #else
@@ -584,7 +584,7 @@ void repelz(void)
                         }
                     }
                 }
-                if (KeyboardGetKey(SCAN_ESC)) // Quit
+                if (!samInFlight && KeyboardGetKey(SCAN_ESC)) // Quit, but don't allow cheating if about to be hit by SAM
                     quit = 1;
 #endif
                 break;
@@ -601,7 +601,7 @@ void repelz(void)
             case 2: // Explosion animation
                 if (explosion)
                 {
-                    if (explosion == fireballSeq)
+                    if (explosion >= fireballSeq)
                     {
                         explosion = 0;
                         spriteDisable(3);
@@ -611,7 +611,7 @@ void repelz(void)
                 }
                 if (ending)
                 {
-                    if (ending == fireballSeq)
+                    if (ending >= fireballSeq)
                     {
                         quit = 1;
                         spriteDisable(4);
@@ -731,6 +731,7 @@ void repelz(void)
         frameCount = 0;
         while (frameCount < 120)
             statusRasterTimer();
+        numDrones++;
     }
 #ifndef USE_GETCH
     KeyboardUninstallDriver();
@@ -738,6 +739,10 @@ void repelz(void)
 #endif
     viewExit();
     txt80();
+    if (numDrones == 1)
+        printf("\n\t1 drone destroyed\n");
+    else
+        printf("\n\t%d drones destroyed\n", numDrones);
     printf("\n\t%d of %d tanks destroyed\n",       numTanks - liveTanks, numTanks);
     printf("\t%d of %d SAM launchers destroyed\n", numSAMs  - liveSAMs,  numSAMs);
 }
@@ -799,8 +804,9 @@ int main(int argc, char **argv)
     }
     mapWidth  = st;
     mapHeight = st >> 16;
-    numTanks  =
+    numTanks  = 0;
     numSAMs   = 0;
+    numDrones = 0;
     for (j = 0; j < mapHeight; j++)
         for (i = 0; i <mapWidth; i++)
         {
@@ -825,6 +831,7 @@ int main(int argc, char **argv)
     {
         repelz();
         printf("\n\tContinue playing? (Y/N)"); fflush(stdout);
-    } while (toupper(getch()) == 'Y');
+        i = getch();
+    } while (toupper(i) == 'Y');
     return 0;
 }
