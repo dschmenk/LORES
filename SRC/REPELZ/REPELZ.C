@@ -286,11 +286,11 @@ void repelz(void)
     droneT          = (maxT >> 1) & 0xFFFE;
     dronePrevMapX   =
     dronePrevMapY   = 0;
-    droneAngle      =
+    droneAngle      = 0x08;
     droneDir        = 0;
     droneSpeed      = MIN_SPEED;
     droneStep       = &dirSteps[droneDir];
-    droneFix        = 0;
+    droneFix        = 0L;
     droneInc        = droneStep->fixInc / droneSpeed;
     droneErr        = droneStep->err;
     viewS           = (droneS - viewOffsetS) & 0xFFFE;
