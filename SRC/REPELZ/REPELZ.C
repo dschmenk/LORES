@@ -589,10 +589,10 @@ void repelz(void)
 #endif
                 break;
             case 1: // Sound sequencing
-                if (explosion)
-                    SET_SOUND(explodeNoise[explosion - 1]);
-                else if (samInFlight)
+                if (samInFlight)
                     SET_SOUND(samAlert[samInFlight & 0x03]);
+                else if (explosion)
+                    SET_SOUND(explodeNoise[explosion - 1]);
                 else if (missileInFlight)
                     SET_SOUND(missileWhiz[missileInFlight & 0x03]);
                 else
@@ -637,7 +637,7 @@ void repelz(void)
                         spriteUpdate(2, sam + samDir * sizeofSAM);
                     }
                 }
-                else if (droneMapX != dronePrevMapX || droneMapY != dronePrevMapY)
+                else if ((droneMapX != dronePrevMapX) || (droneMapY != dronePrevMapY))
                 {
                     /*
                      * Check if any SAM launcher in-range of drone
