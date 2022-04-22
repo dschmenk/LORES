@@ -24,7 +24,7 @@ Contents:
 - [Building](#building)
 - [Editors](./SRC/MAPEDIT/README.md)
 - [Samples and Demos](#samples-and-demos)
-  - [Video](https://youtu.be/rIbONSlyQeU)
+  - [Video Playlist](https://www.youtube.com/playlist?list=PLlPKgUMQbJ7-OW7Yd0epmfyc6yJB1ZOlN)
 
 ## Overview
 
