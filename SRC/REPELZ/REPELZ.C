@@ -51,7 +51,7 @@
  */
 #define MAX_SPEED               2
 #define MIN_SPEED               5
-#define turnAngle               4
+#define TURN_ANGLE              4
 /*
  * Sound sequences
  */
@@ -475,9 +475,9 @@ void repelz(void)
                     }
                 }
                 if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Turn left
-                    droneAngle -= turnAngle;
+                    droneAngle -= TURN_ANGLE;
                 if (keyboardGetKey(SCAN_KP_6) || keyboardGetKey(SCAN_RIGHT_ARROW)) // Turn right
-                    droneAngle += turnAngle;
+                    droneAngle += TURN_ANGLE;
                 if (((droneAngle >> 4) & 0x0F) != droneDir)
                 {
                     droneDir  = (droneAngle >> 4) & 0x0F;
