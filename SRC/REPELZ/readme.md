@@ -64,11 +64,7 @@ handling, sound generation, enemy AI, and such.
 
 ### Efficient Input
 
-There are two methods for keyboard input that are compile time options. The first,
-original method uses the C library getch() function which is basically a wrapper
-around the BIOS keyboard calls. There are two issues with this approach: high
-overhead and hard to control keypress rate. The second method installs a keyboard
-IRQ handler to monitor key presses and releases. The key state can be quickly
-checked with very little overhead. However, the code uses a feature of the
-Borland C++ compiler to implement interrupt routines directly in C. As a result,
-this code won't compile under MSC 5.1.
+The input method installs a keyboard IRQ handler to monitor key presses and
+releases. The key state can be quickly checked with very little overhead compared
+to other input methods that use BIOS calls which can have much higher overhead.
+
