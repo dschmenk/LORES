@@ -51,6 +51,7 @@
  */
 #define MAX_SPEED               2
 #define MIN_SPEED               5
+#define turnAngle               4
 /*
  * Sound sequences
  */
@@ -193,22 +194,6 @@ void intro(char *txtfile)
     else
         printf("Unable to open %s\n", txtfile);
 }
-#ifdef USE_GETCH
-/*
- * Extended keyboard input
- */
-unsigned short getkb(void)
-{
-    unsigned short extch;
-
-    if (!kbhit())
-        return 0;
-    extch = getch();
-    if (!extch)
-        extch = getch() << 8;
-    return extch;
-}
-#endif
 /*
  * Convert cartesian coordiantes to angle
  */
@@ -268,16 +253,11 @@ void repelz(void)
     int missileMapX, missileMapY, missilePrevMapX, missilePrevMapY;
     long samFixS, samFixT, samIncS, samIncT;
     int samS, samT, samPrevS, samPrevT, samInFlight;
-    unsigned char turnAngle, droneAngle, droneDir, samDir, ending, explosion, quit;
+    unsigned char droneAngle, droneDir, samDir, ending, explosion, quit;
     int diffS, diffT, viewOffsetS, viewOffsetT;
     unsigned long st;
     int scrolldir, i;
 
-#ifdef USE_GETCH
-#define turnAngle   16
-#else
-#define turnAngle   4
-#endif
     maxS            = mapWidth << 4;
     maxT            = mapHeight << 4;
     viewOffsetS     = 80 - droneWidth / 2;
@@ -301,9 +281,7 @@ void repelz(void)
     explosion       = 0;
     ending          = 0;
     quit            = 0;
-#ifndef USE_GETCH
-    KeyboardInstallDriver();
-#endif
+    keyboardInstallDriver();
     viewInit(gr160(BLACK, BLACK), viewS, viewT, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
     spriteEnable(0, droneS, droneT, droneWidth, droneHeight, drone + droneDir * sizeofDrone);
     SET_SOUND(droneBuzz[droneSpeed]);
@@ -474,67 +452,7 @@ void repelz(void)
         switch (frameCount & 0x03)
         {
             case 0: // Deal with user input
-#ifdef USE_GETCH
-                switch (getkb())
-                {
-                    case UP_ARROW: // Speed up
-                        if (droneSpeed > MAX_SPEED)
-                        {
-                            droneSpeed--;
-                            droneInc = droneStep->fixInc / droneSpeed;
-                        }
-                        break;
-                    case DOWN_ARROW: // Slow down
-                        if (droneSpeed < MIN_SPEED)
-                        {
-                            droneSpeed++;
-                            droneInc = droneStep->fixInc / droneSpeed;
-                        }
-                        break;
-                    case LEFT_ARROW: // Turn left
-                        droneAngle -= turnAngle;
-                        if (((droneAngle >> 4) & 0x0F) != droneDir)
-                        {
-                            droneDir  = (droneAngle >> 4) & 0x0F;
-                            droneStep = &dirSteps[droneDir];
-                            droneInc  = droneStep->fixInc / droneSpeed;
-                            droneErr  = droneStep->err;
-                            spriteUpdate(0, drone + droneDir * sizeofDrone);
-                        }
-                        break;
-                    case RIGHT_ARROW: // Turn right
-                        droneAngle += turnAngle;
-                        if (((droneAngle >> 4) & 0x0F) != droneDir)
-                        {
-                            droneDir  = (droneAngle >> 4) & 0x0F;
-                            droneStep = &dirSteps[droneDir];
-                            droneInc  = droneStep->fixInc / droneSpeed;
-                            droneErr  = droneStep->err;
-                            spriteUpdate(0, drone + droneDir * sizeofDrone);
-                        }
-                        break;
-                    case SPACEBAR: // Fire missile
-                        if (!missileInFlight)
-                        {
-                            missileIncS = (cosFix[droneDir] << 1) + cosFix[droneDir] / droneSpeed;
-                            missileFixS = ((long)droneS << 16) + missileIncS + ((long)(droneWidth - missileWidth) << 15);
-                            missileIncT = (sinFix[droneDir] << 1) + sinFix[droneDir] / droneSpeed;
-                            missileFixT = ((long)droneT << 16) + missileIncT + ((long)(droneHeight - missileHeight) << 15);
-                            if (spriteEnable(1, missileFixS >> 16, missileFixT >> 16, missileWidth, missileHeight, missile + droneDir * sizeofMissile))
-                            {
-                                missilePrevMapX = 0;
-                                missilePrevMapY = 0;
-                                missileInFlight = MISSILE_FLIGHT_TIME;
-                            }
-                        }
-                        break;
-                    case ESCAPE: // Quit
-                        if (!samInFlight) // Don't allow cheating if about to be hit by SAM
-                            quit = 1;
-                        break;
-                }
-#else
-                if (KeyboardGetKey(SCAN_KP_8) || KeyboardGetKey(SCAN_UP_ARROW)) //  Speed up
+                if (keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)) //  Speed up
                 {
                     if (droneSpeed > MAX_SPEED)
                     {
@@ -545,7 +463,7 @@ void repelz(void)
                         }
                     }
                 }
-                if (KeyboardGetKey(SCAN_KP_2) || KeyboardGetKey(SCAN_DOWN_ARROW)) // Slow down
+                if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)) // Slow down
                 {
                     if (droneSpeed < MIN_SPEED)
                     {
@@ -556,9 +474,9 @@ void repelz(void)
                         }
                     }
                 }
-                if (KeyboardGetKey(SCAN_KP_4) || KeyboardGetKey(SCAN_LEFT_ARROW)) // Turn left
+                if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Turn left
                     droneAngle -= turnAngle;
-                if (KeyboardGetKey(SCAN_KP_6) || KeyboardGetKey(SCAN_RIGHT_ARROW)) // Turn right
+                if (keyboardGetKey(SCAN_KP_6) || keyboardGetKey(SCAN_RIGHT_ARROW)) // Turn right
                     droneAngle += turnAngle;
                 if (((droneAngle >> 4) & 0x0F) != droneDir)
                 {
@@ -568,7 +486,7 @@ void repelz(void)
                     droneErr  = droneStep->err;
                     spriteUpdate(0, drone + droneDir * sizeofDrone);
                 }
-                if (KeyboardGetKey(SCAN_SPACE)) // Fire missile
+                if (keyboardGetKey(SCAN_SPACE)) // Fire missile
                 {
                     if (!missileInFlight)
                     {
@@ -584,9 +502,8 @@ void repelz(void)
                         }
                     }
                 }
-                if (!samInFlight && KeyboardGetKey(SCAN_ESC)) // Quit, but don't allow cheating if about to be hit by SAM
+                if (!samInFlight && keyboardGetKey(SCAN_ESC)) // Quit, but don't allow cheating if about to be hit by SAM
                     quit = 1;
-#endif
                 break;
             case 1: // Sound sequencing
                 if (samInFlight)
@@ -733,10 +650,8 @@ void repelz(void)
             statusRasterTimer();
         numDrones++;
     }
-#ifndef USE_GETCH
-    KeyboardUninstallDriver();
+    keyboardUninstallDriver();
     if (kbhit()) getch(); // Clean up any straggling keypresses
-#endif
     viewExit();
     txt80();
     if (numDrones == 1)

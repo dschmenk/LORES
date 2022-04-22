@@ -5,10 +5,10 @@
 #define KEY_PRESSED 1
 #define KEY_RELEASED 0
 
-unsigned char KeyboardGetKey(unsigned int scanCode);
-void          KeyboardClearKeys(void);
-void          KeyboardInstallDriver(void);
-void          KeyboardUninstallDriver(void);
+unsigned char keyboardGetKey(unsigned int scanCode);
+void          keyboardClearKeys(void);
+void          keyboardInstallDriver(void);
+void          keyboardUninstallDriver(void);
 
 #endif // KEYBOARD_H_INCLUDED
 
