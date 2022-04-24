@@ -289,7 +289,7 @@ void repelz(void)
     do
     {
 #ifdef PROFILE
-        //rasterBorder(WHITE);
+        rasterBorder(WHITE);
 #endif
         scrolldir = 0;
         /*
