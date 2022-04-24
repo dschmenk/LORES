@@ -1,5 +1,5 @@
-	TITLE   keyboard.asm
-	NAME    keyboard
+    TITLE   keyboard.asm
+    NAME    keyboard
 _TEXT   SEGMENT  WORD PUBLIC 'CODE'
 _TEXT   ENDS
 _DATA   SEGMENT  WORD PUBLIC 'DATA'
@@ -8,33 +8,33 @@ CONST   SEGMENT  WORD PUBLIC 'CONST'
 CONST   ENDS
 _BSS    SEGMENT  WORD PUBLIC 'BSS'
 _BSS    ENDS
-DGROUP  GROUP	CONST, _BSS, _DATA
+DGROUP  GROUP    CONST, _BSS, _DATA
 _TEXT   SEGMENT
-        ASSUME	CS: _TEXT, DS: DGROUP, SS: DGROUP
+        ASSUME    CS: _TEXT, DS: DGROUP, SS: DGROUP
 
 oldKeyboardISR  DD  00h
-isPrevCodeExt	DB  00h
+isPrevCodeExt   DB  00h
 keyStates       DB  256 DUP(00h)
 
-        PUBLIC	_keyboardGetKey
-_keyboardGetKey	PROC NEAR
+        PUBLIC  _keyboardGetKey
+_keyboardGetKey PROC NEAR
         push    bp
-        mov	    bp, sp
-;	scanCode = 4
+        mov     bp, sp
+;    scanCode = 4
         xor     ax,ax
-        mov	    bx, WORD PTR [bp+4]	;scanCode
-        cmp	    bh, 0E0h
-	    jne	    @F
+        mov     bx, WORD PTR [bp+4]     ; scanCode
+        cmp     bh, 0E0h
+        jne     @F
         xor     bh, bh
         add     bx, 127
 @@:     mov     al, BYTE PTR cs:keyStates[bx]
         pop     bp
         ret
-_keyboardGetKey	ENDP
+_keyboardGetKey    ENDP
 
-	   PUBLIC  _keyboardClearKeys
-_keyboardClearKeys	PROC NEAR
-        push	di
+       PUBLIC  _keyboardClearKeys
+_keyboardClearKeys    PROC NEAR
+        push    di
         mov     cx, 256/2
         mov     di, OFFSET _TEXT:keyStates
         mov     ax, cs
@@ -43,10 +43,10 @@ _keyboardClearKeys	PROC NEAR
     rep stosw
         pop     di
         ret
-_keyboardClearKeys	ENDP
+_keyboardClearKeys    ENDP
 
         PUBLIC  _keyboardInstallDriver
-_keyboardInstallDriver	PROC NEAR
+_keyboardInstallDriver    PROC NEAR
         mov     ax, WORD PTR cs:oldKeyboardISR+0
         or      ax, WORD PTR cs:oldKeyboardISR+2
         jnz     @F
@@ -74,7 +74,7 @@ _keyboardInstallDriver	PROC NEAR
         pop     di
         pop     si
 @@:     ret
-_keyboardInstallDriver	ENDP
+_keyboardInstallDriver    ENDP
 
         PUBLIC  _keyboardUninstallDriver
 _keyboardUninstallDriver    PROC NEAR
@@ -100,7 +100,7 @@ _keyboardUninstallDriver    ENDP
 
         ASSUME  DS: NOTHING, SS: NOTHING
 keyboardISR     PROC FAR
-        push	ax
+        push    ax
         push    bx
         xor     bx, bx
         in      al, 061h                ; PPI port B
