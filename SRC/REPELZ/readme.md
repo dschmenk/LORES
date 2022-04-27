@@ -42,7 +42,7 @@ might be initially assumed.
 
 ### Scrolling Algorithm
 
-One of the limitations of the LORES library is the horizontal two-pixel
+One of the hardware limitations of the LORES library is the horizontal two-pixel
 scrolling increment. In order to create a consistent appearance during diagonal
 scrolling, vertical increments can be set to two-pixel increments as well. By
 moving the center around by even pixel coordinates and locking the view to the main
