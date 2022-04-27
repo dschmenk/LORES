@@ -32,7 +32,7 @@ does all the heavy lifting, leaving just the game logic to implement.
 
 ### Sprite Usage
 
-The 8088 at 4.77 MHz can't push a lot of pixels in the short time allotted during
+The PC can't push a lot of pixels in the short time allotted during
 inactive video to avoid CGA snow and video tearing. The sprites must be of moderate
 size to update everything on the screen. Keeping the sprite size from around 8x8
 to 12x12 pixels will be necessary to have a few of them being simultaneously active
@@ -45,9 +45,9 @@ might be initially assumed.
 One of the limitations of the LORES library is the horizontal two-pixel
 scrolling increment. In order to create a consistent appearance during diagonal
 scrolling, vertical increments can be set to two-pixel increments as well. By
-moving the center around by even pixel coordinates and locking the view to this
-sprite, it will be hard to visually recognize that the scrolling is actually
-limited to two-pixel amounts. The actual movement is controlled with a combination
+moving the center around by even pixel coordinates and locking the view to the main
+sprite, it will be harder to visually recognize that the scrolling is actually
+limited to two-pixel amounts. The movement is controlled with a combination
 of a 16.16 fixed point move rate and a Bresenham algorithm to choose the pixel
 coordinates. Other sprites are moved by a simple 16.16 position and increment.
 
