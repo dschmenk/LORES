@@ -277,7 +277,7 @@ unsigned char brush(unsigned char red, unsigned char grn, unsigned blu, unsigned
                 pattern[RED_PLANE] =
                 pattern[GRN_PLANE] =
                 pattern[BLU_PLANE] =  ddithmask[((l - 64) >> 2)];
-                clr =  0x0F;
+                clr =  0x07;
             }
             else // 0%-25% grey
             {

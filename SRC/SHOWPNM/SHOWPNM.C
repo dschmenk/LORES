@@ -15,11 +15,13 @@ int main(int argc, char **argv)
 	FILE *pbmfile;
 	int pbmwidth, pbmheight, pbmdepth;
 	int x, y;
-    unsigned char r, g, b;
+    unsigned char dither, r, g, b;
     float gammafunc;
+    unsigned int pixbrush[4];
 
     for (x = 0; x < 256; x++)
         gamma[x] = x;
+    dither = 1;
     while (argc > 1 && argv[1][0] == '-')
     {
         if (argc > 2 && argv[1][1] == 'g')
@@ -29,6 +31,10 @@ int main(int argc, char **argv)
                 gamma[x] = pow((float)x/255.0, gammafunc) * 255.0;
             argc--;
             argv++;
+        }
+        else if (argv[1][1] == 'n')
+        {
+            dither = 0;
         }
         argc--;
         argv++;
@@ -60,7 +66,10 @@ int main(int argc, char **argv)
             r = gamma[getc(pbmfile)];
             g = gamma[getc(pbmfile)];
             b = gamma[getc(pbmfile)];
- 			plotrgb(x, y, r, g, b);
+            if (dither)
+ 			    plotrgb(x, y, r, g, b);
+            else
+                plot(x, y, brush(r, g, b, pixbrush));
         }
 	getchar();
 	txt80();
