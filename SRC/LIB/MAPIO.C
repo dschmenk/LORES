@@ -20,9 +20,9 @@ int tilesetLoad(char *filename, unsigned char far * *tileset, int sizeoftile)
     count = 0;
     if (stat(filename, &buffer) == 0)
     {
-        if (buffer.st_size >= sizeoftile)
+        if ((count = buffer.st_size / (8*16)) > 0)
         {
-            count = buffer.st_size / (8*16);
+            ;
             sizeoftileset = (unsigned long)count * (unsigned long)sizeoftile;
             if (sizeoftileset < 65536L)
             {
