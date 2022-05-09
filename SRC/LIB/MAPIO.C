@@ -13,6 +13,7 @@
 int tilesetLoad(char *filename, unsigned char far * *tileset, int sizeoftile)
 {
     int count, fd, i, j;
+    unsigned long sizeoftileset;
     struct stat buffer;
     unsigned char tile[8*16], far *tileptr;
 
@@ -22,22 +23,31 @@ int tilesetLoad(char *filename, unsigned char far * *tileset, int sizeoftile)
         if (buffer.st_size >= sizeoftile)
         {
             count = buffer.st_size / (8*16);
-            *tileset = (unsigned char far *)_fmalloc(count * sizeoftile);
-            if (*tileset != NULL)
+            sizeoftileset = (unsigned long)count * (unsigned long)sizeoftile;
+            if (sizeoftileset < 65536L)
             {
-                tileptr = *tileset;
-                fd      = open(filename, O_RDONLY | O_BINARY);
-                for (i = 0; i < count; i++)
+                *tileset = (unsigned char far *)_fmalloc(sizeoftileset);
+                if (*tileset)
                 {
-                    read(fd, (char *)tile, 8*16);
-                    for (j = 0; j < 8*16; j++)
-                        tileptr[j] = tile[j];
-                    tileptr += sizeoftile;
+                    fd = open(filename, O_RDONLY | O_BINARY);
+                    if (fd)
+                    {
+                        tileptr = *tileset;
+                        for (i = 0; i < count; i++)
+                        {
+                            read(fd, (char *)tile, 8*16);
+                            for (j = 0; j < 8*16; j++)
+                                tileptr[j] = tile[j];
+                            tileptr += sizeoftile;
+                        }
+                        close(fd);
+                    }
                 }
-                close(fd);
+                else
+                    fprintf(stderr, "Error: Unable to allocate tileset.\n");
             }
             else
-                count = -1;
+                fprintf(stderr, "Error: Tileset > 64K.\n");
         }
     }
     return count;
@@ -67,6 +77,7 @@ unsigned long tilemapLoad(char *filename, unsigned char far *tileset, int sizeof
     unsigned int index;
     unsigned char far * far *mapptr;
 
+    width = height = 0;
     fd = open(filename, O_RDONLY | O_BINARY);
     if (fd)
     {
@@ -83,15 +94,13 @@ unsigned long tilemapLoad(char *filename, unsigned char far *tileset, int sizeof
                     if (index == 0xFFFF)
                         *mapptr++ = NULL;
                     else
-                        *mapptr++ = tileset + index * sizeoftile;
+                        *mapptr++ = tileset + index * (unsigned int)sizeoftile;
                 }
         }
         else
-            width = height = 0;
+            fprintf(stderr, "Error: Unable to allocate map.\n");
         close(fd);
     }
-    else
-        width = height = 0;
     return ((unsigned long)height << 16) | width;
 }
 int tilemapSave(char *filename, unsigned char far *tileset, int sizeoftile, unsigned char far * far *tilemap, int width, int height)

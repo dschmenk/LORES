@@ -30,7 +30,7 @@ char statusClear[] = "                                      ";
 struct tile_t
 {
     unsigned char tile[TILE_WIDTH * TILE_HEIGHT / 2];
-    unsigned char tileExp[TILE_WIDTH * TILE_HEIGHT];
+    unsigned char far *tileExp;
     int id;
     int refcount;
 };
@@ -261,7 +261,8 @@ struct tile_t far * tileNew(void)
         /*
          * Init fresh tile
          */
-        newSet[tileCount].id = tileCount;
+        newSet[tileCount].id      = tileCount;
+        newSet[tileCount].tileExp = (unsigned char far *)_fmalloc(TILE_WIDTH * TILE_HEIGHT);
         for (j = 0; j < TILE_WIDTH * TILE_HEIGHT; j++)
             newSet[tileCount].tileExp[j] = GREY;
         /*
@@ -269,7 +270,8 @@ struct tile_t far * tileNew(void)
          */
         for (i = 0; i < tileCount; i++)
         {
-            newSet[i].id = i;
+            newSet[i].id      = i;
+            newSet[i].tileExp = (unsigned char far *)_fmalloc(TILE_WIDTH * TILE_HEIGHT);
             for (j = 0; j < TILE_WIDTH * TILE_HEIGHT; j++)
                 newSet[i].tileExp[j] = tileSet[i].tileExp[j];
         }
@@ -279,6 +281,8 @@ struct tile_t far * tileNew(void)
         for (j = 0; j < mapHeight; j++)
             for (i = 0; i < mapWidth; i++)
                 tileMap[j * mapWidth + i] = &newSet[(tileMap[j * mapWidth + i])->id];
+        for (i = 0; i < tileCount; i++)
+            _ffree(tileSet[i].tileExp);
         _ffree(tileSet);
         tileSet = newSet;
         return &tileSet[tileCount++];
@@ -297,13 +301,15 @@ void tileDel(int index)
          */
         for (i = 0; i < index; i++)
         {
-            newSet[i].id = i;
+            newSet[i].id      = i;
+            newSet[i].tileExp = (unsigned char far *)_fmalloc(TILE_WIDTH * TILE_HEIGHT);
             for (j = 0; j < TILE_WIDTH * TILE_HEIGHT; j++)
                 newSet[i].tileExp[j] = tileSet[i].tileExp[j];
         }
         for (i = index + 1; i < tileCount; i++)
         {
-            newSet[i].id = i - 1;
+            newSet[i - 1].id      = i - 1;
+            newSet[i - 1].tileExp = (unsigned char far *)_fmalloc(TILE_WIDTH * TILE_HEIGHT);
             for (j = 0; j < TILE_WIDTH * TILE_HEIGHT; j++)
                 newSet[i - 1].tileExp[j] = tileSet[i].tileExp[j];
         }
@@ -320,6 +326,8 @@ void tileDel(int index)
                 else
                     tileMap[j * mapWidth + i] = &newSet[(tileMap[j * mapWidth + i])->id - 1];
             }
+        for (i = 0; i < tileCount; i++)
+            _ffree(tileSet[i].tileExp);
         _ffree(tileSet);
         tileSet = newSet;
         tileCount--;
@@ -473,33 +481,40 @@ void LoadMap(char *filebase)
 {
     int i, row, col;
     unsigned long mapDim;
-    struct tile_t far *tileptr, far * far *mapptr;
     char filename[128];
 
     strcpy(filename, filebase);
     strcat(filename, ".set");
     tileCount = tilesetLoad(filename, (unsigned char far * *)&tileSet, sizeof(struct tile_t));
+    if (tileCount == 0)
+    {
+        fprintf(stderr, "Unable to load tileset %s.\n", filename);
+        exit(1);
+    }
     strcpy(filename, filebase);
     strcat(filename, ".map");
-    mapDim    = tilemapLoad(filename, (unsigned char far *)tileSet, sizeof(struct tile_t), (unsigned char far * far * *)&tileMap);
+    mapDim = tilemapLoad(filename, (unsigned char far *)tileSet, sizeof(struct tile_t), (unsigned char far * far * *)&tileMap);
+    if (mapDim == 0L)
+    {
+        fprintf(stderr, "Unable to load tilemap %s.\n", filename);
+        exit(1);
+    }
     mapHeight = mapDim >> 16;
     mapWidth  = mapDim;
-    tileptr   = tileSet;
     for (i = 0; i < tileCount; i++)
     {
-        tileptr->id = i;
-        tileptr->refcount = 0;
+        tileSet[i].id       = i;
+        tileSet[i].refcount = 0;
+        tileSet[i].tileExp  = _fmalloc(TILE_WIDTH * TILE_HEIGHT);
         for (row = 0; row < TILE_HEIGHT; row++)
             for (col = 0; col < TILE_WIDTH; col += 2)
             {
-                tileptr->tileExp[row * 16 + col]     = tileptr->tile[row * 8 + col / 2] & 0x0F;
-                tileptr->tileExp[row * 16 + col + 1] = tileptr->tile[row * 8 + col / 2] >> 4;
+                tileSet[i].tileExp[row * TILE_WIDTH + col]     = tileSet[i].tile[(row * TILE_WIDTH + col) / 2] & 0x0F;
+                tileSet[i].tileExp[row * TILE_WIDTH + col + 1] = tileSet[i].tile[(row * TILE_WIDTH + col) / 2] >> 4;
             }
-        tileptr++;
     }
-    mapptr = tileMap;
     for (i = 0; i < mapHeight * mapWidth; i++)
-        (*mapptr++)->refcount++;
+        tileMap[i]->refcount++;
 }
 void SaveMap(char *filebase)
 {
