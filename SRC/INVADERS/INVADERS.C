@@ -18,6 +18,7 @@
 #define MISSILE_SPRITE      1
 #define INVADER_SPRITE_BASE 2
 #define INVADER_ALIVE       0
+#define INVADER_INC         5
 /*
  * Tile map
  */
@@ -34,7 +35,7 @@ unsigned char far *ship, far *missile, far *invader;
 int shipWidth, shipHeight;
 int missileWidth, missileHeight, sizeofMissile;
 int invaderInc[MAX_INVADERS], invaderX[MAX_INVADERS], invaderY[MAX_INVADERS], invaderState[MAX_INVADERS];
-int invaderCount, invaderSeq, invaderWidth, invaderHeight, sizeofInvader;
+int invaderMove, invaderCount, invaderSeq, invaderWidth, invaderHeight, sizeofInvader;
 
 int main(int argc, char **argv)
 {
@@ -74,13 +75,14 @@ int main(int argc, char **argv)
     quit            = 0;
     shipX           = ORG_X + 160/2 - 3;
     missileInFlight = 0;
+    invaderMove     = MAX_INVADERS - 1;
     keyboardInstallDriver();
     viewInit(gr160(BLACK, BLACK), ORG_X, 0, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
     spriteEnable(SHIP_SPRITE, shipX, SHIP_Y, shipWidth, shipHeight, ship);
     for (invaderCount = 0; invaderCount < MAX_INVADERS; invaderCount++)
     {
         invaderState[invaderCount] = INVADER_ALIVE;
-        invaderInc[invaderCount]   = 1;
+        invaderInc[invaderCount]   = INVADER_INC;
         invaderX[invaderCount]     = ORG_X + SCREEN_WIDTH/MAX_INVADERS * invaderCount + SCREEN_WIDTH/MAX_INVADERS/4;
         invaderY[invaderCount]     = ORG_Y + 1;
         spriteEnable(invaderCount + INVADER_SPRITE_BASE, invaderX[invaderCount], invaderY[invaderCount], invaderWidth, invaderHeight, invader);
@@ -128,33 +130,37 @@ int main(int argc, char **argv)
         /*
          * Update aliens
          */
-        for (i = 0; i < MAX_INVADERS; i++)
+        if (invaderState[invaderMove] == INVADER_ALIVE)
         {
-            if (invaderState[i] == INVADER_ALIVE)
+            invaderX[invaderMove] += invaderInc[invaderMove];
+            if (invaderX[invaderMove] < ORG_X || invaderX[invaderMove] > ORG_X + SCREEN_WIDTH - invaderWidth)
             {
-                invaderX[i] += invaderInc[i];
-                if (invaderX[i] < ORG_X || invaderX[i] > ORG_X + SCREEN_WIDTH - invaderWidth)
-                {
-                    invaderInc[i] = -invaderInc[i];
-                    invaderX[i]  += invaderInc[i];
-                    invaderY[i]  += invaderHeight;
-                    if (invaderY[i] >= ORG_Y + SCREEN_HEIGHT)
-                        quit = 1;
-                }
-                spritePosition(i + INVADER_SPRITE_BASE, invaderX[i], invaderY[i]);
+                invaderInc[invaderMove] = -invaderInc[invaderMove];
+                invaderX[invaderMove]   = (invaderX[invaderMove] < ORG_X) ? ORG_X : ORG_X + SCREEN_WIDTH - invaderWidth;
+                invaderY[invaderMove]  += invaderHeight + 1;
             }
-            else
-            {
-                if (invaderState[i] < invaderSeq)
-                    spriteUpdate(i + INVADER_SPRITE_BASE, invader + invaderState[i]++ * sizeofInvader);
-                else if (invaderState[i] == invaderSeq)
-                {
-                    invaderState[i]++;
-                    spriteDisable(i + INVADER_SPRITE_BASE);
-                    quit = (--invaderCount == 0);
-                }
+            spritePosition(invaderMove + INVADER_SPRITE_BASE, invaderX[invaderMove], invaderY[invaderMove]);
+            if ((invaderY[invaderMove] + invaderHeight >= SHIP_Y)
+             && (invaderX[invaderMove] + invaderWidth >= shipX)
+             && (invaderX[invaderMove] <= shipX + shipWidth))
+             {
+                quit = MAX_INVADERS;
+                invaderMove++;
             }
         }
+        else
+        {
+            if (invaderState[invaderMove] < invaderSeq)
+                spriteUpdate(invaderMove + INVADER_SPRITE_BASE, invader + invaderState[invaderMove]++ * sizeofInvader);
+            else if (invaderState[invaderMove] == invaderSeq)
+            {
+                invaderState[invaderMove]++;
+                spriteDisable(invaderMove + INVADER_SPRITE_BASE);
+                quit = (--invaderCount == 0) ? -1 : 0;
+            }
+        }
+        if (!invaderMove--)
+            invaderMove = MAX_INVADERS - 1;
         oldX = shipX;
         if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Turn left
             shipX--;
@@ -174,7 +180,7 @@ int main(int argc, char **argv)
             missileInFlight = spriteEnable(MISSILE_SPRITE, missileX, missileY, missileWidth, missileHeight, missile);
         }
         if (keyboardGetKey(SCAN_ESC)) // Quit, but don't allow cheating if about to be hit by SAM
-            quit = 1;
+            quit = -1;
         viewRefresh(0);
     } while (!quit);
     /*
@@ -182,6 +188,23 @@ int main(int argc, char **argv)
      */
     if (missileInFlight)
         spriteDisable(MISSILE_SPRITE);
+    if (quit > 0)
+        spriteDisable(SHIP_SPRITE);
+    while (quit > 0)
+    {
+        if (invaderState[invaderMove] < invaderSeq)
+            spriteUpdate(invaderMove + INVADER_SPRITE_BASE, invader + invaderState[invaderMove]++ * sizeofInvader);
+        else if (invaderState[invaderMove] == invaderSeq)
+        {
+            invaderState[invaderMove]++;
+            spriteDisable(invaderMove + INVADER_SPRITE_BASE);
+        }
+        frameCount = 0;
+        while (frameCount < MAX_INVADERS)
+            statusRasterTimer();
+        viewRefresh(SCROLL_DOWN);
+        quit--;
+    }
     for (i = 0; i < ORG_Y; i++)
         viewRefresh(SCROLL_DOWN);
     keyboardUninstallDriver();
