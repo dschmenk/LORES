@@ -21,6 +21,12 @@ aliens. A stock IBM PC cannot update all 8 sprites 60 times a second without
 CGA snow or image anomalies so alien movement is interleaved, one alien per
 frame. It is hard to recognize that the aliens aren't moving in sync.
 
+The LORES library won't clip sprites to the map boundaries, but it will clip
+them to screen boundaries (an implementation performance decision). In order to
+get clipped sprites, "Invaders" creates a tile boundary surrounding the
+playfield. The view is set inside this boundary so the sprites will be nicely
+clipped to the screen edges.
+
 The background was created from a NASA "Earthrise" picture. The slicer.c
 program in the MAPEDIT directory is run on a modern computer and will convert
 the Portable Net RGB image into either a dithered or a closest match 4 BPP IRGB
