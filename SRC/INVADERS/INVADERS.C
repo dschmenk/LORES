@@ -222,10 +222,10 @@ int main(int argc, char **argv)
                  */
                 for (i = 0; i < MAX_INVADERS; i++)
                     if ((invaderState[i] == INVADER_ALIVE)
-                     && (missileX >= invaderX[i] - INVADER_INC/2)
-                     && (missileX + missileWidth <= invaderX[i] + invaderWidth + INVADER_INC/2)
-                     && (missileY >= invaderY[i])
-                     && (missileY + missileHeight <= invaderY[i] + invaderHeight))
+                     && (missileY + missileHeight >= invaderY[i])
+                     && (missileY <= invaderY[i] + invaderHeight)
+                     && (missileX + missileWidth >= invaderX[i])
+                     && (missileX <= invaderX[i] + invaderWidth))
                     {
                         invaderState[i]++;
                         missileInFlight = (ORG_Y-16 - missileY) / MISSILE_SPEED;
