@@ -167,8 +167,8 @@ int main(int argc, char **argv)
                 invaderY[invaderMove]  += invaderHeight + 1;
             }
             if ((invaderY[invaderMove] + invaderHeight >= SHIP_Y)
-             && (invaderX[invaderMove] + invaderWidth >= shipX)
-             && (invaderX[invaderMove] <= shipX + shipWidth))
+             && (invaderX[invaderMove] + invaderWidth > shipX)
+             && (invaderX[invaderMove] < shipX + shipWidth))
             {
                 /*
                  * Alien hit ship
@@ -222,10 +222,10 @@ int main(int argc, char **argv)
                  */
                 for (i = 0; i < MAX_INVADERS; i++)
                     if ((invaderState[i] == INVADER_ALIVE)
-                     && (missileY + missileHeight >= invaderY[i])
-                     && (missileY <= invaderY[i] + invaderHeight)
-                     && (missileX + missileWidth >= invaderX[i])
-                     && (missileX <= invaderX[i] + invaderWidth))
+                     && (missileY < invaderY[i] + invaderHeight)
+                     && (missileY + missileHeight > invaderY[i])
+                     && (missileX < invaderX[i] + invaderWidth)
+                     && (missileX + missileWidth > invaderX[i]))
                     {
                         invaderState[i]++;
                         missileInFlight = (ORG_Y-16 - missileY) / MISSILE_SPEED;
