@@ -130,25 +130,29 @@ unsigned int gr160(unsigned char fill, unsigned char border)
             regs.x.bx = 0x0000;
             int86(0x10, &regs, &regs); /* turn off blink via BIOS */
         }
+        fill = (fill << 4) | fill;
+        wfill = 221 | (fill << 8);
+        for (i = 0; i < scrnMask; i++)
+            wvidmem[i] = wfill;
     }
     else
     {   /* CGA */
         adapter = CGA;
         scrnMask = 0x3FFF;
         /* Set CRTC registers */
-        outp(0x3D8, 0x00); /* Turn off video */
+        rasterDisable();
         for (i = 0; i < sizeof(cga160crtc); i++)
         {
             outp(0x3D4, i); outp(0x3D5, cga160crtc[i]);
         }
-        outp(0x3D8, 0x09);      // Turn off blink attribute
+        fill = (fill << 4) | fill;
+        wfill = 221 | (fill << 8);
+        for (i = 0; i < scrnMask; i++)
+            wvidmem[i] = wfill;
         borderColor = border & 0x0F;
-        rasterBorder(borderColor);    // Set border
+        rasterBorder(borderColor);
+        rasterEnable();
     }
-    fill = (fill << 4) | fill;
-    wfill = 221 | (fill << 8);
-    for (i = 0; i < scrnMask; i++)
-        wvidmem[i] = wfill;
     /*
      * Precaclulate scanline offsets
      */
