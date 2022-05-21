@@ -145,7 +145,7 @@ unsigned int gr160(unsigned char fill, unsigned char border)
     }
     fill = (fill << 4) | fill;
     wfill = 221 | (fill << 8);
-    for (i = 0; i < scrnMask; i++)
+    for (i = 0; i < scrnMask>>1; i++)
         wvidmem[i] = wfill;
     rasterEnable();
     /* Precaclulate scanline offsets */
