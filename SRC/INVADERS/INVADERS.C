@@ -270,14 +270,12 @@ int main(int argc, char **argv)
          */
         if (pewpew)
         {
+            if (buzzRate == 0)
+                buzzIndex ^= 1;
             if (--pewpew)
                 SET_SOUND(missileWhiz[pewpew]);
             else
-            {
-                if (buzzRate == 0)
-                    buzzIndex ^= 1;
                 SET_SOUND(alienBuzz[buzzIndex]);
-            }
         }
         else
         {
