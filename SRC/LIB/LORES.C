@@ -85,8 +85,7 @@ unsigned int gr160(unsigned char fill, unsigned char border)
     int far *wvidmem = (int far *)0xB8000000L;
     union REGS regs;
 
-    /* Start off in text mode 3, 200 scanlines */
-
+    /* Start off in text mode 3 */
     regs.x.ax = 3;
     int86(0x10, &regs, &regs);
     regs.x.ax = 0x1130; /* Get character generator information */
@@ -94,6 +93,7 @@ unsigned int gr160(unsigned char fill, unsigned char border)
     regs.x.cx = 0x0000;
     int86(0x10, &regs, &regs);
     chrows = regs.h.cl;
+    rasterDisable();
     if (chrows)
     {
         scrnMask = 0x7FFF;
@@ -130,32 +130,25 @@ unsigned int gr160(unsigned char fill, unsigned char border)
             regs.x.bx = 0x0000;
             int86(0x10, &regs, &regs); /* turn off blink via BIOS */
         }
-        fill = (fill << 4) | fill;
-        wfill = 221 | (fill << 8);
-        for (i = 0; i < scrnMask; i++)
-            wvidmem[i] = wfill;
     }
     else
     {   /* CGA */
         adapter = CGA;
         scrnMask = 0x3FFF;
         /* Set CRTC registers */
-        rasterDisable();
         for (i = 0; i < sizeof(cga160crtc); i++)
         {
             outp(0x3D4, i); outp(0x3D5, cga160crtc[i]);
         }
-        fill = (fill << 4) | fill;
-        wfill = 221 | (fill << 8);
-        for (i = 0; i < scrnMask; i++)
-            wvidmem[i] = wfill;
         borderColor = border & 0x0F;
         rasterBorder(borderColor);
-        rasterEnable();
     }
-    /*
-     * Precaclulate scanline offsets
-     */
+    fill = (fill << 4) | fill;
+    wfill = 221 | (fill << 8);
+    for (i = 0; i < scrnMask; i++)
+        wvidmem[i] = wfill;
+    rasterEnable();
+    /* Precaclulate scanline offsets */
     for (i = 0; i < 100; i++)
         scanline[i] = i * 160;
     return adapter;
