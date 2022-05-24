@@ -202,6 +202,33 @@ int addtile(FILE *tilefile, unsigned char *mapptr)
 /*
  * World's dumbest routine to read PGM/PNM files.
  */
+int readheader(FILE *fp, int *width, int *height, int *depth)
+{
+    char pbmheader[80];
+
+    fgets(pbmheader, 80, fp);
+    if (strcmp(pbmheader, "P6\n"))
+    {
+        fprintf(stderr, "PBM header: Missing P6 %s\n", pbmheader);
+        return 0;
+    }
+    do fgets(pbmheader, 80, fp); while (pbmheader[0] == '#');
+    switch (sscanf(pbmheader, "%d %d\n", width, height))
+    {
+        case 0:
+            fprintf(stderr, "PBM header: Missing width %s\n", pbmheader);
+            return 0;
+        case 1:
+            if (!fscanf(fp, "%d\n", height))
+            {
+                fprintf(stderr, "PBM header: Missing height %s\n", pbmheader);
+                return 0;
+            }
+        case 2:
+            break;
+    }
+    return fscanf(fp, "%d\n", depth) == 1;
+}
 int main(int argc, char **argv)
 {
 	FILE *pbmfile, *tilefile, *mapfile;
@@ -252,9 +279,9 @@ int main(int argc, char **argv)
         fprintf(stderr, "Missing basename\n");
         return -1;
     }
-	if (fscanf(pbmfile, "P6\n%d\n%d\n%d\n", &pbmwidth, &pbmheight, &pbmdepth) != 3)
+	if (!readheader(pbmfile, &pbmwidth, &pbmheight, &pbmdepth))
 	{
-		fprintf(stderr, "Not a valid PGM file.\n");
+		fprintf(stderr, "Not a valid PBM file.\n");
 		return -1;
 	}
     mapwidth  = (pbmwidth  + 15) & 0xFFF0;
