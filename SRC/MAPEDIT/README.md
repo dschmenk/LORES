@@ -87,7 +87,7 @@ The 'slicer' tool must be compiled on your modern OS to run. It is very generic 
 
     ./slicer -g [gamma value] [-n] <basename>
 
-The basename is the name of the '.pnm' file without the extension. The files '<basename>.set' and '<basename>.map' will be created for importing directly to the game or further editing with MAPEDIT.
+The basename is the name of the '.pnm' file without the extension. The files '\<basename\>.set' and '\<basename\>.map' will be created for importing directly to the game or further editing with MAPEDIT.
 
 ## Executables
 
