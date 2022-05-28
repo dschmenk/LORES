@@ -394,6 +394,20 @@ unsigned long viewScroll(int scrolldir)
 #ifdef PROFILE
     rasterBorder(GREEN);
 #endif
+    /*
+     * Sanity check scroll flags
+     */
+    if (scrolldir & SCROLL_LEFT2 && scrolldir & SCROLL_RIGHT2)
+        scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
+    if (scrolldir & (SCROLL_UP2 | SCROLL_UP) && scrolldir & (SCROLL_DOWN2 | SCROLL_DOWN))
+        scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+    if (scrolldir & SCROLL_UP2 && scrolldir & SCROLL_UP)
+        scrolldir &= ~(SCROLL_UP2| SCROLL_UP);
+    if (scrolldir & SCROLL_DOWN2 && scrolldir & SCROLL_DOWN)
+        scrolldir &= ~(SCROLL_DOWN2| SCROLL_DOWN);
+    /*
+     * Calculate new scroll origin
+     */
     if (scrolldir & SCROLL_LEFT2)
     {
         if (orgS < maxOrgS - 1)
