@@ -28,7 +28,7 @@ unsigned char edgeH[2][80], edgeV[100];
 unsigned int orgS = 0;
 unsigned int orgT = 0;
 unsigned int maxOrgS, maxOrgT, extS, extT;
-unsigned int widthMapS, widthMapT, widthMap, spanMap, heightMap;
+unsigned int widthMapS, heightMapT, widthMap, spanMap, heightMap;
 unsigned char far * far *tileMap;
 unsigned long (*viewRefresh)(int scrolldir);
 /*
@@ -161,8 +161,8 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t)
     {
         if (s > (widthMapS - sprite->width))
             s = widthMapS - sprite->width;
-        if (t > (widthMapT - sprite->height))
-            t = widthMapT - sprite->height;
+        if (t > (heightMapT - sprite->height))
+            t = heightMapT - sprite->height;
         if (s != sprite->s || t != sprite->t || sprite->state == STATE_MOVING)
         {
             deltaS = s - sprite->s;
@@ -396,7 +396,7 @@ unsigned long viewScroll(int scrolldir)
 #endif
     if (scrolldir & SCROLL_LEFT2)
     {
-        if (orgS < maxOrgS)
+        if (orgS < maxOrgS - 1)
         {
             orgS   += 2;
             extS    = orgS + 160;
@@ -407,7 +407,7 @@ unsigned long viewScroll(int scrolldir)
     }
     else if (scrolldir & SCROLL_RIGHT2)
     {
-        if (orgS > 0)
+        if (orgS > 1)
         {
             orgS    = (orgS - 2) & 0x0FFFE;
             extS    = orgS + 160;
@@ -418,7 +418,7 @@ unsigned long viewScroll(int scrolldir)
     }
     if (scrolldir & SCROLL_UP2)
     {
-        if (orgT < maxOrgT)
+        if (orgT < maxOrgT - 1)
         {
             orgT    = (orgT + 2) & 0x0FFFE;
             extT    = orgT + 100;
@@ -429,7 +429,7 @@ unsigned long viewScroll(int scrolldir)
     }
     else if (scrolldir & SCROLL_DOWN2)
     {
-        if (orgT > 0)
+        if (orgT > 1)
         {
             orgT    = (orgT - 2) & 0x0FFFE;
             extT    = orgT + 100;
@@ -440,7 +440,7 @@ unsigned long viewScroll(int scrolldir)
     }
     else if (scrolldir & SCROLL_UP)
     {
-        if (orgT < maxOrgT + 1)
+        if (orgT < maxOrgT)
         {
             orgT++;
             extT    = orgT + 100;
@@ -641,7 +641,7 @@ unsigned long viewRedraw(int scrolldir)
 
     if (scrolldir & SCROLL_LEFT2)
     {
-        if (orgS < maxOrgS)
+        if (orgS < maxOrgS - 1)
         {
             orgS += 2;
             extS  = orgS + 160;
@@ -651,7 +651,7 @@ unsigned long viewRedraw(int scrolldir)
     }
     else if (scrolldir & SCROLL_RIGHT2)
     {
-        if (orgS > 0)
+        if (orgS > 1)
         {
             orgS = (orgS - 2) & 0x0FFFE;
             extS = orgS + 160;
@@ -661,7 +661,7 @@ unsigned long viewRedraw(int scrolldir)
     }
     if (scrolldir & SCROLL_UP2)
     {
-        if (orgT < maxOrgT)
+        if (orgT < maxOrgT - 1)
         {
             orgT = (orgT + 2) & 0x0FFFE;
             extT = orgT + 100;
@@ -671,7 +671,7 @@ unsigned long viewRedraw(int scrolldir)
     }
     else if (scrolldir & SCROLL_DOWN2)
     {
-        if (orgT > 0)
+        if (orgT > 1)
         {
             orgT = (orgT - 2) & 0x0FFFE;
             extT = orgT + 100;
@@ -681,7 +681,7 @@ unsigned long viewRedraw(int scrolldir)
     }
     else if (scrolldir & SCROLL_UP)
     {
-        if (orgT < maxOrgT + 1)
+        if (orgT < maxOrgT)
         {
             orgT++;
             extT = orgT + 100;
@@ -775,18 +775,18 @@ void viewInit(int adapter, unsigned int s, unsigned int t, unsigned int width, u
     /*
      * Init tile map
      */
-    tileMap   = map;
-    widthMap  = width;
-    spanMap   = widthMap << 2;
-    heightMap = height;
-    widthMapS = width  << 4;
-    widthMapT = height << 4;
-    maxOrgS   = widthMapS - 160;
-    maxOrgT   = widthMapT - 100;
-    orgS      = s & 0xFFFE; // S always even
-    orgT      = t;
-    extS      = orgS + 160;
-    extT      = orgT + 100;
+    tileMap    = map;
+    widthMap   = width;
+    spanMap    = widthMap << 2;
+    heightMap  = height;
+    widthMapS  = width  << 4;
+    heightMapT = height << 4;
+    maxOrgS    = widthMapS  - 160;
+    maxOrgT    = heightMapT - 100;
+    orgS       = s & 0xFFFE; // S always even
+    orgT       = t;
+    extS       = orgS + 160;
+    extT       = orgT + 100;
     enableRasterTimer((adapter & 0x7FFF) - 1);
     if (adapter & 0x8000)
     {   // EGA/VGA
