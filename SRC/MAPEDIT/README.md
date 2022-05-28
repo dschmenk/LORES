@@ -1,5 +1,5 @@
-# Tile Set/Map Editor and Sprite Editor
-The LORES library provides an API for programming the CGA to implement a virtual tiled map and sprites. Instead of creating assets with graph paper and transcribe them into hexadecimal arrays in source files, tile sets and tiled maps can be created and edited with the MAPEDIT.EXE program, sprites can be created and edited with the SPRITED.EXE program. WIth the sprite rotator, a sprite image can be rotated around the center and saved as a sprite page.
+# Tile Set/Map Editor, Sprite Editor and Image Slicer
+The LORES library provides an API for programming the CGA to implement a virtual tiled map and sprites. Instead of creating assets with graph paper and transcribe them into hexadecimal arrays in source files, tile sets and tiled maps can be created and edited with the MAPEDIT.EXE program, sprites can be created and edited with the SPRITED.EXE program. With the sprite rotator, a sprite image can be rotated around the center and saved as a sprite page. 'slicer.c' is another tool that runs on modern OSes that will take a Portable BitMap '.pnm' file and convert it into a format digestible by the LORES MAPIO API. It will reduce the 24 BPP RGB image into a 4BPP IRGB, 16x16 tiled map.
 
 ## MAPEDIT
 
@@ -81,6 +81,16 @@ A sprite image can be rotated around the center by an increment. The first image
 
     SPROTATE [FILENAME] [ROTATE INCREMENTS]
 
+## slicer.c
+
+The 'slicer' tool must be compiled on your modern OS to run. It is very generic C code so should have no problem running on anything remotely modern. It takes a Portable BitMap '.pnm' image file, easily exported by the GIMP (https://www.gimp.org) image processing program and creates the tile set and tile map assets importable using the LORES MAPIO API. It also reduces all duplicate tiles to save space in the tile set.
+
+    ./slicer -g [gamma value] [-n] <basename>
+
+The basename is the name of the '.pnm' file without the extension. The files '<basename>.set' and '<basename>.map' will be created for importing directly to the game or further editing with MAPEDIT.
+
 ## Executables
 
-Real-mode MS-DOS programs are located in the [BIN](https://github.com/dschmenk/LORES/tree/main/BIN) directory.
+Real-mode MS-DOS programs are located in the [BIN](https://github.com/dschmenk/LORES/tree/main/BIN) directory. 'slicer.c' can be compiled under just about any modern OS:
+
+    cc -o slicer slicer.c
