@@ -58,11 +58,9 @@ int main(int argc, char **argv)
     }
     mapWidth    = st;
     mapHeight   = st >> 16;
-    printf("Map = (%d x %d)\n", mapWidth, mapHeight);
-    getch();
     viewScreenX = 0;
     viewScreenY = 0;
-    quit      = 0;
+    quit        = 0;
     keyboardInstallDriver();
     viewInit(gr160(BLACK, BLACK), viewScreenY, viewScreenX, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
     while (!quit)
