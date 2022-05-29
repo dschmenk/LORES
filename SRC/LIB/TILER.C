@@ -272,17 +272,10 @@ void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
     for (sprite = &spriteTable[0]; sprite != spriteAbove; sprite++)
     {
         if ((sprite->state >= STATE_ACTIVE)
-#if 0
-         && (sprite->s < rightS)
-         && ((sprite->s + sprite->width) > leftS)
-         && (sprite->t < bottomT)
-         && ((sprite->t + sprite->height) > topT))
-#else
          && (sprite->bufS < rightS)
          && ((sprite->bufS + sprite->bufWidth) > leftS)
          && (sprite->bufT < bottomT)
          && ((sprite->bufT + sprite->bufHeight) > topT))
-#endif
         {
             if (spriteAbove->state == STATE_ACTIVE)
             {
