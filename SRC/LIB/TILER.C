@@ -397,14 +397,17 @@ unsigned long viewScroll(int scrolldir)
     /*
      * Sanity check scroll flags
      */
-    if (scrolldir & SCROLL_LEFT2 && scrolldir & SCROLL_RIGHT2)
-        scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
     if (scrolldir & (SCROLL_UP2 | SCROLL_UP) && scrolldir & (SCROLL_DOWN2 | SCROLL_DOWN))
         scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
-    if (scrolldir & SCROLL_UP2 && scrolldir & SCROLL_UP)
-        scrolldir &= ~(SCROLL_UP2| SCROLL_UP);
-    if (scrolldir & SCROLL_DOWN2 && scrolldir & SCROLL_DOWN)
-        scrolldir &= ~(SCROLL_DOWN2| SCROLL_DOWN);
+    else
+    {
+        if ((scrolldir & (SCROLL_UP2 | SCROLL_UP)) == (SCROLL_UP2 | SCROLL_UP))
+            scrolldir &= ~(SCROLL_UP2| SCROLL_UP);
+        if ((scrolldir & (SCROLL_DOWN2| SCROLL_DOWN)) == (SCROLL_DOWN2| SCROLL_DOWN))
+            scrolldir &= ~(SCROLL_DOWN2| SCROLL_DOWN);
+    }
+    if ((scrolldir & (SCROLL_LEFT2 | SCROLL_RIGHT2)) == (SCROLL_LEFT2 | SCROLL_RIGHT2))
+        scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
     /*
      * Calculate new scroll origin
      */
@@ -412,45 +415,45 @@ unsigned long viewScroll(int scrolldir)
     {
         if (orgS < maxOrgS - 1)
         {
-            orgS   += 2;
+            orgS    = (orgS + 2) & 0xFFFE;
             extS    = orgS + 160;
             orgAddr = (orgAddr + 2) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
+            scrolldir &= ~SCROLL_LEFT2;
     }
     else if (scrolldir & SCROLL_RIGHT2)
     {
         if (orgS > 1)
         {
-            orgS    = (orgS - 2) & 0x0FFFE;
+            orgS    = (orgS - 2) & 0xFFFE;
             extS    = orgS + 160;
             orgAddr = (orgAddr - 2) & 0x3FFF;
         }
         else
-        scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
+        scrolldir &= ~SCROLL_RIGHT2;
     }
     if (scrolldir & SCROLL_UP2)
     {
         if (orgT < maxOrgT - 1)
         {
-            orgT    = (orgT + 2) & 0x0FFFE;
+            orgT    = (orgT + 2) & 0xFFFE;
             extT    = orgT + 100;
             orgAddr = (orgAddr + 320) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~SCROLL_UP2;
     }
     else if (scrolldir & SCROLL_DOWN2)
     {
         if (orgT > 1)
         {
-            orgT    = (orgT - 2) & 0x0FFFE;
+            orgT    = (orgT - 2) & 0xFFFE;
             extT    = orgT + 100;
             orgAddr = (orgAddr - 320) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~SCROLL_DOWN2;
     }
     else if (scrolldir & SCROLL_UP)
     {
@@ -461,7 +464,7 @@ unsigned long viewScroll(int scrolldir)
             orgAddr = (orgAddr + 160) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~SCROLL_UP;
     }
     else if (scrolldir & SCROLL_DOWN)
     {
@@ -472,7 +475,7 @@ unsigned long viewScroll(int scrolldir)
             orgAddr = (orgAddr - 160) & 0x3FFF;
         }
         else
-            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~SCROLL_DOWN;
     }
     /*
      * Pre-render edges based on scroll direction
@@ -653,45 +656,62 @@ unsigned long viewRedraw(int scrolldir)
     unsigned char far *spriteImg;
     int spriteX, spriteY, spriteWidth, spriteHeight;
 
+    /*
+     * Sanity check scroll flags
+     */
+    if (scrolldir & (SCROLL_UP2 | SCROLL_UP) && scrolldir & (SCROLL_DOWN2 | SCROLL_DOWN))
+        scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+    else
+    {
+        if ((scrolldir & (SCROLL_UP2 | SCROLL_UP)) == (SCROLL_UP2 | SCROLL_UP))
+            scrolldir &= ~(SCROLL_UP2| SCROLL_UP);
+        if ((scrolldir & (SCROLL_DOWN2| SCROLL_DOWN)) == (SCROLL_DOWN2| SCROLL_DOWN))
+            scrolldir &= ~(SCROLL_DOWN2| SCROLL_DOWN);
+    }
+    if ((scrolldir & (SCROLL_LEFT2 | SCROLL_RIGHT2)) == (SCROLL_LEFT2 | SCROLL_RIGHT2))
+        scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
+    /*
+     * Calculate new scroll origin
+     */
     if (scrolldir & SCROLL_LEFT2)
     {
         if (orgS < maxOrgS - 1)
         {
-            orgS += 2;
+            orgS  = (orgS + 2) & 0xFFFE;
             extS  = orgS + 160;
         }
         else
-            scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
+            scrolldir &= ~SCROLL_LEFT2;
     }
     else if (scrolldir & SCROLL_RIGHT2)
     {
         if (orgS > 1)
         {
-            orgS = (orgS - 2) & 0x0FFFE;
-            extS = orgS + 160;
+            orgS  = (orgS - 2) & 0xFFFE;
+            extS  = orgS + 160;
         }
         else
-        scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
+        scrolldir &= ~SCROLL_RIGHT2;
     }
     if (scrolldir & SCROLL_UP2)
     {
         if (orgT < maxOrgT - 1)
         {
-            orgT = (orgT + 2) & 0x0FFFE;
-            extT = orgT + 100;
+            orgT  = (orgT + 2) & 0xFFFE;
+            extT  = orgT + 100;
         }
         else
-            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~SCROLL_UP2;
     }
     else if (scrolldir & SCROLL_DOWN2)
     {
         if (orgT > 1)
         {
-            orgT = (orgT - 2) & 0x0FFFE;
-            extT = orgT + 100;
+            orgT  = (orgT - 2) & 0xFFFE;
+            extT  = orgT + 100;
         }
         else
-            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~SCROLL_DOWN2;
     }
     else if (scrolldir & SCROLL_UP)
     {
@@ -701,7 +721,7 @@ unsigned long viewRedraw(int scrolldir)
             extT = orgT + 100;
         }
         else
-            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~SCROLL_UP;
     }
     else if (scrolldir & SCROLL_DOWN)
     {
@@ -711,7 +731,7 @@ unsigned long viewRedraw(int scrolldir)
             extT = orgT + 100;
         }
         else
-            scrolldir &= ~(SCROLL_UP2 | SCROLL_DOWN2 | SCROLL_UP | SCROLL_DOWN);
+            scrolldir &= ~SCROLL_DOWN;
     }
     /*
      * Point orgAddr to back buffer
