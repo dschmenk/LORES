@@ -12,7 +12,7 @@ The LORES library is based around square 16x16 pixel tiles. Isometric tiles (tec
 
 ## Creating an Isometric Grid and Map
 
-Watching some YouTube videos on how all the cool kids create their isometric tile maps for use in Steam, I found a very nifty program called Aseprite: https://www.aseprite.org. I went ahead and bought this tool, affordably priced at $20 for a LOT of functionality. I created my first test map using Aseprite, but realized that I could have done everything just as easily using GIMP: https://www.gimp.org. So I exported the map file over to GIMP and worked from there.
+Watching some YouTube videos on how all the cool kids create their isometric tile maps for use in Unity, I found a very nifty program called Aseprite: https://www.aseprite.org. I went ahead and bought this tool, affordably priced at $20 for a LOT of functionality. I created my first test map using Aseprite, but realized that I could have done everything just as easily using GIMP: https://www.gimp.org. So I exported the map file over to GIMP and worked from there.
 
 ### The Isometric Grid
 
