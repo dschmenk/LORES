@@ -2,6 +2,8 @@
 
 ![ISOTEST](isotest.png)
 
+https://youtu.be/ne-p3P5NYD4
+
 I've always been a fan of the isometric view for games. It is a visually interesting projection that combines the simplicity of a top down view with a pseudo-3D aesthetic that conveys a sophisticated image without the overhead of a real 3D implementation. I figured that the LORES library might be able to pull off a simplified isometric environment, but there are a few issues to work through in order to do so.
 
 One of the constraints of the LORES library scrolling actually works in our favor: scrolling horizontally by two pixels with the ability of scrolling vertically by one pixel matches well with the 2:1 aspect ration of an isometric tile. And that is about the only common ground between the LORES library and isometric tiles.

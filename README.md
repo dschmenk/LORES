@@ -258,4 +258,6 @@ Another playable game, [RepelZ](SRC/REPELZ/readme.md) Is a complete 2D scrolling
 
 The [Invaders from Outer Space](SRC/INVADERS/readme.md) playable demo focusses on sprites for game play rendering. Scrolling is only used for the opening and closing scenes.
 
+An [Isometric Test](SRC/ISOTEST/readme.md) goes through the process of mapping isometric tiles onto the LORES square tiles.
+
 To run on modern hardware, a DOS emulator such as DOSBox-X can be used. Note that DOSBox in it's current relase has CGA emulation bugs (DOSBox-X works fine), however, using the Tandy machine options does seem to work.
