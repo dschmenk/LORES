@@ -20,14 +20,15 @@ int writesprite(FILE *spritefile, unsigned char *pixptr, unsigned char *spritept
 int main(int argc, char **argv)
 {
 	FILE *spritefile;
-	int x, y, spritecount, spritewidth;
+	int x, y, spriterows, spritecols, spritecount, spritewidth, spriteheight;
     unsigned char dither, stats, spritenums[6], *sprite;
     float gammafunc;
     char *basename,  pnmname[80], spritename[80];
 
-    gammafunc   = 1.0;
-    dither      = 1;
-    spritecount = 1;
+    gammafunc  = 1.0;
+    dither     = 1;
+    spriterows = 1;
+    spritecols = 1;
     while (argc > 1 && argv[1][0] == '-')
     {
         if (argc > 2 && argv[1][1] == 'g')
@@ -38,7 +39,13 @@ int main(int argc, char **argv)
         }
         if (argc > 2 && argv[1][1] == 'c')
         {
-            spritecount = atoi(argv[2]);
+            spritecols = atoi(argv[2]);
+            argc--;
+            argv++;
+        }
+        if (argc > 2 && argv[1][1] == 'r')
+        {
+            spriterows = atoi(argv[2]);
             argc--;
             argv++;
         }
@@ -53,26 +60,36 @@ int main(int argc, char **argv)
 	{
         basename = argv[1];
         sprintf(pnmname, "%s.pnm", basename);
-		if (!readimage(pnmname, dither, gammafunc))
+		if (readimage(pnmname, dither, gammafunc) != 0)
+        {
+            fprintf(stderr, "Unable to read PNM image: %s\n", pnmname);
 			return -1;
+        }
 	}
 	else
 	{
         fprintf(stderr, "Missing basename\n");
         return -1;
     }
-    spritewidth = mapwidth / spritecount;
-    sprite = malloc((spritewidth + 1) / 2 * mapheight);
+    spritecount  = spriterows * spritecols;
+    spritewidth  = mapwidth / spritecols;
+    spriteheight = mapheight / spriterows;
+    sprite       = malloc((spritewidth + 1) / 2 * spriteheight);
     sprintf(spritename, "%s.spr", basename);
-    spritefile  = fopen(spritename, "wb");
-    spritenums[0] = (spritewidth / 16);
-    spritenums[1] = (spritewidth / 16) >> 8;
-    spritenums[2] = (mapheight   / 16);
-    spritenums[3] = (mapheight   / 16) >> 8;
-    spritenums[4] = (spritecount / 16);
-    spritenums[5] = (spritecount / 16) >> 8;
+    if ((spritefile = fopen(spritename, "wb")) == NULL)
+    {
+        fprintf(stderr, "Unable to write sprite file: %s\n", spritename);
+        return -1;
+    }
+    spritenums[0] = spritewidth;
+    spritenums[1] = spritewidth >> 8;
+    spritenums[2] = spriteheight;
+    spritenums[3] = spriteheight >> 8;
+    spritenums[4] = spritecount;
+    spritenums[5] = spritecount >> 8;
     fwrite(spritenums, 1, 6, spritefile);
-    for (x = 0; x < mapwidth; x += spritewidth)
-        writesprite(spritefile, pixmap + x / 2, sprite, spritewidth, mapwidth / 2, mapheight);
+    for (y = 0; y < mapheight; y += spriteheight)
+        for (x = 0; x < mapwidth; x += spritewidth)
+            writesprite(spritefile, pixmap + (y * mapwidth + x) / 2, sprite, spritewidth, mapwidth / 2, spriteheight);
     fclose(spritefile);
 }
