@@ -40,6 +40,8 @@
  */
 #define HERO_SPRITE             0
 #define HERO_IDLE               0
+#define HERO_JUMP_LEFT          2
+#define HERO_JUMP_RIGHT         3
 #define HERO_RUN_LEFT           4
 #define HERO_RUN_RIGHT          8
 #define HERO_CLIMB              12
@@ -67,8 +69,9 @@ int main(int argc, char **argv)
 {
     unsigned long st;
     signed   char quit;
-    unsigned char far *heroImage, *heroPrevImage;
-    int heroX, heroY, heroPrevX, heroPrevY;
+    unsigned char far *heroImage, far *heroPrevImage;
+    int heroS, heroT, heroPrevS, heroPrevT, heroMapX, heroMapY;
+    int heroVelS, heroVelT, heroOfstS, heroOfstT;
 
     if (!spriteLoad("hero.spr", &hero, &heroWidth, &heroHeight))
     {
@@ -76,11 +79,20 @@ int main(int argc, char **argv)
         exit(1);
     }
     sizeofHero = heroWidth * heroHeight / 2;
+    heroOfstS  = heroWidth/2;
+    heroOfstT  = heroHeight - 1;
     if ((tileCount = tilesetLoad("world.set", (unsigned char far * *)&tileset, sizeof(struct tile))) == 0)
     {
         fprintf(stderr, "Unable to load tile set\n");
         exit(1);
     }
+    /*
+     * Flag tiles
+     */
+    tileset[0].tileFlags = TILE_AIR;
+    tileset[1].tileFlags = TILE_GROUND;
+    tileset[2].tileFlags = TILE_GROUND|TILE_LADDER;
+    tileset[3].tileFlags = TILE_LADDER;
     st = tilemapLoad("world.map", (unsigned char far *)tileset, sizeof(struct tile), (unsigned char far * far * *)&tilemap);
     if (!st)
     {
@@ -90,53 +102,105 @@ int main(int argc, char **argv)
     mapWidth        = st;
     mapHeight       = st >> 16;
     quit            = 0;
-    heroX           = (160 - heroWidth)/2;
-    heroY           = 100/2 - heroHeight;
+    heroVelS        =
+    heroVelT        = 0;
+    heroS           = SCREEN_WIDTH/2;
+    heroT           = 75;
     heroImage       =
     heroPrevImage   = hero;
     keyboardInstallDriver();
     viewInit(gr160(BLUE, BLUE), 0, 0, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
-    spriteEnable(HERO_SPRITE, heroX, heroY, heroWidth, heroHeight, hero);
+    spriteEnable(HERO_SPRITE, heroS + heroWidth/2, heroT - heroHeight, heroWidth, heroHeight, hero);
     do
     {
 #ifdef PROFILE
         rasterBorder(WHITE);
 #endif
-        heroPrevX     = heroX;
-        heroPrevY     = heroY;
+        heroMapX      = heroS >> 4;
+        heroMapY      = heroT >> 4;
+        heroPrevS     = heroS;
+        heroPrevT     = heroT;
         heroPrevImage = heroImage;
         /*
          * Hero movement input
          */
-        if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_UP_ARROW)) // Climb up
+        if ((heroT & 0x000F) == 0x0F)
         {
-            heroY--;
-            heroImage = hero + (HERO_CLIMB + ((heroY >> 3) & 0x03)) * sizeofHero;
-        }
-        if (keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_DOWN_ARROW)) // Climb down
-        {
-            heroY++;
-            heroImage = hero + (HERO_CLIMB + ((heroY >> 3) & 0x03)) * sizeofHero;
-        }
-        if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Move left
-        {
-            heroX--;
-            heroImage = hero + (HERO_RUN_LEFT + ((heroX >> 3) & 0x03)) * sizeofHero;
-        }
-        if (keyboardGetKey(SCAN_KP_6) || keyboardGetKey(SCAN_RIGHT_ARROW)) // Move right
-        {
-            heroX++;
-            heroImage = hero + (HERO_RUN_RIGHT + ((heroX >> 3) & 0x03)) * sizeofHero;
-        }
-        if (heroX == heroPrevX && heroY == heroPrevY)
-        {
-            heroImage = hero + (HERO_IDLE + ((frameCount >> 6) & 0x01)) * sizeofHero;
+            if (tilemap[(heroMapY + 1) * mapWidth + heroMapX]->tileFlags == TILE_AIR) // Fall
+            {
+                heroS    += heroVelS;
+                heroT    += heroVelT >> 2;
+                heroImage = hero + (heroVelS == 1 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
+                heroVelT++;
+            }
+            else
+            {
+                heroVelS =
+                heroVelT = 0;
+                if ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_UP_ARROW)) && (tilemap[heroMapY * mapWidth + heroMapX]->tileFlags & TILE_LADDER)) // Climb up
+                {
+                    heroS = (heroS & 0xFFF0) | 0x8;
+                    heroT--;
+                    heroImage = hero + (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                }
+                if ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_DOWN_ARROW)) && (tilemap[(heroMapY + 1) * mapWidth + heroMapX]->tileFlags & TILE_LADDER)) // Climb down
+                {
+                    heroS = (heroS & 0xFFF0) | 0x8;
+                    heroT++;
+                    heroImage = hero + (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                }
+                if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Move left
+                {
+                    heroVelS = -1;
+                    heroS--;
+                    heroImage = hero + (HERO_RUN_LEFT + ((heroS >> 3) & 0x03)) * sizeofHero;
+                }
+                if (keyboardGetKey(SCAN_KP_6) || keyboardGetKey(SCAN_RIGHT_ARROW)) // Move right
+                {
+                    heroVelS = 1;
+                    heroS++;
+                    heroImage = hero + (HERO_RUN_RIGHT + ((heroS >> 3) & 0x03)) * sizeofHero;
+                }
+            }
         }
         else
         {
-            st = spritePosition(HERO_SPRITE, heroX, heroY);
-            heroX = st;
-            heroY = st >> 16;
+            if (tilemap[heroMapY * mapWidth + heroMapX]->tileFlags & TILE_LADDER)
+            {
+                if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_UP_ARROW)) // Climb up
+                {
+                    heroS = (heroS & 0xFFF0) | 0x8;
+                    heroT--;
+                    heroImage = hero + (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                }
+                if (keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_DOWN_ARROW)) // Climb down
+                {
+                    heroS = (heroS & 0xFFF0) | 0x8;
+                    heroT++;
+                    heroImage = hero + (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                }
+            }
+            else if (tilemap[heroMapY * mapWidth + heroMapX]->tileFlags & TILE_GROUND)
+            {
+                heroT     = (heroT & 0xFFF0) - 1;
+                heroImage = hero;
+                heroVelT  = 0;
+            }
+            else //if (tilemap[(heroMapY + 1) * mapWidth + heroMapX]->tileFlags & TILE_AIR) // Fall
+            {
+                heroS    += heroVelS;
+                heroT    += heroVelT >> 2;
+                heroImage = hero + (heroVelS == 1 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
+                heroVelT++;
+            }
+        }
+        if (heroS == heroPrevS && heroT == heroPrevT)
+            heroImage = hero + (HERO_IDLE + ((frameCount >> 6) & 0x01)) * sizeofHero;
+        else
+        {
+            st = spritePosition(HERO_SPRITE, heroS - heroOfstS, heroT - heroOfstT);
+            heroS = st + heroOfstS;
+            heroT = (st >> 16) + heroOfstT;
         }
         if (heroImage != heroPrevImage)
             spriteUpdate(HERO_SPRITE, heroImage);
