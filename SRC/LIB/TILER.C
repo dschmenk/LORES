@@ -89,13 +89,21 @@ void tileUpdate(unsigned i, unsigned j, unsigned char far *tileNew)
 /*
  * Sprite routines
  */
-int spriteEnable(int index, unsigned int s, unsigned int t, int width, int height, unsigned char far *spriteImg)
+int spriteEnable(int index, int s, int t, int width, int height, unsigned char far *spriteImg)
 {
     struct sprite_t *sprite;
 
     sprite = &spriteTable[index];
     if (sprite->state == STATE_INACTIVE)
     {
+        if (s < 0)
+            s = 0;
+        else if (s > (widthMapS - width))
+            s = widthMapS - width;
+        if (t < 0)
+            t = 0;
+        else if (t > (heightMapT - height))
+            t = heightMapT - height;
         sprite->spriteptr = spriteImg;
         sprite->spritebuf = (unsigned char *)malloc((width+ERASE_BORDER+2)/2*(height+ERASE_BORDER)); // Leave room for erase border
         sprite->erasebuf  = (unsigned char *)malloc((width+ERASE_BORDER+2)/2*(height+ERASE_BORDER));
@@ -151,7 +159,7 @@ void spriteUpdate(int index, unsigned char far *spriteImg)
         sprite->bufHeight = sprite->height;
     }
 }
-unsigned long spritePosition(int index, unsigned int s, unsigned int t)
+unsigned long spritePosition(int index, int s, int t)
 {
     int deltaS, deltaT;
     struct sprite_t *sprite;
@@ -159,9 +167,13 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t)
     sprite = &spriteTable[index];
     if (sprite->state >= STATE_ACTIVE)
     {
-        if (s > (widthMapS - sprite->width))
+        if (s < 0)
+            s = 0;
+        else if (s > (widthMapS - sprite->width))
             s = widthMapS - sprite->width;
-        if (t > (heightMapT - sprite->height))
+        if (t < 0)
+            t = 0;
+        else if (t > (heightMapT - sprite->height))
             t = heightMapT - sprite->height;
         if (s != sprite->s || t != sprite->t || sprite->state == STATE_MOVING)
         {
@@ -203,7 +215,7 @@ unsigned long spritePosition(int index, unsigned int s, unsigned int t)
                      * Create erase border to the top
                      */
                     sprite->bufT      = sprite->t;
-                    sprite->bufHeight = (t + sprite->width) - sprite->bufT;
+                    sprite->bufHeight = (t + sprite->height) - sprite->bufT;
                 }
                 sprite->s = s;
                 sprite->t = t;
