@@ -46,7 +46,7 @@ unsigned char far *tileUpdatePtr[16];
 #define STATE_ACTIVE        0x02
 #define STATE_MOVING        0x03
 #define STATE_POSITIONING   0x04
-#define ERASE_BORDER        4
+#define ERASE_BORDER        8
 /*
  * Sprite table
  */

@@ -63,16 +63,16 @@ int tileCount;
  * Sprites
  */
 unsigned char far *hero;
-unsigned int heroWidth, heroHeight, sizeofHero;
+int heroWidth, heroHeight, sizeofHero;
 
 int main(int argc, char **argv)
 {
     unsigned long st;
-    signed   char quit;
+    signed   char quit, tileAtFlags, tileOnFlags;
     unsigned char far *heroImage, far *heroPrevImage;
-    struct tile far *tileAt, far *tileOn;
     int heroS, heroT, heroPrevS, heroPrevT, heroMapX, heroMapY;
     int heroVelS, heroVelT, heroOfstS, heroOfstT;
+    unsigned int heroSprite;
 
     if (!spriteLoad("hero.spr", &hero, &heroWidth, &heroHeight))
     {
@@ -121,89 +121,100 @@ int main(int argc, char **argv)
         heroPrevT     = heroT;
         heroMapX      = heroS >> 4;
         heroMapY      = heroT >> 4;
-        tileAt        = tilemap[heroMapY * mapWidth + heroMapX];
-        tileOn        = tilemap[(heroMapY + 1) * mapWidth + heroMapX];
+        tileAtFlags   = tilemap[ heroMapY      * mapWidth + heroMapX]->tileFlags;
+        tileOnFlags   = tilemap[(heroMapY + 1) * mapWidth + heroMapX]->tileFlags;
         heroPrevImage = heroImage;
         /*
          * Hero movement input
          */
         if ((heroT & 0x000F) == 0x0F)
         {
-            if (tileOn->tileFlags == TILE_AIR) // Fall
+            if (tileOnFlags == TILE_AIR) // Fall
             {
                 heroS    += heroVelS;
                 heroT    += heroVelT >> 2;
-                heroImage = hero + (heroVelS == 1 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
+                heroSprite = (heroVelS == 1 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
+                heroImage  = hero + heroSprite;
                 heroVelT++;
             }
-            else
+            else // Standing on some kind of surface
             {
                 heroVelS =
                 heroVelT = 0;
-                if ((tileAt->tileFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_UP_ARROW)))) // Climb up
-                {
-                    heroS = (heroS & 0xFFF0) | 0x8;
-                    heroT--;
-                    heroImage = hero + (HERO_CLIMB + ((heroT >> 2) & 0x03)) * sizeofHero;
-                }
-                if ((tileOn->tileFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_DOWN_ARROW)))) // Climb down
-                {
-                    heroS = (heroS & 0xFFF0) | 0x8;
-                    heroT++;
-                    heroImage = hero + (HERO_CLIMB + ((heroT >> 2) & 0x03)) * sizeofHero;
-                }
-                if (tileOn->tileFlags & TILE_GROUND)
+                if (tileOnFlags & TILE_GROUND)
                 {
                     if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Move left
                     {
                         heroVelS = -1;
                         heroS--;
-                        heroImage = hero + (HERO_RUN_LEFT + ((heroS >> 3) & 0x03)) * sizeofHero;
+                        heroSprite = (HERO_RUN_LEFT + ((heroS >> 3) & 0x03)) * sizeofHero;
+                        heroImage  = hero + heroSprite;
                     }
                     if (keyboardGetKey(SCAN_KP_6) || keyboardGetKey(SCAN_RIGHT_ARROW)) // Move right
                     {
                         heroVelS = 1;
                         heroS++;
-                        heroImage = hero + (HERO_RUN_RIGHT + ((heroS >> 3) & 0x03)) * sizeofHero;
+                        heroSprite = (HERO_RUN_RIGHT + ((heroS >> 3) & 0x03)) * sizeofHero;
+                        heroImage  = hero + heroSprite;
                     }
+                }
+                if ((tileAtFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_UP_ARROW)))) // Climb up
+                {
+                    heroS = (heroS & 0xFFF0) | 0x8;
+                    heroT--;
+                    heroSprite = (HERO_CLIMB + ((heroT >> 2) & 0x03)) * sizeofHero;
+                    heroImage  = hero + heroSprite;
+                }
+                if ((tileOnFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_DOWN_ARROW)))) // Climb down
+                {
+                    heroS = (heroS & 0xFFF0) | 0x8;
+                    heroT++;
+                    heroSprite = (HERO_CLIMB + ((heroT >> 2) & 0x03)) * sizeofHero;
+                    heroImage  = hero + heroSprite;
                 }
             }
         }
-        else
+        else // Mid-tile
         {
-            if (tileAt->tileFlags & TILE_LADDER)
+            if (tileAtFlags & TILE_LADDER) // Climbing
             {
                 if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_UP_ARROW)) // Climb up
                 {
                     heroS = (heroS & 0xFFF0) | 0x8;
                     heroT--;
-                    heroImage = hero + (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                    heroSprite = (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                    heroImage  = hero + heroSprite;
                 }
                 if (keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_DOWN_ARROW)) // Climb down
                 {
                     heroS = (heroS & 0xFFF0) | 0x8;
                     heroT++;
-                    heroImage = hero + (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                    heroSprite = (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                    heroImage =  hero + heroSprite;
                 }
             }
-            else if (tileAt->tileFlags & TILE_GROUND)
+            else if (tileAtFlags & TILE_GROUND) // Fell into ground tile so force to surface
             {
                 heroT     = (heroT & 0xFFF0) - 1;
                 heroImage = hero;
                 heroVelT  = 0;
             }
-            else //if (tilemap[(heroMapY + 1) * mapWidth + heroMapX]->tileFlags & TILE_AIR) // Fall
+            else // Falling
             {
                 heroS    += heroVelS;
                 heroT    += heroVelT >> 2;
-                heroImage = hero + (heroVelS == 1 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
+                heroSprite = (heroVelS == 1 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
+                heroImage  = hero + heroSprite;
                 heroVelT++;
             }
         }
         if (heroS == heroPrevS && heroT == heroPrevT)
         {
             if ((heroT & 0x000F) == 0x0F)
-                heroImage = hero + (HERO_IDLE + ((frameCount >> 6) & 0x01)) * sizeofHero;
+            {
+                heroSprite = (HERO_IDLE + ((frameCount >> 6) & 0x01)) * sizeofHero;
+                heroImage  = hero + heroSprite;
+            }
         }
         else
         {
@@ -213,9 +224,9 @@ int main(int argc, char **argv)
         }
         if (heroImage != heroPrevImage)
             spriteUpdate(HERO_SPRITE, heroImage);
-        if (!quit && keyboardGetKey(SCAN_ESC)) // Quit
-            quit = 1;
         viewRefresh(0);
+        if (keyboardGetKey(SCAN_ESC)) // Quit
+            quit = 1;
     } while (!quit);
     /*
      * Clean up
