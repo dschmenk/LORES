@@ -158,14 +158,14 @@ int main(int argc, char **argv)
                         heroImage  = hero + heroSprite;
                     }
                 }
-                if ((tileAtFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_UP_ARROW)))) // Climb up
+                if ((tileAtFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)))) // Climb up
                 {
                     heroS = (heroS & 0xFFF0) | 0x8;
                     heroT--;
                     heroSprite = (HERO_CLIMB + ((heroT >> 2) & 0x03)) * sizeofHero;
                     heroImage  = hero + heroSprite;
                 }
-                if ((tileOnFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_DOWN_ARROW)))) // Climb down
+                if ((tileOnFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)))) // Climb down
                 {
                     heroS = (heroS & 0xFFF0) | 0x8;
                     heroT++;
@@ -178,14 +178,14 @@ int main(int argc, char **argv)
         {
             if (tileAtFlags & TILE_LADDER) // Climbing
             {
-                if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_UP_ARROW)) // Climb up
+                if (keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)) // Climb up
                 {
                     heroS = (heroS & 0xFFF0) | 0x8;
                     heroT--;
                     heroSprite = (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
                     heroImage  = hero + heroSprite;
                 }
-                if (keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_DOWN_ARROW)) // Climb down
+                if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)) // Climb down
                 {
                     heroS = (heroS & 0xFFF0) | 0x8;
                     heroT++;
