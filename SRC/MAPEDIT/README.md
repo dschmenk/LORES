@@ -1,4 +1,4 @@
-# Tile Set/Map Editor, Sprite Editor and Image Slicer
+# Tile Set/Map Editor, Sprite Editor and Image/Sprite Slicer
 The LORES library provides an API for programming the CGA to implement a virtual tiled map and sprites. Instead of creating assets with graph paper and transcribe them into hexadecimal arrays in source files, tile sets and tiled maps can be created and edited with the MAPEDIT.EXE program, sprites can be created and edited with the SPRITED.EXE program. With the sprite rotator, a sprite image can be rotated around the center and saved as a sprite page. 'slicer.c' is another tool that runs on modern OSes that will take a Portable BitMap '.pnm' file and convert it into a format digestible by the LORES MAPIO API. It will reduce the 24 BPP RGB image into a 4BPP IRGB, 16x16 tiled map.
 
 ## MAPEDIT
@@ -87,7 +87,15 @@ The 'slicer' tool must be compiled on your modern OS to run. It is very generic 
 
     ./slicer -g [gamma value] [-n] <basename>
 
-The basename is the name of the '.pnm' file without the extension. The files '\<basename\>.set' and '\<basename\>.map' will be created for importing directly to the game or further editing with MAPEDIT.
+The basename is the name of the '.pnm' file without the extension. The files '\<basename\>.set' and '\<basename\>.map' will be created for importing directly into the game or further editing with MAPEDIT.
+
+## spriter.c
+
+The 'spriter' tool is very similar to the above slicer tool in that it takes a sprite page and slices it up into individual images and creates a LORES MAPIO compatible sprite file. Again, it also takes in a Portable BitMap '.pnm' image easily exported from the GIMP. Programs like ![aseprite](https://www.aseprite.org) can export its sprite sheet to a '.png' file which can be imported into the GIMP and further exported to '.pnm'. Whew, that *is* a lot of file format exporting, but probably easier than creating them by hand with SPRITED.
+
+    ./spriter -g [gamma value] [-n] [-r rows] [-c columns] <basename>
+
+Rows and Columns default to 1 if not specified. Basename is the name of the '.pnm' file without the extension. The file '\<basename\>.spr' will be created for importing directly into the game or further editing with SPRITED.
 
 ## Executables
 
