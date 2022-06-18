@@ -260,4 +260,6 @@ The [Invaders from Outer Space](SRC/INVADERS/readme.md) playable demo focusses o
 
 An [Isometric Test](SRC/ISOTEST/readme.md) goes through the process of mapping isometric tiles onto the LORES square tiles.
 
+The start of a typical 2D side view platform game, [PLATFORM](SRC/PLATFORM/readme.md) uses the sprite slicer tool to import assets available from other platforms to incorporate in your own projects.
+
 To run on modern hardware, a DOS emulator such as DOSBox-X can be used. Note that DOSBox in it's current relase has CGA emulation bugs (DOSBox-X works fine), however, using the Tandy machine options does seem to work.
