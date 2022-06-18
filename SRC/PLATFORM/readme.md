@@ -20,14 +20,14 @@ I discovered that there is a vibrant community building Game Boy games. The
 Game Boy has a graphics resolution of 160x144 which maps pretty well to the
 160x100 CGA LORES resolution, at least as far as assets go. Even the tile size
 of 16x16 matches the LORES tile size. So there are potentially lots of
-available assets from the Game Boy development community. Look at ![Game Boy
+available assets from the Game Boy development community. Look at [Game Boy
 Studio](https://www.gbstudio.dev) for many ideas and great pixel artwork.
 
 The running/climbing/falling man sprite is based of the Game Boy Kung Fu Man
 available here:
 https://chasersgaming.itch.io/rpg-asset-character-kung-fu-man-gameboy. This is
 also a great site for assets. The
-![PICO-8](https://www.lexaloffle.com/pico-8.php) is a fantasy console that has
+[PICO-8](https://www.lexaloffle.com/pico-8.php) is a fantasy console that has
 a community of asset creators that also matches well to the LORES library.
 
 Once again, the limitations of a 4.77 MHz CPU raises its ugly head. Even though

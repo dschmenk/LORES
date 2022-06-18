@@ -91,7 +91,7 @@ The basename is the name of the '.pnm' file without the extension. The files '\<
 
 ## spriter.c
 
-The 'spriter' tool is very similar to the above slicer tool in that it takes a sprite page and slices it up into individual images and creates a LORES MAPIO compatible sprite file. Again, it also takes in a Portable BitMap '.pnm' image easily exported from the GIMP. Programs like ![aseprite](https://www.aseprite.org) can export its sprite sheet to a '.png' file which can be imported into the GIMP and further exported to '.pnm'. Whew, that *is* a lot of file format exporting, but probably easier than creating them by hand with SPRITED.
+The 'spriter' tool is very similar to the above slicer tool in that it takes a sprite page and slices it up into individual images and creates a LORES MAPIO compatible sprite file. Again, it also takes in a Portable BitMap '.pnm' image easily exported from the GIMP. Programs like [Aseprite](https://www.aseprite.org) can export its sprite sheet to a '.png' file which can be imported into the GIMP and further exported to '.pnm'. Whew, that *is* a lot of file format exporting, but probably easier than creating them by hand with SPRITED.
 
     ./spriter -g [gamma value] [-n] [-r rows] [-c columns] <basename>
 
