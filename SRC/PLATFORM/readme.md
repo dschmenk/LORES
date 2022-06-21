@@ -27,8 +27,9 @@ The running/climbing/falling man sprite is derived from the Game Boy Kung Fu
 Man available here:
 https://chasersgaming.itch.io/rpg-asset-character-kung-fu-man-gameboy. This is
 also a great site for assets. The
-[PICO-8](https://www.lexaloffle.com/pico-8.php) is a fantasy console that has a
-community of asset creators that also matches well to the LORES library.
+[PICO-8](https://www.lexaloffle.com/pico-8.php) and [TIC-80](https://tic80.com)
+are fantasy consoles that have communities of asset creators that match well to 
+the LORES library.
 
 Once again, the limitations of a 4.77 MHz CPU raises its ugly head. Even though
 this sprite doesn't look very big, it really pushes the limits of the number of
