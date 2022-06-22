@@ -141,7 +141,21 @@ int main(int argc, char **argv)
             {
                 heroVelS =
                 heroVelT = 0;
-                if (tileOnFlags & TILE_GROUND)
+                if ((tileAtFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)))) // Climb up
+                {
+                    heroS = (heroS & 0xFFF0) | 0x8;
+                    heroT--;
+                    heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
+                    heroImage  = hero + heroSprite;
+                }
+                else if ((tileOnFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)))) // Climb down
+                {
+                    heroS = (heroS & 0xFFF0) | 0x8;
+                    heroT++;
+                    heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
+                    heroImage  = hero + heroSprite;
+                }
+                else if (tileOnFlags & TILE_GROUND)
                 {
                     if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Move left
                     {
@@ -157,20 +171,11 @@ int main(int argc, char **argv)
                         heroSprite = (HERO_RUN_RIGHT + ((heroS >> 3) & 0x03)) * sizeofHero;
                         heroImage  = hero + heroSprite;
                     }
-                }
-                if ((tileAtFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)))) // Climb up
-                {
-                    heroS = (heroS & 0xFFF0) | 0x8;
-                    heroT--;
-                    heroSprite = (HERO_CLIMB + ((heroT >> 2) & 0x03)) * sizeofHero;
-                    heroImage  = hero + heroSprite;
-                }
-                if ((tileOnFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)))) // Climb down
-                {
-                    heroS = (heroS & 0xFFF0) | 0x8;
-                    heroT++;
-                    heroSprite = (HERO_CLIMB + ((heroT >> 2) & 0x03)) * sizeofHero;
-                    heroImage  = hero + heroSprite;
+                    if (heroS == heroPrevS && heroT == heroPrevT)
+                    {
+                        heroSprite = (HERO_IDLE + ((frameCount >> 6) & 0x01)) * sizeofHero;
+                        heroImage  = hero + heroSprite;
+                    }
                 }
             }
         }
@@ -182,14 +187,14 @@ int main(int argc, char **argv)
                 {
                     heroS = (heroS & 0xFFF0) | 0x8;
                     heroT--;
-                    heroSprite = (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                    heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
                     heroImage  = hero + heroSprite;
                 }
                 if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)) // Climb down
                 {
                     heroS = (heroS & 0xFFF0) | 0x8;
                     heroT++;
-                    heroSprite = (HERO_CLIMB + ((heroT >> 3) & 0x03)) * sizeofHero;
+                    heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
                     heroImage =  hero + heroSprite;
                 }
             }
@@ -208,15 +213,7 @@ int main(int argc, char **argv)
                 heroVelT++;
             }
         }
-        if (heroS == heroPrevS && heroT == heroPrevT)
-        {
-            if ((heroT & 0x000F) == 0x0F)
-            {
-                heroSprite = (HERO_IDLE + ((frameCount >> 6) & 0x01)) * sizeofHero;
-                heroImage  = hero + heroSprite;
-            }
-        }
-        else
+        if (heroS != heroPrevS || heroT != heroPrevT)
         {
             st = spritePosition(HERO_SPRITE, heroS - heroOfstS, heroT - heroOfstT);
             heroS = st + heroOfstS;
