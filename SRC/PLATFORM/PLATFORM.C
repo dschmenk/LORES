@@ -68,11 +68,11 @@ int heroWidth, heroHeight, sizeofHero;
 int main(int argc, char **argv)
 {
     unsigned long st;
-    signed   char quit, tileAtFlags, tileOnFlags;
-    unsigned char far *heroImage, far *heroPrevImage;
+    signed   char quit, tileAtFlags, tileOnFlags, scrolldir;
     int heroS, heroT, heroPrevS, heroPrevT, heroMapX, heroMapY;
     int heroVelS, heroVelT, heroOfstS, heroOfstT;
-    unsigned int heroSprite;
+    unsigned int heroSprite, heroPrevSprite;
+    int mapOrgS, mapOrgT;
 
     if (!spriteLoad("hero.spr", &hero, &heroWidth, &heroHeight))
     {
@@ -94,6 +94,9 @@ int main(int argc, char **argv)
     tileset[1].tileFlags = TILE_GROUND;
     tileset[2].tileFlags = TILE_GROUND|TILE_LADDER;
     tileset[3].tileFlags = TILE_LADDER;
+    tileset[4].tileFlags = TILE_SOLID;
+    tileset[5].tileFlags = TILE_SOLID|TILE_LADDER;
+    tileset[6].tileFlags = TILE_GROUND;
     st = tilemapLoad("world.map", (unsigned char far *)tileset, sizeof(struct tile), (unsigned char far * far * *)&tilemap);
     if (!st)
     {
@@ -102,126 +105,141 @@ int main(int argc, char **argv)
     }
     mapWidth        = st;
     mapHeight       = st >> 16;
+    mapOrgS         =
+    mapOrgT         = 0;
     quit            = 0;
     heroVelS        =
     heroVelT        = 0;
     heroS           = SCREEN_WIDTH/2;
-    heroT           = 75;
-    heroImage       =
-    heroPrevImage   = hero;
+    heroT           = heroHeight - 1;
+    heroSprite      = HERO_IDLE;
     keyboardInstallDriver();
     viewInit(gr160(BLUE, BLUE), 0, 0, mapWidth, mapHeight, (unsigned char far * far *)tilemap);
-    spriteEnable(HERO_SPRITE, heroS + heroWidth/2, heroT - heroHeight, heroWidth, heroHeight, hero);
+    spriteEnable(HERO_SPRITE, heroS + heroWidth/2, heroT - heroHeight, heroWidth, heroHeight, hero + heroSprite);
     do
     {
 #ifdef PROFILE
         rasterBorder(WHITE);
 #endif
-        heroPrevS     = heroS;
-        heroPrevT     = heroT;
-        heroMapX      = heroS >> 4;
-        heroMapY      = heroT >> 4;
-        tileAtFlags   = tilemap[ heroMapY      * mapWidth + heroMapX]->tileFlags;
-        tileOnFlags   = tilemap[(heroMapY + 1) * mapWidth + heroMapX]->tileFlags;
-        heroPrevImage = heroImage;
+        if (frameCount & 1)
+        {
+            heroPrevS      = heroS;
+            heroPrevT      = heroT;
+            heroMapX       = heroS >> 4;
+            heroMapY       = heroT >> 4;
+            tileAtFlags    = tilemap[ heroMapY      * mapWidth + heroMapX]->tileFlags;
+            tileOnFlags    = tilemap[(heroMapY + 1) * mapWidth + heroMapX]->tileFlags;
+            heroPrevSprite = heroSprite;
+            /*
+             * Hero movement input
+             */
+            if ((heroT & 0x000F) == 0x0F)
+            {
+                if (tileOnFlags == TILE_AIR) // Fall
+                {
+                    heroS     += heroVelS;
+                    heroT     += heroVelT >> 1;
+                    heroSprite = (heroVelS > 0 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
+                    if (++heroVelT > 15) heroVelT = 15; // Terminal velocity
+                }
+                else // Standing on some kind of surface
+                {
+                    heroVelS =
+                    heroVelT = 0;
+                    if ((tileAtFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)))) // Climb up
+                    {
+                        heroS = (heroS & 0xFFF0) | 0x8;
+                        heroT--;
+                        heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
+                    }
+                    else if ((tileOnFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)))) // Climb down
+                    {
+                        heroS = (heroS & 0xFFF0) | 0x8;
+                        heroT++;
+                        heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
+                    }
+                    else if (tileOnFlags & TILE_GROUND)
+                    {
+                        if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Move left
+                        {
+                            if ((heroS & 0x0F) > 2 || tilemap[(heroMapY + 1) * mapWidth + heroMapX - 1]->tileFlags != TILE_SOLID)
+                            {
+                                heroVelS = -2;
+                                heroS   -= 2;
+                                heroSprite = (HERO_RUN_LEFT + ((heroS >> 3) & 0x03)) * sizeofHero;
+                            }
+                        }
+                        if (keyboardGetKey(SCAN_KP_6) || keyboardGetKey(SCAN_RIGHT_ARROW)) // Move right
+                        {
+                            if ((heroS & 0x0F) < 14 || tilemap[(heroMapY + 1) * mapWidth + heroMapX + 1]->tileFlags != TILE_SOLID)
+                            {
+                                heroVelS = 2;
+                                heroS   += 2;
+                                heroSprite = (HERO_RUN_RIGHT + ((heroS >> 3) & 0x03)) * sizeofHero;
+                            }
+                        }
+                        if (heroS == heroPrevS && heroT == heroPrevT) //Idle breathing
+                        {
+                            heroSprite = (HERO_IDLE + ((frameCount >> 6) & 0x01)) * sizeofHero;
+                        }
+                    }
+                }
+            }
+            else // Mid-tile
+            {
+                if (tileAtFlags & TILE_LADDER) // Climbing
+                {
+                    if (keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)) // Climb up
+                    {
+                        heroS = (heroS & 0xFFF0) | 0x8;
+                        heroT--;
+                        heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
+                    }
+                    if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)) // Climb down
+                    {
+                        heroS = (heroS & 0xFFF0) | 0x8;
+                        heroT++;
+                        heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
+                    }
+                }
+                else if (tileAtFlags & TILE_GROUND) // Fell into ground tile so force to surface
+                {
+                    heroT      = (heroT & 0xFFF0) - 1;
+                    heroSprite = HERO_IDLE;
+                    heroVelT   = 0;
+                }
+                else // Falling
+                {
+                    heroS     += heroVelS;
+                    heroT     += heroVelT >> 1;
+                    heroSprite = (heroVelS > 0 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
+                    if (++heroVelT > 15) heroVelT = 15; // Terminal velocity
+                }
+            }
+            if (heroS != heroPrevS || heroT != heroPrevT)
+            {
+                st    = spritePosition(HERO_SPRITE, heroS - heroOfstS, heroT - heroOfstT);
+                heroS =  st        + heroOfstS;
+                heroT = (st >> 16) + heroOfstT;
+            }
+            if (heroSprite != heroPrevSprite)
+                spriteUpdate(HERO_SPRITE, hero + heroSprite);
+        }
         /*
-         * Hero movement input
+         * Attempt to keep hero centered by scrolling map
          */
-        if ((heroT & 0x000F) == 0x0F)
-        {
-            if (tileOnFlags == TILE_AIR) // Fall
-            {
-                heroS    += heroVelS;
-                heroT    += heroVelT >> 2;
-                heroSprite = (heroVelS == 1 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
-                heroImage  = hero + heroSprite;
-                heroVelT++;
-            }
-            else // Standing on some kind of surface
-            {
-                heroVelS =
-                heroVelT = 0;
-                if ((tileAtFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)))) // Climb up
-                {
-                    heroS = (heroS & 0xFFF0) | 0x8;
-                    heroT--;
-                    heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
-                    heroImage  = hero + heroSprite;
-                }
-                else if ((tileOnFlags & TILE_LADDER) && ((keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)))) // Climb down
-                {
-                    heroS = (heroS & 0xFFF0) | 0x8;
-                    heroT++;
-                    heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
-                    heroImage  = hero + heroSprite;
-                }
-                else if (tileOnFlags & TILE_GROUND)
-                {
-                    if (keyboardGetKey(SCAN_KP_4) || keyboardGetKey(SCAN_LEFT_ARROW)) // Move left
-                    {
-                        heroVelS = -1;
-                        heroS--;
-                        heroSprite = (HERO_RUN_LEFT + ((heroS >> 3) & 0x03)) * sizeofHero;
-                        heroImage  = hero + heroSprite;
-                    }
-                    if (keyboardGetKey(SCAN_KP_6) || keyboardGetKey(SCAN_RIGHT_ARROW)) // Move right
-                    {
-                        heroVelS = 1;
-                        heroS++;
-                        heroSprite = (HERO_RUN_RIGHT + ((heroS >> 3) & 0x03)) * sizeofHero;
-                        heroImage  = hero + heroSprite;
-                    }
-                    if (heroS == heroPrevS && heroT == heroPrevT)
-                    {
-                        heroSprite = (HERO_IDLE + ((frameCount >> 6) & 0x01)) * sizeofHero;
-                        heroImage  = hero + heroSprite;
-                    }
-                }
-            }
-        }
-        else // Mid-tile
-        {
-            if (tileAtFlags & TILE_LADDER) // Climbing
-            {
-                if (keyboardGetKey(SCAN_KP_8) || keyboardGetKey(SCAN_UP_ARROW)) // Climb up
-                {
-                    heroS = (heroS & 0xFFF0) | 0x8;
-                    heroT--;
-                    heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
-                    heroImage  = hero + heroSprite;
-                }
-                if (keyboardGetKey(SCAN_KP_2) || keyboardGetKey(SCAN_DOWN_ARROW)) // Climb down
-                {
-                    heroS = (heroS & 0xFFF0) | 0x8;
-                    heroT++;
-                    heroSprite = (HERO_CLIMB + ((heroT >> 1) & 0x03)) * sizeofHero;
-                    heroImage =  hero + heroSprite;
-                }
-            }
-            else if (tileAtFlags & TILE_GROUND) // Fell into ground tile so force to surface
-            {
-                heroT     = (heroT & 0xFFF0) - 1;
-                heroImage = hero;
-                heroVelT  = 0;
-            }
-            else // Falling
-            {
-                heroS    += heroVelS;
-                heroT    += heroVelT >> 2;
-                heroSprite = (heroVelS == 1 ? HERO_JUMP_RIGHT : HERO_JUMP_LEFT) * sizeofHero;
-                heroImage  = hero + heroSprite;
-                heroVelT++;
-            }
-        }
-        if (heroS != heroPrevS || heroT != heroPrevT)
-        {
-            st = spritePosition(HERO_SPRITE, heroS - heroOfstS, heroT - heroOfstT);
-            heroS = st + heroOfstS;
-            heroT = (st >> 16) + heroOfstT;
-        }
-        if (heroImage != heroPrevImage)
-            spriteUpdate(HERO_SPRITE, heroImage);
-        viewRefresh(0);
+        scrolldir = 0;
+        if (heroS - heroOfstS - SCREEN_WIDTH/2 + 2 < mapOrgS)
+            scrolldir = SCROLL_RIGHT2;
+        else if (heroS - heroOfstS - SCREEN_WIDTH/2 - 2> mapOrgS)
+            scrolldir = SCROLL_LEFT2;
+        if (heroT - heroOfstT - SCREEN_HEIGHT/2 < mapOrgT)
+            scrolldir |= SCROLL_DOWN;
+        else if (heroT - heroOfstT - SCREEN_HEIGHT/2 > mapOrgT)
+            scrolldir |= SCROLL_UP;
+        st      = viewRefresh(scrolldir);
+        mapOrgS = st;
+        mapOrgT = st >> 16;
         if (keyboardGetKey(SCAN_ESC)) // Quit
             quit = 1;
     } while (!quit);
