@@ -2,7 +2,7 @@
 
 ![PLATFORM](platform.png)
 
-https://youtu.be/fnouk6HWc_A
+https://youtu.be/YjKsGetjuhc
 
 The most obvious use of the CGA LORES library is to create a 2D side view
 platformer style game. This is a simple Lode Runner looking test to try out the
