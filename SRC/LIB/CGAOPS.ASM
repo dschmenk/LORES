@@ -75,17 +75,19 @@ _cpyEdgeH       PROC NEAR
         mov     si, OFFSET DGROUP:_edgeH
         mov     cx, WORD PTR [bp+6]     ; hcount
 cpyedgeh:
-        REPT    80
+        REPT    79
         movsb
         inc     di
         ENDM
+        movsb
         loop    @F
         pop     si
         pop     di
         mov     sp, bp
         pop     bp
         ret
-@@:     jmp     cpyedgeh
+@@:     inc     di
+        jmp     cpyedgeh
 _cpyEdgeH       ENDP
 
         PUBLIC  _cpyEdgeV
@@ -98,7 +100,6 @@ _cpyEdgeV       PROC NEAR
         mov     es, ax
         mov     di, WORD PTR [bp+4]     ; pixaddr
         mov     si, OFFSET DGROUP:_edgeV
-cpyedgev:
         mov     ax, 159
         REPT    99
         movsb
@@ -210,25 +211,29 @@ cpybuf:
         sub     di, DGROUP:_orgS
         add     di, DGROUP:_orgAddr     ; pixaddr = (scanline[t - orgT] + (s - orgS) + orgAddr) & 0x3FFF
         and     di, DGROUP:_scrnMask
-        mov     cx, WORD PTR [bp+8]     ; width
-        mov     bx, cx
-        shr     cx, 1                   ; width/2
-        mov     dl, cl                  ; width/2 must be less than 80
-        mov     dh, BYTE PTR [bp+10]    ; height must be 100 or less
+        mov     ax, WORD PTR [bp+8]     ; width
+        mov     bx, ax
+        mov     dx, ax
+        sub     ax, 161
+        shr     dx, 1                   ; width/2
+        mov     cx, dx
         and     bx, 001Eh
         mov     bx, cpybufsel[bx]
+        add     dx, 15                  ; Round up iteration count
+        shr     dx, 1
+        shr     dx, 1
+        shr     dx, 1
+        shr     dx, 1
+        mov     dh, BYTE PTR [bp+10]    ; height must be 100 or less
         lds     si, DWORD PTR [bp+12]   ; buf
         ASSUME  DS: NOTHING
         push    bp                      ; This is bad. Very bad
         mov     bp, WORD PTR [bp-2]     ; span
         sub     bp, cx                  ; span -= width/2
 cpybufv:
-        add     cx, 15                  ; Round up iteration count
-        shr     cx, 1
-        shr     cx, 1
-        shr     cx, 1
-        shr     cx, 1
+        mov     cl, dl                  ; width/32
         jmp     bx
+@@:     inc     di
 cpybufh16:
         movsb
         inc     di
@@ -276,12 +281,9 @@ cpybufh2:
         inc     di
 cpybufh1:
         movsb
-        inc     di
-        loop    cpybufh16
-        add     di, 160
-        mov     cl, dl                  ; width/2
-        sub     di, cx
-        sub     di, cx
+        loop    @B
+;        add     di, 161
+        sub     di, ax
         add     si, bp                  ; span
         dec     dh                      ; height
         jnz     cpybufv
@@ -475,11 +477,12 @@ tilemidrow:
         add     si, WORD PTR [bp+6]     ; t * 8
         mov     dx, WORD PTR [bp-20]    ; height
 tilemidtile:
-        REPT    8
+        REPT    7
         movsb
         inc     di
         ENDM
-        add     di, 160-16
+        movsb
+        add     di, 160-16+1
         dec     dx                      ; height
         jnz     tilemidtile
 ; tilerow++;
@@ -528,20 +531,19 @@ tile            PROC NEAR
 tilev:
         mov     cx, bx
         shr     cx, 1
-        jnc     tileh
+        jnc     @F
         movsb
-        inc     di
         jcxz    tilenxt
 tileh:
-        movsb
+        inc     di
+@@:     movsb
         inc     di
         movsb
-        inc     di
         loop    tileh
 tilenxt:
         add     si, 8                   ; span
         sub     si, bx
-        add     di, 160
+        add     di, 160+1
         sub     di, bx
         sub     di, bx
         dec     dx                      ; height
