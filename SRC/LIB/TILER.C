@@ -52,14 +52,14 @@ unsigned char far *tileUpdatePtr[16];
  */
 struct sprite_t
 {
+    unsigned char      state;
+    int                width,  bufWidth,  eraWidth;
+    int                height, bufHeight, eraHeight;
     unsigned char far *spriteptr;   // Sprite image
     unsigned char     *spritebuf;   // Surrounding background+sprite
     unsigned char     *erasebuf;    // Erase previous sprite position
     unsigned int       s, bufS, eraS;
     unsigned int       t, bufT, eraT;
-    int                width,  bufWidth,  eraWidth;
-    int                height, bufHeight, eraHeight;
-    unsigned char      state;
 } spriteTable[NUM_SPRITES];
 /*
  * Update tile in map
@@ -281,7 +281,7 @@ void spriteIntersectSpriteBuf(struct sprite_t *spriteAbove)
     rightS  = leftS + spriteAbove->bufWidth;
     topT    = spriteAbove->bufT;
     bottomT = topT  + spriteAbove->bufHeight;
-    for (sprite = &spriteTable[0]; sprite != spriteAbove; sprite++)
+    for (sprite = &spriteTable[0]; sprite < spriteAbove; sprite++)
     {
         if ((sprite->state >= STATE_ACTIVE)
          && (sprite->bufS < rightS)
@@ -345,7 +345,7 @@ void spriteIntersectEraseBuf(struct sprite_t *spriteAbove)
     rightS  = leftS + spriteAbove->eraWidth;
     topT    = spriteAbove->eraT;
     bottomT = topT  + spriteAbove->eraHeight;
-    for (sprite = &spriteTable[0]; sprite != spriteAbove; sprite++)
+    for (sprite = &spriteTable[0]; sprite < spriteAbove; sprite++)
     {
         if ((sprite->state >= STATE_ACTIVE)
          && (sprite->s < rightS)
@@ -414,7 +414,7 @@ unsigned long viewScroll(int scrolldir)
     if ((scrolldir & (SCROLL_LEFT2 | SCROLL_RIGHT2)) == (SCROLL_LEFT2 | SCROLL_RIGHT2))
         scrolldir &= ~(SCROLL_LEFT2 | SCROLL_RIGHT2);
     /*
-     * Calculate new scroll origin
+     * Calculate new scroll origin and pre-render edges
      */
     if (scrolldir & SCROLL_LEFT2)
     {
@@ -423,6 +423,12 @@ unsigned long viewScroll(int scrolldir)
             orgS    = (orgS + 2) & 0xFFFE;
             extS    = orgS + 160;
             orgAddr = (orgAddr + 2) & 0x3FFF;
+            /*
+             * Fill right edge
+             */
+            vaddr = (orgAddr + 158) & 0x3FFF;
+            tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + ((orgS + 158) >> 4));
+            spriteIntersectRect(orgS + 158, orgT, 2, 100);
         }
         else
             scrolldir &= ~SCROLL_LEFT2;
@@ -434,6 +440,12 @@ unsigned long viewScroll(int scrolldir)
             orgS    = (orgS - 2) & 0xFFFE;
             extS    = orgS + 160;
             orgAddr = (orgAddr - 2) & 0x3FFF;
+            /*
+             * Fill in left edge
+             */
+            vaddr = orgAddr;
+            tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
+            spriteIntersectRect(orgS, orgT, 2, 100);
         }
         else
             scrolldir &= ~SCROLL_RIGHT2;
@@ -445,6 +457,13 @@ unsigned long viewScroll(int scrolldir)
             orgT    = (orgT + 2) & 0xFFFE;
             extT    = orgT + 100;
             orgAddr = (orgAddr + 320) & 0x3FFF;
+            /*
+             * Fill in botom edge
+             */
+            hcount = 2;
+            haddr  = (orgAddr + 98 * 160) & 0x3FFF;
+            tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * widthMap + (orgS >> 4));
+            spriteIntersectRect(orgS, orgT + 98, 160, 2);
         }
         else
             scrolldir &= ~SCROLL_UP2;
@@ -456,6 +475,13 @@ unsigned long viewScroll(int scrolldir)
             orgT    = (orgT - 2) & 0xFFFE;
             extT    = orgT + 100;
             orgAddr = (orgAddr - 320) & 0x3FFF;
+            /*
+             * Fill in top edge
+             */
+            hcount = 2;
+            haddr  = orgAddr;
+            tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
+            spriteIntersectRect(orgS, orgT, 160, 2);
         }
         else
             scrolldir &= ~SCROLL_DOWN2;
@@ -467,6 +493,13 @@ unsigned long viewScroll(int scrolldir)
             orgT++;
             extT    = orgT + 100;
             orgAddr = (orgAddr + 160) & 0x3FFF;
+            /*
+             * Fill in botom edge
+             */
+            haddr  = (orgAddr + 99 * 160) & 0x3FFF;
+            hcount = 1;
+            tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * widthMap + (orgS >> 4));
+            spriteIntersectRect(orgS, orgT + 99, 160, 1);
         }
         else
             scrolldir &= ~SCROLL_UP;
@@ -478,70 +511,16 @@ unsigned long viewScroll(int scrolldir)
             orgT--;
             extT    = orgT + 100;
             orgAddr = (orgAddr - 160) & 0x3FFF;
+            /*
+             * Fill in top edge
+             */
+            haddr  = orgAddr;
+            hcount = 1;
+            tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
+            spriteIntersectRect(orgS, orgT, 160, 1);
         }
         else
             scrolldir &= ~SCROLL_DOWN;
-    }
-    /*
-     * Pre-render edges based on scroll direction
-     */
-    if (scrolldir & SCROLL_RIGHT2)
-    {
-        /*
-         * Fill in left edge
-         */
-        vaddr = orgAddr;
-        tileEdgeV(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
-        spriteIntersectRect(orgS, orgT, 2, 100);
-    }
-    else if (scrolldir & SCROLL_LEFT2)
-    {
-        /*
-         * Fill right edge
-         */
-        vaddr = (orgAddr + 158) & 0x3FFF;
-        tileEdgeV((orgS + 158) & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + ((orgS + 158) >> 4));
-        spriteIntersectRect(orgS + 158, orgT, 2, 100);
-    }
-    if (scrolldir & SCROLL_DOWN2)
-    {
-        /*
-         * Fill in top edge
-         */
-        hcount = 2;
-        haddr  = orgAddr;
-        tileEdgeH2(orgS & 0x0E, orgT & 0x0E, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
-        spriteIntersectRect(orgS, orgT, 160, 2);
-    }
-    else if (scrolldir & SCROLL_UP2)
-    {
-        /*
-         * Fill in botom edge
-         */
-        hcount = 2;
-        haddr  = (orgAddr + 98 * 160) & 0x3FFF;
-        tileEdgeH2(orgS & 0x0E, (orgT + 98) & 0x0E, tileMap + ((orgT + 98) >> 4) * widthMap + (orgS >> 4));
-        spriteIntersectRect(orgS, orgT + 98, 160, 2);
-    }
-    else if (scrolldir & SCROLL_DOWN)
-    {
-        /*
-         * Fill in top edge
-         */
-        haddr  = orgAddr;
-        hcount = 1;
-        tileEdgeH(orgS & 0x0E, orgT & 0x0F, tileMap + (orgT >> 4) * widthMap + (orgS >> 4));
-        spriteIntersectRect(orgS, orgT, 160, 1);
-    }
-    else if (scrolldir & SCROLL_UP)
-    {
-        /*
-         * Fill in botom edge
-         */
-        haddr  = (orgAddr + 99 * 160) & 0x3FFF;
-        hcount = 1;
-        tileEdgeH(orgS & 0x0E, (orgT + 99) & 0x0F, tileMap + ((orgT + 99) >> 4) * widthMap + (orgS >> 4));
-        spriteIntersectRect(orgS, orgT + 99, 160, 1);
     }
     /*
      * Intersect tile updates with active sprites that may need redraw
@@ -555,7 +534,7 @@ unsigned long viewScroll(int scrolldir)
     /*
      * Update sprite buffers
      */
-    for (sprite = &spriteTable[0]; sprite != &spriteTable[NUM_SPRITES]; sprite++)
+    for (sprite = &spriteTable[0]; sprite < &spriteTable[NUM_SPRITES]; sprite++)
     {
         if (sprite->state)
         {
@@ -607,7 +586,7 @@ unsigned long viewScroll(int scrolldir)
     if (scrolldir & (SCROLL_LEFT2 | SCROLL_RIGHT2))
         cpyEdgeV(vaddr);
     /*
-     * Draw any updated tiles
+     * Draw updated tiles
      */
     while (tileUpdateCount)
     {
@@ -615,7 +594,7 @@ unsigned long viewScroll(int scrolldir)
         _cpyBuf(tileUpdateS[tileUpdateCount], tileUpdateT[tileUpdateCount], 16, 16, tileUpdatePtr[tileUpdateCount]);
     }
     /*
-     * Update sprites
+     * Draw update sprites
      */
     for (sprite = &spriteTable[0]; sprite < &spriteTable[NUM_SPRITES]; sprite++)
     {

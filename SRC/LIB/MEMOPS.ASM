@@ -554,14 +554,14 @@ _spriteBuf      PROC NEAR
         imul    WORD PTR [bp+16]        ; span
         add     ax, cx
         add     WORD PTR [bp+18], ax    ; OFFSET buf
-        shr     WORD PTR [bp+8], 1      ; width
-        mov     cx, WORD PTR [bp+8]     ; width
+        shr     WORD PTR [bp+8], 1      ; width => width/2
+        mov     cx, WORD PTR [bp+8]     ; width/2
         sub     WORD PTR [bp+16], cx    ; span
         mov     dx, WORD PTR [bp+10]    ; height
         lds     si, DWORD PTR [bp+12]   ; sprite
         les     di, DWORD PTR [bp+18]   ; buf
         test    BYTE PTR [bp+4], 1      ; x
-        jnz     dstodd
+        jnz     oddfirst
 evenx:
         lodsb
         cmp     al, 088h                ; Both nybbles transparent?
@@ -593,13 +593,11 @@ exparhi:
 evennxt:
         inc     di
         loop    evenx
-@@:     mov     cx, WORD PTR [bp+8]     ; width
+@@:     mov     cx, WORD PTR [bp+8]     ; width/2
         add     di, WORD PTR [bp+16]    ; span
         dec     dx                      ; height
         jnz     evenx
-        jmp     sprtexit
-dstodd:
-        dec     WORD PTR [bp+16]        ; span
+        jmp     SHORT sprtexit
 oddfirst:
         xor     ax, ax
         lodsb
@@ -607,14 +605,13 @@ oddfirst:
         ror     ax, 1
         ror     ax, 1
         ror     ax, 1
-        cmp     ah, 80h;                ; High nybble transparent?
-        je      @F
-        mov     bh, es:[di]
-        and     bh, 0Fh
-        or      ah, bh
-        mov     es:[di], ah
-@@:     inc     di
-        mov     bh, al
+        mov     bx, ax
+        cmp     bh, 80h;                ; High nybble transparent?
+        je      oddnxt
+        mov     al, es:[di]
+        and     al, 0Fh
+        or      al, bh
+        stosb
         loop    oddx
         jmp     SHORT oddlast
 oddx:
@@ -624,52 +621,28 @@ oddx:
         ror     ax, 1
         ror     ax, 1
         ror     ax, 1
-        mov     bl, bh
-        or      bl, ah
-        cmp     bl, 088h                ; Both nybbles transparent?
+        xchg    ax, bx
+        mov     ah, al
+        or      al, bh
+        cmp     al, 088h                ; Both nybbles transparent?
         je      oddnxt
-        cmp     bh, 08h                 ; Low nybble transparent?
+        cmp     ah, 08h                 ; Low nybble transparent?
         je      oxparlo
-        cmp     ah, 080h                ; High nybble transparent?
+        cmp     bh, 080h                ; High nybble transparent?
         je      oxparhi
-        mov     bh, al
-        mov     al, bl
         stosb
-        loop    oddx
-        jmp     SHORT oddlast
-oxparlo:
-        mov     bh, al
-        mov     al, es:[di]
-        and     al, 0Fh
-        or      al, ah
-        stosb
-        loop    oddx
-        jmp     SHORT oddlast
-oxparhi:
-        xchg    bh, al
-        mov     bl, es:[di]
-        and     bl, 0F0h
-        or      al, bl
-        stosb
-        loop    oddx
-        jmp     SHORT oddlast
-oddnxt:
-        mov     bh, al
-        inc     di
         loop    oddx
 oddlast:
-        cmp     bh, 08h;                ; Low nybble transparent?
+        cmp     bl, 08h;                ; Low nybble transparent?
         je      @F
-        mov     ah, es:[di]
-        and     ah, 0F0h
-        or      ah, bh
-        mov     es:[di], ah
-@@:     inc     di
-        mov     cx, WORD PTR [bp+8]     ; width
+        mov     al, es:[di]
+        and     al, 0F0h
+        or      al, bl
+        mov     es:[di], al
+@@:     mov     cx, WORD PTR [bp+8]     ; width/2
         add     di, WORD PTR [bp+16]    ; span
         dec     dx                      ; height
-        jz      sprtexit
-        jmp     oddfirst
+        jnz     oddfirst
 sprtexit:
         pop     ds
         ASSUME  DS: DGROUP
@@ -678,6 +651,24 @@ sprtexit:
         mov     sp, bp
         pop     bp
         ret
+oxparlo:
+        mov     al, es:[di]
+        and     al, 0Fh
+        or      al, bh
+        stosb
+        loop    oddx
+        jmp     SHORT oddlast
+oxparhi:
+        mov     al, es:[di]
+        and     al, 0F0h
+        or      al, ah
+        stosb
+        loop    oddx
+        jmp     SHORT oddlast
+oddnxt:
+        inc     di
+        loop    oddx
+        jmp     SHORT oddlast
 _spriteBuf      ENDP
 
         PUBLIC  _cpyBuf2Buf
