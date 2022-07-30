@@ -494,7 +494,7 @@ _tileEdgeV      PROC NEAR
         add     si, ax
         mov     ax, 7
 @@:     movsb
-        add     si, ax ;7
+        add     si, ax                  ; 7
         loop    @B
 ; tile += spanMap;
         add     bx, es:_spanMap         ; tile
@@ -504,10 +504,11 @@ tileedgev:
         mov     ds, dx
         lds     si, [bx]                ; *tile
         add     si, WORD PTR [bp+4]     ; s
-        REPT    16
+        REPT    15
         movsb
-        add     si, ax ;7
+        add     si, ax                  ; 7
         ENDM
+        movsb
 ; tile += spanMap;
         add     bx, es:_spanMap         ; tile
         cmp     di, OFFSET DGROUP:_edgeV + 100 - 16
@@ -519,7 +520,7 @@ tileedgev:
         sub     cx, di                  ; 100 - y
         add     si, WORD PTR [bp+4]     ; s
 @@:     movsb
-        add     si, ax ;7
+        add     si, ax                  ; 7
         loop    @B
         pop     ds
         ASSUME  DS: DGROUP, ES: NOTHING
@@ -596,7 +597,7 @@ evennxt:
         add     di, WORD PTR [bp+16]    ; span
         dec     dx                      ; height
         jnz     evenx
-        jmp    sprtexit
+        jmp     sprtexit
 dstodd:
         dec     WORD PTR [bp+16]        ; span
 oddfirst:
@@ -700,8 +701,7 @@ _cpyBuf2Buf     PROC NEAR
         lds     si, DWORD PTR [bp+10]   ; bufSrc
         ASSUME  DS: NOTHING
         mov     bx, WORD PTR [bp+8]     ; spanSrc
-        push    bp
-        mov     bp, WORD PTR [bp+14]    ; spanDst
+        mov     ax, WORD PTR [bp+14]    ; spanDst
 @@:     shr     cx, 1
     rep movsw
         adc     cx, cx
@@ -710,10 +710,9 @@ _cpyBuf2Buf     PROC NEAR
         sub     si, cx
         add     si, bx    ; bufSrc
         sub     di, cx
-        add     di, bp    ; bufDst
+        add     di, ax    ; bufDst
         dec     dh
         jne     @B
-        pop     bp
         pop     ds
         ASSUME  DS: DGROUP
         pop     si

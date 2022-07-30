@@ -436,7 +436,7 @@ unsigned long viewScroll(int scrolldir)
             orgAddr = (orgAddr - 2) & 0x3FFF;
         }
         else
-        scrolldir &= ~SCROLL_RIGHT2;
+            scrolldir &= ~SCROLL_RIGHT2;
     }
     if (scrolldir & SCROLL_UP2)
     {
