@@ -397,7 +397,7 @@ unsigned long viewScroll(int scrolldir)
     struct sprite_t *sprite;
 
 #ifdef PROFILE
-    rasterBorder(GREEN);
+    rasterBorder(BLUE);
 #endif
     /*
      * Sanity check scroll flags
@@ -569,7 +569,7 @@ unsigned long viewScroll(int scrolldir)
         }
     }
 #ifdef PROFILE
-    rasterBorder(borderColor);
+    rasterBorder(GREEN);
 #endif
     /*
      * The following happens after last active scanline
