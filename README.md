@@ -66,6 +66,8 @@ This library is focussed on the CGA. However, most computers are equipped with a
 
 Graphics in games is always time critical, even more so with this library. In order to figure out where time is spent in the library and application code, a nifty feature of the CGA is used: border colors. The CGA allows real time updates to the border color. By changing the color of the border in sections of code, a bar graph of sorts is generated in the screen border regions. Because all rendering is synchronized to the inactive video timing, the changing of the border colors start with the updating of the on-screen view. It is informative to see where CPU time is spent throughout the code and can help optimize or change algorithms to fit the desired frame rate.
 
+Profiling is a hard subject to describe, so I created a video to explain the process: [CGA LORES PRofiline](https://youtu.be/dHhNQqGSBWs)
+
 ## Dealing with CGA Snow
 
 It is quite possible that all rendering tasks won't complete during inactive video, leading to snow if care isn't taken. The library will use routines that go as fast as possible during the view update, forgoing snow checks. Code will have to be written to complete rendering during inactive video generation. Code that renders to the video memory can be compiled to use versions of the routines that check for snow, or not, depending on a `#define CGA_SNOW`.
